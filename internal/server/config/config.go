@@ -23,6 +23,9 @@ type Config struct {
 
 	// period of expired token
 	TokenExp time.Duration
+
+	// Secret is a string of secret to chipher data
+	CipherSecret string
 }
 
 func InitConfig() *Config {
@@ -37,7 +40,11 @@ func InitConfig() *Config {
 
 	secret := flag.String(
 		"s", "supersecret",
-		"Enter private key. Or use SECRET env")
+		"Enter secret. Or use SECRET env")
+
+	cipherSecret := flag.String(
+		"c", "supersecretchipher",
+		"Enter cipher key. Or use CIPHERSECRET env")
 
 	flag.Parse()
 
@@ -57,12 +64,17 @@ func InitConfig() *Config {
 		*secret = envSecret
 	}
 
+	if envCipherSecret := os.Getenv("CIPHERSECRET"); envCipherSecret != "" {
+		*cipherSecret = envCipherSecret
+	}
+
 	cfg := &Config{
-		URLServer:   *URLServer,
-		LoggerLevel: *logLevel,
-		DatabaseDsn: *databaseDsn,
-		Secret:      *secret,
-		TokenExp:    TOKENEXP,
+		URLServer:    *URLServer,
+		LoggerLevel:  *logLevel,
+		DatabaseDsn:  *databaseDsn,
+		Secret:       *secret,
+		TokenExp:     TOKENEXP,
+		CipherSecret: *cipherSecret,
 	}
 	return cfg
 }

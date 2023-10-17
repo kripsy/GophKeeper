@@ -56,3 +56,21 @@ func IsPasswordCorrect(ctx context.Context, password, hashPassowrd []byte, logge
 
 	return nil
 }
+
+// Placeholder function to validate the token
+func IsValidToken(tokenString string, secret string) (bool, error) {
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
+		return []byte(secret), nil
+	})
+
+	if err != nil {
+		return false, fmt.Errorf("%w", err)
+	}
+
+	if !token.Valid {
+		return false, fmt.Errorf("%w", err)
+	}
+
+	return true, nil
+}

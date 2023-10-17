@@ -36,3 +36,19 @@ func NewUserLoginError(username string) error {
 func (ue *UserLoginError) Error() string {
 	return ue.Err.Error()
 }
+
+type SecretNotFoundError struct {
+	Text string
+	Err  error
+}
+
+func NewSecretNotFoundError(ID int) error {
+	return &SecretNotFoundError{
+		Text: fmt.Sprintf("failed init secret number %d", ID),
+		Err:  errors.New("failed init secret"),
+	}
+}
+
+func (ue *SecretNotFoundError) Error() string {
+	return ue.Err.Error()
+}

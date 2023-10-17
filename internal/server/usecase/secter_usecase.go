@@ -5,6 +5,7 @@ package usecase
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/kripsy/GophKeeper/internal/server/entity"
 	"github.com/kripsy/GophKeeper/internal/server/infrastructure"
@@ -12,7 +13,8 @@ import (
 )
 
 type SecretUseCase interface {
-	AddSecret(ctx context.Context, user entity.User) error
+	SaveSecret(ctx context.Context, user entity.User) error
+	GetSecret(ctx context.Context, secretID int) (entity.Secret, error)
 }
 
 type secretUseCase struct {
@@ -22,7 +24,7 @@ type secretUseCase struct {
 	cipherSecret string
 }
 
-func InitSecretUseCases(ctx context.Context, db infrastructure.UserRepository, cipherSecret string, l *zap.Logger) (SecretUseCase, error) {
+func InitSecretUseCases(ctx context.Context, db infrastructure.SecretRepository, cipherSecret string, l *zap.Logger) (SecretUseCase, error) {
 	uc := &secretUseCase{
 		ctx:          ctx,
 		db:           db,
@@ -32,10 +34,26 @@ func InitSecretUseCases(ctx context.Context, db infrastructure.UserRepository, c
 	return uc, nil
 }
 
-// RegisterUser get context, user and return token, expired time, error.
-// At the first step we check is user exists. If exists - return error conflict.
-// If user not exists we get new user ID.
-// After register new user we generate new jwt token.
-func (uc *secretUseCase) AddSecret(ctx context.Context, user entity.User) error {
+// SaveSecret saves the provided secret to the database.
+// Returns the ID of the saved secret.
+func (uc *secretUseCase) SaveSecret(ctx context.Context, user entity.User) error {
 	return errors.New("not implemented")
+}
+
+// GetSecret retrieves a secret based on the provided secretID.
+func (uc *secretUseCase) GetSecret(ctx context.Context, secretID int) (entity.Secret, error) {
+	secret, err := uc.db.GetSecret(ctx, secretID)
+	if err != nil {
+		return entity.Secret{}, fmt.Errorf("%w", err)
+	}
+	return secret, nil
+}
+
+// DeleteSecret deletes a secret based on the provided secretID.
+func (uc *secretUseCase) DeleteSecret(ctx context.Context, secretID int) error {
+	err := uc.db.DeleteSecret(ctx, secretID)
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+	return nil
 }

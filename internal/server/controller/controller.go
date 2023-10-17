@@ -19,15 +19,19 @@ type Response struct {
 }
 
 type Server struct {
-	server      *echo.Echo
-	userUseCase usecase.UserUseCase
+	server        *echo.Echo
+	userUseCase   usecase.UserUseCase
+	secretUseCase usecase.SecretUseCase
+	secret        string
 	// middleware  *deviceHandlerMiddleware
 }
 
-func InitNewServer(userUseCase usecase.UserUseCase, secretUseCase usecase.SecretUseCase, logger *zap.Logger) *Server {
+func InitNewServer(userUseCase usecase.UserUseCase, secretUseCase usecase.SecretUseCase, secret string, logger *zap.Logger) *Server {
 	s := &Server{
-		server:      echo.New(),
-		userUseCase: userUseCase,
+		server:        echo.New(),
+		userUseCase:   userUseCase,
+		secretUseCase: secretUseCase,
+		secret:        secret,
 		// middleware:  InitDeviceHandlerMiddleware(logger),
 	}
 	s.setRouting(logger)
@@ -51,7 +55,8 @@ func (s *Server) setRouting(logger *zap.Logger) error {
 	authGroup.POST("/login", s.login(logger))
 
 	secretGroup := s.server.Group("/secrets")
-	secretGroup.POST("/add", s.addSecret(logger))
+	secretGroup.Use(TokenAuthMiddleware(logger, s.secret))
+	secretGroup.POST("/create", s.createSecret(logger))
 
 	// // create routes group
 	// devicesGroup := s.server.Group("/devices")

@@ -49,16 +49,30 @@ func main() {
 		l.Error("error init user repository", zap.String("msg", err.Error()))
 		os.Exit(1)
 	}
-
 	l.Debug("NewUserRepository initialized")
+
+	secretRepo, err := infrastructure.NewSecretRepository(repo)
+	if err != nil {
+		l.Error("error init secret repository", zap.String("msg", err.Error()))
+		os.Exit(1)
+	}
+	l.Debug("NewSecretRepository initialized")
 
 	userUseCase, err := usecase.InitUseCases(ctx, userRepo, cfg.Secret, cfg.TokenExp, l)
 	if err != nil {
 		l.Error("error create user usecase instance", zap.String("msg", err.Error()))
 		os.Exit(1)
 	}
+	l.Debug("userUseCase initialized")
 
-	s := controller.InitNewServer(userUseCase, secretUseCase, l)
+	secretUseCase, err := usecase.InitSecretUseCases(ctx, secretRepo, cfg.CipherSecret, l)
+	if err != nil {
+		l.Error("error create user usecase instance", zap.String("msg", err.Error()))
+		os.Exit(1)
+	}
+	l.Debug("secretUseCase initialized")
+
+	s := controller.InitNewServer(userUseCase, secretUseCase, cfg.Secret, l)
 
 	// start shutdown application
 	wg.Add(2)
