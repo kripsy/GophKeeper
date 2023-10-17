@@ -12,11 +12,11 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/kripsy/GophKeeper/internal/config"
-	"github.com/kripsy/GophKeeper/internal/controller"
-	"github.com/kripsy/GophKeeper/internal/infrastructure"
 	"github.com/kripsy/GophKeeper/internal/logger"
-	"github.com/kripsy/GophKeeper/internal/usecase"
+	"github.com/kripsy/GophKeeper/internal/server/config"
+	"github.com/kripsy/GophKeeper/internal/server/controller"
+	"github.com/kripsy/GophKeeper/internal/server/infrastructure"
+	"github.com/kripsy/GophKeeper/internal/server/usecase"
 	"go.uber.org/zap"
 )
 
@@ -52,35 +52,13 @@ func main() {
 
 	l.Debug("NewUserRepository initialized")
 
-	// userRepo, err := infrastructure.NewUserRepository(repo)
-	// if err != nil {
-	// 	l.Error("error init user repository", zap.String("msg", err.Error()))
-	// 	os.Exit(1)
-	// }
-
-	// l.Debug("NewUserRepository initialized")
-
-	// deviceKafkaProducer, err := infrastructure.NewDeviceKafkaProducer("kafka:9092", "DeviceEvents", l)
-	// if err != nil {
-	// 	l.Error("error init device kafka producer", zap.String("msg", err.Error()))
-	// 	os.Exit(1)
-	// }
-
-	// l.Debug("NewDeviceKafkaProducer initialized")
-
-	userUseCase, err := usecase.InitUseCases(ctx, userRepo, cfg.PrivateKey, cfg.TokenExp)
+	userUseCase, err := usecase.InitUseCases(ctx, userRepo, cfg.Secret, cfg.TokenExp, l)
 	if err != nil {
 		l.Error("error create user usecase instance", zap.String("msg", err.Error()))
 		os.Exit(1)
 	}
 
-	// userUseCase, err := usecase.NewUserUseCase(userRepo, l, cfg)
-	// if err != nil {
-	// 	l.Error("error create user usecase instance", zap.String("msg", err.Error()))
-	// 	os.Exit(1)
-	// }
-
-	s := controller.InitNewServer(userUseCase, l)
+	s := controller.InitNewServer(userUseCase, secretUseCase, l)
 
 	// start shutdown application
 	wg.Add(2)

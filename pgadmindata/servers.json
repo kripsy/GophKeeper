@@ -1,12 +1,12 @@
 {
     "Servers": {
         "1": {
-            "Name": "gophermarket_postgres_db",
+            "Name": "GophKeeper_postgres_db",
             "Group": "Servers",
-            "Host": "gophermarket_postgres_db",
+            "Host": "postgres_db",
             "Port": 5432,
-            "MaintenanceDB": "seed",
-            "Username": "seed",
+            "MaintenanceDB": "gophkeeperdb",
+            "Username": "gophkeeperdb",
             "UseSSHTunnel": 0,
             "TunnelPort": "22",
             "TunnelAuthentication": 0,

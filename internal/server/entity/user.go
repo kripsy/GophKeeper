@@ -3,10 +3,9 @@ package entity
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 
-	jsonv2 "github.com/go-json-experiment/json"
 	"github.com/go-playground/validator/v10"
+	"github.com/kripsy/GophKeeper/internal/utils"
 )
 
 type User struct {
@@ -14,42 +13,28 @@ type User struct {
 	Password string `json:"password,omitempty" validate:"required"`
 }
 
-func InitNewUser(data []byte) (*User, error) {
+func InitNewUser(data []byte) (User, error) {
 	var buf bytes.Buffer
 	buf.Write(data)
 	decoder := json.NewDecoder(&buf)
 	decoder.DisallowUnknownFields()
 
-	u := &User{}
+	u := User{}
 	err := decoder.Decode(&u)
 	if err != nil {
-		return nil, err
+		return User{}, err
 	}
 
 	validate := validator.New()
-	err = validate.Struct(u)
+	err = validate.Struct(&u)
 	if err != nil {
-		return nil, err
+		return User{}, err
 	}
 
-	err = checkDuplicateFields(data)
+	err = utils.CheckDuplicateFields(data, &User{})
 	if err != nil {
-		return nil, err
+		return User{}, err
 	}
 
 	return u, nil
-}
-
-func checkDuplicateFields(data []byte) error {
-	u := &User{}
-	fmt.Println(string(data))
-	err := jsonv2.UnmarshalOptions{}.Unmarshal(jsonv2.DecodeOptions{
-		AllowDuplicateNames: false,
-	}, data, &u)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
