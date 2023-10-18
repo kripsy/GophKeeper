@@ -1,7 +1,9 @@
 package config
 
 import (
+	"errors"
 	"flag"
+	"fmt"
 	"os"
 	"time"
 )
@@ -28,7 +30,7 @@ type Config struct {
 	CipherSecret string
 }
 
-func InitConfig() *Config {
+func InitConfig() (*Config, error) {
 
 	// declare flag set for subcommand
 	URLServer := flag.String("a", "localhost:8080", "Enter address exec http server as ip_address:port. Or use SERVER_ADDRESS env")
@@ -43,8 +45,8 @@ func InitConfig() *Config {
 		"Enter secret. Or use SECRET env")
 
 	cipherSecret := flag.String(
-		"c", "supersecretchipher",
-		"Enter cipher key. Or use CIPHERSECRET env")
+		"c", "supersecretchipher!!!!!!",
+		"Enter cipher key. Or use CIPHERSECRET env. Expected 16, 24, or 32 bytes.")
 
 	flag.Parse()
 
@@ -68,6 +70,16 @@ func InitConfig() *Config {
 		*cipherSecret = envCipherSecret
 	}
 
+	ok, err := checkLenCipherSecret(*cipherSecret)
+	if err != nil {
+
+		return nil, fmt.Errorf("%w", err)
+	}
+	if !ok {
+
+		return nil, errors.New("Invalid len cipher key")
+	}
+
 	cfg := &Config{
 		URLServer:    *URLServer,
 		LoggerLevel:  *logLevel,
@@ -76,5 +88,16 @@ func InitConfig() *Config {
 		TokenExp:     TOKENEXP,
 		CipherSecret: *cipherSecret,
 	}
-	return cfg
+	return cfg, nil
+}
+
+func checkLenCipherSecret(cipherSecret string) (bool, error) {
+	length := len(cipherSecret)
+
+	switch length {
+	case 16, 24, 32:
+		return true, nil
+	default:
+		return false, fmt.Errorf("Invalid cipher secret length: %d bytes. Expected 16, 24, or 32 bytes.", length)
+	}
 }

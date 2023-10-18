@@ -19,11 +19,6 @@ import (
 	"go.uber.org/zap"
 )
 
-type UserRepository interface {
-	RegisterUser(ctx context.Context, user entity.User) (int, error)
-	LoginUser(ctx context.Context, user entity.User) (int, error)
-}
-
 type userRepository struct {
 	// database instance.
 	db     *sql.DB
@@ -308,7 +303,7 @@ func (r *userRepository) getUserHashPassword(ctx context.Context, username strin
 	return userID, hashPassword, nil
 }
 
-func NewUserRepository(repo *repository) (UserRepository, error) {
+func NewUserRepository(repo *repository) (*userRepository, error) {
 	return &userRepository{
 		db:     repo.db,
 		logger: repo.logger,

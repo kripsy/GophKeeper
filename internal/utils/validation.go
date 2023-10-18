@@ -18,3 +18,12 @@ func CheckDuplicateFields(data []byte, v interface{}) error {
 
 	return nil
 }
+
+func CheckValidQueryParam(params ...int) (bool, error) {
+	for _, param := range params {
+		if param < 0 || param > 100 {
+			return false, nil
+		}
+	}
+	return true, nil
+}

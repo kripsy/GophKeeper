@@ -1,5 +1,6 @@
 BEGIN TRANSACTION;
 
+DROP TABLE secrets ;
 DROP TABLE users ;
 
 COMMIT;

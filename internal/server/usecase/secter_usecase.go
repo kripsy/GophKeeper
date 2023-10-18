@@ -4,27 +4,28 @@ package usecase
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/kripsy/GophKeeper/internal/server/entity"
-	"github.com/kripsy/GophKeeper/internal/server/infrastructure"
+	"github.com/kripsy/GophKeeper/internal/utils"
 	"go.uber.org/zap"
 )
 
-type SecretUseCase interface {
-	SaveSecret(ctx context.Context, user entity.User) error
+type SecretRepository interface {
+	SaveSecret(ctx context.Context, secret entity.Secret) (int, error)
 	GetSecret(ctx context.Context, secretID int) (entity.Secret, error)
+	DeleteSecret(ctx context.Context, secretID int) error
+	GetSecretsByUserID(ctx context.Context, userID, limit, offset int) ([]entity.Secret, error)
 }
 
 type secretUseCase struct {
 	ctx          context.Context
-	db           infrastructure.SecretRepository
+	db           SecretRepository
 	logger       *zap.Logger
 	cipherSecret string
 }
 
-func InitSecretUseCases(ctx context.Context, db infrastructure.SecretRepository, cipherSecret string, l *zap.Logger) (SecretUseCase, error) {
+func InitSecretUseCases(ctx context.Context, db SecretRepository, cipherSecret string, l *zap.Logger) (*secretUseCase, error) {
 	uc := &secretUseCase{
 		ctx:          ctx,
 		db:           db,
@@ -36,9 +37,33 @@ func InitSecretUseCases(ctx context.Context, db infrastructure.SecretRepository,
 
 // SaveSecret saves the provided secret to the database.
 // Returns the ID of the saved secret.
-func (uc *secretUseCase) SaveSecret(ctx context.Context, user entity.User) error {
-	return errors.New("not implemented")
+func (uc *secretUseCase) SaveTextSecret(ctx context.Context, secret entity.Secret) (int, error) {
+	encryptedData, err := utils.Encrypt(secret.Data, uc.cipherSecret)
+	if err != nil {
+		return 0, err
+	}
+	secret.Data = encryptedData
+
+	id, err := uc.db.SaveSecret(ctx, secret)
+	if err != nil {
+		uc.logger.Error("Error save secret in db", zap.Error(err))
+
+		return 0, fmt.Errorf("%w", err)
+	}
+	// Сохранение секрета в репозитории
+
+	return id, nil
 }
+
+func (uc *secretUseCase) GetSecretsByUserID(ctx context.Context, userID, limit, offset int) ([]entity.Secret, error) {
+	secrets, err := uc.db.GetSecretsByUserID(ctx, userID, limit, offset)
+	if err != nil {
+		return []entity.Secret{}, fmt.Errorf("%w", err)
+	}
+	return secrets, nil
+}
+
+// d, _ := utils.Decrypt(encryptedData, uc.cipherSecret)
 
 // GetSecret retrieves a secret based on the provided secretID.
 func (uc *secretUseCase) GetSecret(ctx context.Context, secretID int) (entity.Secret, error) {

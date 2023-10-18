@@ -25,7 +25,11 @@ func main() {
 	defer stop()
 	var wg sync.WaitGroup
 
-	cfg := config.InitConfig()
+	cfg, err := config.InitConfig()
+	if err != nil {
+		fmt.Printf("Error init cfg: %v", err)
+		os.Exit(1)
+	}
 
 	l, err := logger.InitLog(cfg.LoggerLevel)
 	if err != nil {

@@ -74,3 +74,19 @@ func IsValidToken(tokenString string, secret string) (bool, error) {
 
 	return true, nil
 }
+
+func GetUserIDFromToken(tokenString, secretKey string) (int, error) {
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
+		return []byte(secretKey), nil
+	})
+	if err != nil {
+		return 0, fmt.Errorf("%w", err)
+	}
+
+	if !token.Valid {
+		return 0, fmt.Errorf("%w", err)
+	}
+
+	return claims.UserID, nil
+}

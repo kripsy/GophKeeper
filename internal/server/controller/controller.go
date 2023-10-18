@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/kripsy/GophKeeper/internal/server/usecase"
+	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 
@@ -18,15 +18,23 @@ type Response struct {
 	Error interface{} `json:"error"`
 }
 
+type CustomValidator struct {
+	validator *validator.Validate
+}
+
+func (cv *CustomValidator) Validate(i interface{}) error {
+	return cv.validator.Struct(i)
+}
+
 type Server struct {
 	server        *echo.Echo
-	userUseCase   usecase.UserUseCase
-	secretUseCase usecase.SecretUseCase
+	userUseCase   UserUseCase
+	secretUseCase SecretUseCase
 	secret        string
 	// middleware  *deviceHandlerMiddleware
 }
 
-func InitNewServer(userUseCase usecase.UserUseCase, secretUseCase usecase.SecretUseCase, secret string, logger *zap.Logger) *Server {
+func InitNewServer(userUseCase UserUseCase, secretUseCase SecretUseCase, secret string, logger *zap.Logger) *Server {
 	s := &Server{
 		server:        echo.New(),
 		userUseCase:   userUseCase,
@@ -50,12 +58,15 @@ func (s *Server) setRouting(logger *zap.Logger) error {
 	s.server.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{
 		Timeout: CONTEXTTIMEOUT,
 	}))
+	s.server.Validator = &CustomValidator{validator: validator.New()}
+
 	authGroup := s.server.Group("/users")
 	authGroup.POST("/register", s.register(logger))
 	authGroup.POST("/login", s.login(logger))
 
 	secretGroup := s.server.Group("/secrets")
 	secretGroup.Use(TokenAuthMiddleware(logger, s.secret))
+	secretGroup.GET("", s.getSecretsByUserID(logger))
 	secretGroup.POST("/create", s.createSecret(logger))
 
 	// // create routes group

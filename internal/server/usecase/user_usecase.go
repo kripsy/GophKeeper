@@ -8,25 +8,24 @@ import (
 	"time"
 
 	"github.com/kripsy/GophKeeper/internal/server/entity"
-	"github.com/kripsy/GophKeeper/internal/server/infrastructure"
 	"github.com/kripsy/GophKeeper/internal/utils"
 	"go.uber.org/zap"
 )
 
-type UserUseCase interface {
-	RegisterUser(ctx context.Context, user entity.User) (string, error)
-	LoginUser(ctx context.Context, user entity.User) (string, error)
+type UserRepository interface {
+	RegisterUser(ctx context.Context, user entity.User) (int, error)
+	LoginUser(ctx context.Context, user entity.User) (int, error)
 }
 
 type userUseCase struct {
 	ctx      context.Context
-	db       infrastructure.UserRepository
+	db       UserRepository
 	logger   *zap.Logger
 	secret   string
 	tokenExp time.Duration
 }
 
-func InitUseCases(ctx context.Context, db infrastructure.UserRepository, secret string, tokenExp time.Duration, l *zap.Logger) (UserUseCase, error) {
+func InitUseCases(ctx context.Context, db UserRepository, secret string, tokenExp time.Duration, l *zap.Logger) (*userUseCase, error) {
 	uc := &userUseCase{
 		ctx:      ctx,
 		db:       db,

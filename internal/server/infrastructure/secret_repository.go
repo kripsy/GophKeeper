@@ -4,18 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/kripsy/GophKeeper/internal/server/entity"
 	"go.uber.org/zap"
 )
-
-type SecretRepository interface {
-	SaveSecret(ctx context.Context, secret entity.Secret) (int, error)
-	GetSecret(ctx context.Context, secretID int) (entity.Secret, error)
-	DeleteSecret(ctx context.Context, secretID int) error
-}
 
 type secretRepository struct {
 	db     *sql.DB
@@ -36,8 +31,11 @@ func (r *secretRepository) SaveSecret(ctx context.Context, secret entity.Secret)
 	}(tx)
 
 	queryBuilder := squirrel.
-		Insert("secrets").Columns("id", "type", "data", "meta").
-		Values(secret.ID, secret.Type, secret.Data, secret.Meta).PlaceholderFormat(squirrel.Dollar)
+		Insert("secrets").
+		Columns("type", "data", "meta", "chunk_num", "total_chunks", "user_id").
+		Values(secret.Type, secret.Data, secret.Meta, secret.ChunkNum, secret.TotalChunks, secret.UserID).
+		Suffix("RETURNING id").
+		PlaceholderFormat(squirrel.Dollar)
 
 	sql, args, err := queryBuilder.ToSql()
 	if err != nil {
@@ -45,9 +43,11 @@ func (r *secretRepository) SaveSecret(ctx context.Context, secret entity.Secret)
 		return 0, err
 	}
 
-	_, err = tx.ExecContext(ctx, sql, args...)
+	row := tx.QueryRowContext(ctx, sql, args...)
+	var id int
+	err = row.Scan(&id)
 	if err != nil {
-		r.logger.Error("failed to exec sql in SaveSecret", zap.Error(err))
+		r.logger.Error("failed to scan id in SaveSecret", zap.Error(err))
 		return 0, err
 	}
 
@@ -55,7 +55,54 @@ func (r *secretRepository) SaveSecret(ctx context.Context, secret entity.Secret)
 	if err != nil {
 		return 0, err
 	}
-	return secret.ID, nil
+	return id, nil
+}
+
+func (r *secretRepository) GetSecretsByUserID(ctx context.Context, userID int, limit int, offset int) ([]entity.Secret, error) {
+	var secrets []entity.Secret
+
+	queryBuilder := squirrel.
+		Select("id", "type", "meta", "chunk_num", "total_chunks", "user_id").
+		From("secrets").
+		Where(squirrel.Eq{"user_id": userID}).
+		Limit(uint64(limit)).
+		Offset(uint64(offset)).
+		OrderBy("id DESC").
+		PlaceholderFormat(squirrel.Dollar)
+
+	sql, args, err := queryBuilder.ToSql()
+	if err != nil {
+		r.logger.Error("failed to build sql in GetSecretsByUserID", zap.Error(err))
+
+		return nil, fmt.Errorf("%w", err)
+	}
+
+	rows, err := r.db.QueryContext(ctx, sql, args...)
+	if err != nil {
+		r.logger.Error("failed to query secrets in GetSecretsByUserID", zap.Error(err))
+
+		return nil, fmt.Errorf("%w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var secret entity.Secret
+		err := rows.Scan(&secret.ID, &secret.Type, &secret.Meta, &secret.ChunkNum, &secret.TotalChunks, &secret.UserID)
+		if err != nil {
+			r.logger.Error("failed to scan secret in GetSecretsByUserID", zap.Error(err))
+
+			return nil, fmt.Errorf("%w", err)
+		}
+		secrets = append(secrets, secret)
+	}
+
+	if err = rows.Err(); err != nil {
+		r.logger.Error("rows error in GetSecretsByUserID", zap.Error(err))
+
+		return nil, fmt.Errorf("%w", err)
+	}
+
+	return secrets, nil
 }
 
 func (r *secretRepository) GetSecret(ctx context.Context, secretID int) (entity.Secret, error) {
@@ -102,7 +149,7 @@ func (r *secretRepository) DeleteSecret(ctx context.Context, secretID int) error
 	return nil
 }
 
-func NewSecretRepository(repo *repository) (SecretRepository, error) {
+func NewSecretRepository(repo *repository) (*secretRepository, error) {
 	return &secretRepository{
 		db:     repo.db,
 		logger: repo.logger,

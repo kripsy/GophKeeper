@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"errors"
 	"io"
 	"net/http"
@@ -10,6 +11,11 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 )
+
+type UserUseCase interface {
+	RegisterUser(ctx context.Context, user entity.User) (string, error)
+	LoginUser(ctx context.Context, user entity.User) (string, error)
+}
 
 func (s *Server) register(l *zap.Logger) echo.HandlerFunc {
 	return func(c echo.Context) error {
