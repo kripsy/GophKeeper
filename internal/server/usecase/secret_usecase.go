@@ -13,7 +13,7 @@ import (
 
 type SecretRepository interface {
 	SaveSecret(ctx context.Context, secret entity.Secret) (int, error)
-	GetSecret(ctx context.Context, secretID int) (entity.Secret, error)
+	GetSecretByID(ctx context.Context, secretID, userID int) (entity.Secret, error)
 	DeleteSecret(ctx context.Context, secretID int) error
 	GetSecretsByUserID(ctx context.Context, userID, limit, offset int) ([]entity.Secret, error)
 }
@@ -66,11 +66,17 @@ func (uc *secretUseCase) GetSecretsByUserID(ctx context.Context, userID, limit, 
 // d, _ := utils.Decrypt(encryptedData, uc.cipherSecret)
 
 // GetSecret retrieves a secret based on the provided secretID.
-func (uc *secretUseCase) GetSecret(ctx context.Context, secretID int) (entity.Secret, error) {
-	secret, err := uc.db.GetSecret(ctx, secretID)
+func (uc *secretUseCase) GetSecretByID(ctx context.Context, secretID, userID int) (entity.Secret, error) {
+	secret, err := uc.db.GetSecretByID(ctx, secretID, userID)
 	if err != nil {
 		return entity.Secret{}, fmt.Errorf("%w", err)
 	}
+	decryptedData, err := utils.Decrypt(secret.Data, uc.cipherSecret)
+	if err != nil {
+		return entity.Secret{}, err
+	}
+	secret.Data = decryptedData
+
 	return secret, nil
 }
 

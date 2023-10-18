@@ -3,9 +3,12 @@ package controller
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
+	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/kripsy/GophKeeper/internal/server/entity"
 	"github.com/kripsy/GophKeeper/internal/utils"
 	"github.com/labstack/echo/v4"
@@ -20,10 +23,14 @@ type SecretPayload struct {
 	TotalChunks int                    `json:"total_chunks,omitempty"`
 }
 
+type TextSecret struct {
+	Content string `json:"content" validate:"required"`
+}
+
 type SecretUseCase interface {
 	SaveTextSecret(ctx context.Context, secret entity.Secret) (int, error)
-	GetSecret(ctx context.Context, secretID int) (entity.Secret, error)
 	GetSecretsByUserID(ctx context.Context, userID, limit, offset int) ([]entity.Secret, error)
+	GetSecretByID(ctx context.Context, secretID, userID int) (entity.Secret, error)
 }
 
 func (s *Server) createSecret(l *zap.Logger) echo.HandlerFunc {
@@ -153,25 +160,94 @@ func (s *Server) getSecretsByUserID(l *zap.Logger) echo.HandlerFunc {
 	}
 }
 
-func (s *Server) getSecret(l *zap.Logger) echo.HandlerFunc {
+func (s *Server) getSecretByID(l *zap.Logger) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		secretID := 1 //c.Param("id") // Assuming you're getting the secret by ID from the URL
-
 		ctx := c.Request().Context()
-		secret, err := s.secretUseCase.GetSecret(ctx, secretID)
-
+		// Получение ID секрета из URL
+		secretIDStr := c.Param("id")
+		secretID, err := strconv.Atoi(secretIDStr)
 		if err != nil {
-			l.Error("Failed to GetSecret", zap.Error(err))
+			l.Error("Invalid secret ID", zap.Error(err))
 
-			return c.JSON(http.StatusNotFound, Response{
+			return c.JSON(http.StatusBadRequest, Response{
 				Data:  nil,
-				Error: "Secret not found",
+				Error: "Invalid secret ID",
 			})
 		}
 
+		// Извлечение userID из контекста (предполагая, что он там есть после аутентификации)
+		userID, ok := c.Get("user_id").(int)
+		if !ok {
+			l.Error("Failed to retrieve userID from context")
+
+			return c.JSON(http.StatusInternalServerError, Response{
+				Data:  nil,
+				Error: "Failed to retrieve userID",
+			})
+		}
+
+		// Вызов usecase для получения секрета по ID и userID
+		secret, err := s.secretUseCase.GetSecretByID(ctx, secretID, userID)
+		if err != nil {
+			var secretNotFoundError *models.SecretNotFoundError
+			if errors.As(err, &secretNotFoundError) {
+				l.Error("Secret not found", zap.Int("userID", userID), zap.Int("secretID", secretID))
+
+				return c.JSON(http.StatusNoContent, Response{
+					Data:  nil,
+					Error: nil,
+				})
+			}
+
+			l.Error("Failed to retrieve secret", zap.Error(err))
+
+			return c.JSON(http.StatusInternalServerError, Response{
+				Data:  nil,
+				Error: "Failed to retrieve secret",
+			})
+		}
+		payload, err := convertSecret2Payload(secret)
+		if err != nil {
+			l.Error("Failed convertSecret2Payload", zap.Error(err))
+
+			return c.JSON(http.StatusInternalServerError, Response{
+				Data:  nil,
+				Error: "Failed to retrieve secret",
+			})
+		}
+
+		// Возвращаем секрет в ответе
 		return c.JSON(http.StatusOK, Response{
-			Data:  secret,
+			Data:  payload,
 			Error: nil,
 		})
 	}
+}
+
+func convertSecret2Payload(secret entity.Secret) (SecretPayload, error) {
+	payload := SecretPayload{
+		Type:        secret.Type,
+		Meta:        secret.Meta,
+		ChunkNum:    secret.ChunkNum,
+		TotalChunks: secret.TotalChunks,
+		Data:        make(map[string]interface{}),
+	}
+	switch secret.Type {
+	case "text":
+		var textData TextSecret
+		fmt.Println(string(secret.Data))
+		err := json.Unmarshal(secret.Data, &textData)
+		if err != nil {
+			return SecretPayload{}, fmt.Errorf("%w", err)
+		}
+		payload.Data["content"] = textData.Content
+
+	case "binary":
+
+	case "card":
+
+	case "login_password":
+	}
+
+	return payload, nil
 }

@@ -67,6 +67,7 @@ func (s *Server) setRouting(logger *zap.Logger) error {
 	secretGroup := s.server.Group("/secrets")
 	secretGroup.Use(TokenAuthMiddleware(logger, s.secret))
 	secretGroup.GET("", s.getSecretsByUserID(logger))
+	secretGroup.GET("/:id", s.getSecretByID(logger))
 	secretGroup.POST("/create", s.createSecret(logger))
 
 	// // create routes group

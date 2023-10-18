@@ -3,7 +3,6 @@ package infrastructure
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/Masterminds/squirrel"
@@ -105,28 +104,52 @@ func (r *secretRepository) GetSecretsByUserID(ctx context.Context, userID int, l
 	return secrets, nil
 }
 
-func (r *secretRepository) GetSecret(ctx context.Context, secretID int) (entity.Secret, error) {
-	var secret entity.Secret
-	queryBuilder := squirrel.Select("id", "type", "data", "meta").
+func (r *secretRepository) GetSecretByID(ctx context.Context, secretID, userID int) (entity.Secret, error) {
+	tx, err := r.db.Begin()
+	if err != nil {
+		r.logger.Error("Failed to begin transaction", zap.Error(err))
+
+		return entity.Secret{}, err
+	}
+	defer func() {
+		if err := tx.Rollback(); err != nil {
+			r.logger.Error("Failed to rollback transaction", zap.Error(err))
+		}
+	}()
+
+	queryBuilder := squirrel.
+		Select("id", "type", "data", "meta", "chunk_num", "total_chunks", "user_id").
 		From("secrets").
-		Where(squirrel.Eq{"id": secretID}).
+		Where(squirrel.Eq{"id": secretID, "user_id": userID}).
+		RunWith(tx).
 		PlaceholderFormat(squirrel.Dollar)
 
 	qbsql, args, err := queryBuilder.ToSql()
 	if err != nil {
-		r.logger.Error("failed to build sql in GetSecret", zap.Error(err))
-		return secret, err
+		r.logger.Error("Failed to build SQL query", zap.Error(err))
+
+		return entity.Secret{}, err
 	}
 
-	row := r.db.QueryRowContext(ctx, qbsql, args...)
-	err = row.Scan(&secret.ID, &secret.Type, &secret.Data, &secret.Meta)
+	row := tx.QueryRow(qbsql, args...)
+
+	var secret entity.Secret
+	err = row.Scan(&secret.ID, &secret.Type, &secret.Data, &secret.Meta, &secret.ChunkNum, &secret.TotalChunks, &secret.UserID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return secret, models.NewSecretNotFoundError(secretID)
+		if err == sql.ErrNoRows {
+			return entity.Secret{}, models.NewSecretNotFoundError(secretID)
 		}
-		r.logger.Error("failed to scan secret", zap.Error(err))
-		return secret, err
+		r.logger.Error("Failed to retrieve secret from DB", zap.Error(err))
+
+		return entity.Secret{}, err
 	}
+
+	if err := tx.Commit(); err != nil {
+		r.logger.Error("Failed to commit transaction", zap.Error(err))
+
+		return entity.Secret{}, err
+	}
+
 	return secret, nil
 }
 
