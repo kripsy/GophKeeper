@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/crypto/scrypt"
 )
 
 type Claims struct {
@@ -89,4 +90,22 @@ func GetUserIDFromToken(tokenString, secretKey string) (int, error) {
 	}
 
 	return claims.UserID, nil
+}
+
+func DeriveKey(password, salt string) ([]byte, error) {
+
+	const (
+		N       = 32768
+		r       = 8
+		p       = 1
+		saltLen = 16
+		keyLen  = 32
+	)
+
+	key, err := scrypt.Key([]byte(password), []byte(salt), N, r, p, keyLen)
+	if err != nil {
+		return nil, err
+	}
+
+	return key, nil
 }

@@ -21,4 +21,5 @@ vendor/
 .idea
 .vscode
 .DS_Store
-.run
+.ru
+cert/*

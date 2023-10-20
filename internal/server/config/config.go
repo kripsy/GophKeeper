@@ -1,10 +1,9 @@
 package config
 
 import (
-	"errors"
 	"flag"
-	"fmt"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -26,8 +25,8 @@ type Config struct {
 	// period of expired token
 	TokenExp time.Duration
 
-	// Secret is a string of secret to chipher data
-	CipherSecret string
+	// IsSecure if grpc server should be secure (tls)
+	IsSecure bool
 }
 
 func InitConfig() (*Config, error) {
@@ -44,9 +43,7 @@ func InitConfig() (*Config, error) {
 		"s", "supersecret",
 		"Enter secret. Or use SECRET env")
 
-	cipherSecret := flag.String(
-		"c", "supersecretchipher!!!!!!",
-		"Enter cipher key. Or use CIPHERSECRET env. Expected 16, 24, or 32 bytes.")
+	isSecure := flag.Bool("secure", true, "enable secure grpc? Set true/false... Or use ISSECURE env")
 
 	flag.Parse()
 
@@ -66,38 +63,23 @@ func InitConfig() (*Config, error) {
 		*secret = envSecret
 	}
 
-	if envCipherSecret := os.Getenv("CIPHERSECRET"); envCipherSecret != "" {
-		*cipherSecret = envCipherSecret
-	}
-
-	ok, err := checkLenCipherSecret(*cipherSecret)
-	if err != nil {
-
-		return nil, fmt.Errorf("%w", err)
-	}
-	if !ok {
-
-		return nil, errors.New("Invalid len cipher key")
+	if envIsSecure := os.Getenv("ISSECURE"); envIsSecure != "" {
+		parsedValue, err := strconv.ParseBool(envIsSecure)
+		if err != nil {
+			// Обработка ошибки, если значение не может быть преобразовано в bool
+			*isSecure = true
+		} else {
+			*isSecure = parsedValue
+		}
 	}
 
 	cfg := &Config{
-		URLServer:    *URLServer,
-		LoggerLevel:  *logLevel,
-		DatabaseDsn:  *databaseDsn,
-		Secret:       *secret,
-		TokenExp:     TOKENEXP,
-		CipherSecret: *cipherSecret,
+		URLServer:   *URLServer,
+		LoggerLevel: *logLevel,
+		DatabaseDsn: *databaseDsn,
+		Secret:      *secret,
+		TokenExp:    TOKENEXP,
+		IsSecure:    *isSecure,
 	}
 	return cfg, nil
-}
-
-func checkLenCipherSecret(cipherSecret string) (bool, error) {
-	length := len(cipherSecret)
-
-	switch length {
-	case 16, 24, 32:
-		return true, nil
-	default:
-		return false, fmt.Errorf("Invalid cipher secret length: %d bytes. Expected 16, 24, or 32 bytes.", length)
-	}
 }

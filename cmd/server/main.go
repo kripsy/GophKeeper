@@ -2,11 +2,10 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"net"
 
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -17,6 +16,7 @@ import (
 	"github.com/kripsy/GophKeeper/internal/server/controller"
 	"github.com/kripsy/GophKeeper/internal/server/infrastructure"
 	"github.com/kripsy/GophKeeper/internal/server/usecase"
+	"github.com/kripsy/GophKeeper/internal/utils"
 	"go.uber.org/zap"
 )
 
@@ -35,6 +35,17 @@ func main() {
 	if err != nil {
 		fmt.Printf("Error init logger: %v", err)
 		os.Exit(1)
+	}
+
+	if cfg.IsSecure {
+		l.Debug("creating cert")
+		err = utils.CreateCertificate()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+
+			return
+		}
+		l.Debug("cert has been created")
 	}
 
 	l.Debug("Current config app: ",
@@ -69,35 +80,47 @@ func main() {
 	}
 	l.Debug("userUseCase initialized")
 
-	secretUseCase, err := usecase.InitSecretUseCases(ctx, secretRepo, cfg.CipherSecret, l)
+	secretUseCase, err := usecase.InitSecretUseCases(ctx, secretRepo, "", l)
 	if err != nil {
 		l.Error("error create user usecase instance", zap.String("msg", err.Error()))
 		os.Exit(1)
 	}
 	l.Debug("secretUseCase initialized")
 
-	s := controller.InitNewServer(userUseCase, secretUseCase, cfg.Secret, l)
+	// s := controller.InitNewServer(userUseCase, secretUseCase, cfg.Secret, l)
+	s, err := controller.InitGrpcServer(userUseCase, secretUseCase, cfg.Secret, cfg.IsSecure, l)
+
+	if err != nil {
+		l.Error("Error", zap.Error(err))
+
+		return
+	}
 
 	// start shutdown application
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		err = s.Start(":8080")
+		lis, err := net.Listen("tcp", ":50051")
 		if err != nil {
-			if errors.Is(err, http.ErrServerClosed) {
-				l.Debug("echo stopped")
-			} else {
-				l.Error("error start echo", zap.String("msg", err.Error()))
-			}
+			l.Error("Error", zap.Error(err))
+
+			return
 		}
+		l.Debug("Starting gRPC server on :50051")
+		err = s.Serve(lis)
+		if err != nil {
+			l.Error("Error", zap.Error(err))
+		}
+
+		return
 	}()
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
-		log.Println("Closing HTTP Server")
-		if err := s.Shutdown(context.Background()); err != nil {
-			log.Fatal(err)
-		}
+		log.Println("Closing GRPC Server")
+
+		s.GracefulStop()
+
 	}()
 	wg.Wait()
 

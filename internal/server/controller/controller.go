@@ -60,9 +60,9 @@ func (s *Server) setRouting(logger *zap.Logger) error {
 	}))
 	s.server.Validator = &CustomValidator{validator: validator.New()}
 
-	authGroup := s.server.Group("/users")
-	authGroup.POST("/register", s.register(logger))
-	authGroup.POST("/login", s.login(logger))
+	// authGroup := s.server.Group("/users")
+	// authGroup.POST("/register", s.register(logger))
+	// authGroup.POST("/login", s.login(logger))
 
 	secretGroup := s.server.Group("/secrets")
 	secretGroup.Use(TokenAuthMiddleware(logger, s.secret))

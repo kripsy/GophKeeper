@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package pkg.api.gophkeeper.v1;
+
+import "google/protobuf/empty.proto";
+import "buf/validate/validate.proto";
+
+option go_package = "github.com/kripsy/GophKeeper/pkg/api/GophKeeper";
+
+// GophKeeperService provides secure store.
+service GophKeeperService {
+  rpc Register(AuthRequest) returns (AuthResponse);
+  rpc Login(AuthRequest) returns (AuthResponse);
+}
+
+message AuthRequest {
+  string username = 1 [ (buf.validate.field).string.min_len = 1 ];
+  string password = 2 [ (buf.validate.field).string.min_len = 1 ];
+}
+message AuthResponse {
+  string token = 1 [ (buf.validate.field).string.min_len = 1 ];
+}
