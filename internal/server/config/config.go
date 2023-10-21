@@ -27,6 +27,21 @@ type Config struct {
 
 	// IsSecure if grpc server should be secure (tls)
 	IsSecure bool
+
+	// EndpointMinio is an address minio storage
+	EndpointMinio string
+
+	// AccessKeyIDMinio is an username for minio storage
+	AccessKeyIDMinio string
+
+	// SecretAccessKeyMinio is an password for minio storage
+	SecretAccessKeyMinio string
+
+	// BucketNameMinio is an default bucket for minio storage
+	BucketNameMinio string
+
+	// isUseSSL is an ssl mode for minio storage
+	IsUseSSLMinio bool
 }
 
 func InitConfig() (*Config, error) {
@@ -44,6 +59,26 @@ func InitConfig() (*Config, error) {
 		"Enter secret. Or use SECRET env")
 
 	isSecure := flag.Bool("secure", true, "enable secure grpc? Set true/false... Or use ISSECURE env")
+
+	// args for minio
+	endpointMinio := flag.String(
+		"endpointMinio", "localhost:9000",
+		"Enter endpoint for Minio. Or use ENDPOINTMINIO env")
+
+	accessKeyIDMinio := flag.String(
+		"accessKeyIDMinio", "masoud",
+		"Enter accessKeyID for Minio. Or use ACCESSKEYIDMINIO env")
+
+	secretAccessKeyMinio := flag.String(
+		"secretAccessKeyMinio", "Strong#Pass#2022",
+		"Enter secretAccessKey for Minio. Or use SECRETACCESSKEYMINIO env")
+
+	bucketNameMinio := flag.String(
+		"bucketNameMinio", "secrets",
+		"Enter bucketNameMinio for Minio. Or use BUCKETNAMEMINIO env")
+
+	isUseSSLMinio := flag.Bool("isUseSSLMinio", false,
+		"enable ssl for Minio? Set true/false... Or use ISUSESSLMINIO env")
 
 	flag.Parse()
 
@@ -73,13 +108,42 @@ func InitConfig() (*Config, error) {
 		}
 	}
 
+	// minio env
+	if envEndpointMinio := os.Getenv("ENDPOINTMINIO"); envEndpointMinio != "" {
+		*endpointMinio = envEndpointMinio
+	}
+	if envAccessKeyIDMinio := os.Getenv("ACCESSKEYIDMINIO"); envAccessKeyIDMinio != "" {
+		*accessKeyIDMinio = envAccessKeyIDMinio
+	}
+	if envSecretAccessKeyMinio := os.Getenv("SECRETACCESSKEYMINIO"); envSecretAccessKeyMinio != "" {
+		*secretAccessKeyMinio = envSecretAccessKeyMinio
+	}
+	if envBucketNameMinio := os.Getenv("BUCKETNAMEMINIO"); envBucketNameMinio != "" {
+		*bucketNameMinio = envBucketNameMinio
+	}
+
+	if envIsSecure := os.Getenv("ISUSESSLMINIO"); envIsSecure != "" {
+		parsedValue, err := strconv.ParseBool(envIsSecure)
+		if err != nil {
+			// Обработка ошибки, если значение не может быть преобразовано в bool
+			*isUseSSLMinio = true
+		} else {
+			*isUseSSLMinio = parsedValue
+		}
+	}
+
 	cfg := &Config{
-		URLServer:   *URLServer,
-		LoggerLevel: *logLevel,
-		DatabaseDsn: *databaseDsn,
-		Secret:      *secret,
-		TokenExp:    TOKENEXP,
-		IsSecure:    *isSecure,
+		URLServer:            *URLServer,
+		LoggerLevel:          *logLevel,
+		DatabaseDsn:          *databaseDsn,
+		Secret:               *secret,
+		TokenExp:             TOKENEXP,
+		IsSecure:             *isSecure,
+		EndpointMinio:        *endpointMinio,
+		AccessKeyIDMinio:     *accessKeyIDMinio,
+		SecretAccessKeyMinio: *secretAccessKeyMinio,
+		BucketNameMinio:      *bucketNameMinio,
+		IsUseSSLMinio:        *isUseSSLMinio,
 	}
 	return cfg, nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"time"
 
 	"log"
 	"os"
@@ -72,6 +73,25 @@ func main() {
 		os.Exit(1)
 	}
 	l.Debug("NewSecretRepository initialized")
+
+	l.Debug("Start init minio repository")
+	ctxCreateBucket, cancel := context.WithTimeout(ctx, time.Second)
+	defer cancel()
+	_, err = infrastructure.NewMinioRepository(
+		ctxCreateBucket,
+		cfg.EndpointMinio,
+		cfg.AccessKeyIDMinio,
+		cfg.SecretAccessKeyMinio,
+		cfg.BucketNameMinio,
+		cfg.IsUseSSLMinio,
+		l)
+
+	if err != nil {
+		l.Error("Error init minio repository", zap.Error(err))
+
+		return
+	}
+	l.Debug("Success init minio repository")
 
 	userUseCase, err := usecase.InitUseCases(ctx, userRepo, cfg.Secret, cfg.TokenExp, l)
 	if err != nil {
