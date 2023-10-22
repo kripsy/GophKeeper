@@ -38,7 +38,7 @@ func InitSecretUseCases(ctx context.Context, db SecretRepository, cipherSecret s
 // SaveSecret saves the provided secret to the database.
 // Returns the ID of the saved secret.
 func (uc *secretUseCase) SaveTextSecret(ctx context.Context, secret entity.Secret) (int, error) {
-	encryptedData, err := utils.Encrypt(secret.Data, uc.cipherSecret)
+	encryptedData, err := utils.Encrypt(secret.Data, []byte(uc.cipherSecret))
 	if err != nil {
 		return 0, err
 	}
@@ -71,7 +71,7 @@ func (uc *secretUseCase) GetSecretByID(ctx context.Context, secretID, userID int
 	if err != nil {
 		return entity.Secret{}, fmt.Errorf("%w", err)
 	}
-	decryptedData, err := utils.Decrypt(secret.Data, uc.cipherSecret)
+	decryptedData, err := utils.Decrypt(secret.Data, []byte(uc.cipherSecret))
 	if err != nil {
 		return entity.Secret{}, err
 	}

@@ -1,0 +1,6 @@
+
+run/server:
+	go run ./cmd/server/main.go -secure=false
+
+run/client:
+	go run ./cmd/client/

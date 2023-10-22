@@ -1,0 +1,33 @@
+package models
+
+import (
+	"github.com/kripsy/GophKeeper/internal/utils"
+	"path/filepath"
+)
+
+const (
+	metaPostfix = ".meta"
+)
+
+type UserData struct {
+	User User
+	Meta UserMeta
+}
+
+type User struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Key      []byte `json:"_,omitempty"`
+}
+
+func (u User) GetUserKey() ([]byte, error) {
+	return utils.DeriveKey(u.Password, u.Username)
+}
+
+func (u User) GetHashedPass() ([]byte, error) {
+	return utils.DeriveKey(u.Username, u.Password)
+}
+
+func (u User) GetDir(dataPath string) string {
+	return filepath.Join(dataPath, u.Username+metaPostfix)
+}

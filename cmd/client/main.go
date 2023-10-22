@@ -1,39 +1,52 @@
 package main
 
 import (
-	"context"
-	"crypto/tls"
-	"log"
-	"time"
-
-	pb "github.com/kripsy/GophKeeper/gen/pkg/api/gophkeeper/v1"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
+	"fmt"
+	"github.com/kripsy/GophKeeper/internal/client/app"
+	"github.com/kripsy/GophKeeper/internal/client/config"
+	//	"log"
+	//pb "github.com/kripsy/GophKeeper/gen/pkg/api/gophkeeper/v1"
+	//"google.golang.org/grpc"
+	//"google.golang.org/grpc/credentials"
 )
 
 func main() {
-	address := "127.0.0.1:50051"
+	cfg := config.GetConfig()
 
-	creds := credentials.NewTLS(&tls.Config{
-		InsecureSkipVerify: true,
-	})
+	a, err := app.NewApplication(cfg)
+	a.PrepareApp()
+	a.Run()
 
-	conn, err := grpc.Dial(address, grpc.WithTransportCredentials(creds))
+	//creds := credentials.NewTLS(&tls.Config{
+	//	InsecureSkipVerify: true,
+	//})
+
+	//fm.AddToStorage("Note", filemanager.Note{Text: "text"}, models.DataInfo{DataType: 0, Description: "просто текст"})
+	//fm.AddToStorage("Binance", filemanager.BasicAuth{Login: "L", Password: "P"}, models.DataInfo{DataType: 1, Description: "binance.com"})
+	//fm.AddToStorage("Google", filemanager.BasicAuth{Login: "L", Password: "P"}, models.DataInfo{DataType: 1, Description: "google.com"})
+	//fm.AddToStorage("SberBank", filemanager.CardData{Number: "11231231", Date: "02/24", CVV: "456"}, models.DataInfo{DataType: 2, Description: "visa"})
+
+	//err = fm.UpdateDataAndInfoByName("note", Note{Text: "tetextxt"}, DataInfo{DataType: 1, Description: "текст"})
+	//err = fm.DeleteByName("not")
+
+	//conn, err := grpc.Dial(cfg.ServerAddress, grpc.WithTransportCredentials(creds))
 	if err != nil {
-		log.Fatalf("did not connect: %v", err)
+		fmt.Println("did not connect: %v", err)
 	}
-	defer conn.Close()
+	//defer conn.Close()
 
-	client := pb.NewShortenerServiceClient(conn)
+	//client := pb.NewShortenerServiceClient(conn)
+	//
+	//
+	//
+	//ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	//defer cancel()
+	//
+	//r, err := client.Hello(ctx, &pb.HelloRequest{Url: "your_url_here"})
+	//if err != nil {
+	//	log.Fatalf("could not greet: %v", err)
+	//}
+	//
+	//log.Printf("Response: %s", r.GetResult())
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-
-	r, err := client.Hello(ctx, &pb.HelloRequest{Url: "your_url_here"})
-	if err != nil {
-		log.Fatalf("could not greet: %v", err)
-	}
-
-	log.Printf("Response: %s", r.GetResult())
 }
