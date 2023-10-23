@@ -36,14 +36,29 @@ func InitSecretUseCases(ctx context.Context, userRepo UserRepository, secretRepo
 	return uc, nil
 }
 
-func (uc *secretUseCase) MiltipartUploadFile(dataChan <-chan []byte, dataIdChan chan<- string, filename *string) error {
+func (uc *secretUseCase) MiltipartUploadFile(ctx context.Context, dataChan <-chan []byte, dataIdChan chan<- string, filename *string) error {
 	// create new uuid in repo (user_id, external_id, hash256, updatetime)
 	// code there
 
 	// use minio to upload files, using uuid as name
-	for data := range dataChan {
-		fmt.Println(data)
+loop:
+	for {
+		select {
+		case data, ok := <-dataChan:
+			if !ok {
+				uc.logger.Debug("loop getting data ended")
+				break loop
+			}
+			uc.logger.Debug("we got simple data", zap.Any("context", ctx))
+			fmt.Println(data)
+		case <-ctx.Done():
+			uc.logger.Debug("ctx in MiltipartUploadFile usecase exeed")
+			dataIdChan <- ""
+			uc.logger.Debug("send empty to dataIdChan from usecase")
+			return ctx.Err()
+		}
 	}
+
 	fmt.Println("send ID")
 	dataIdChan <- "123-333-44-55-66-77"
 	return nil
