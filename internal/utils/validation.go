@@ -27,3 +27,12 @@ func CheckValidQueryParam(params ...int) (bool, error) {
 	}
 	return true, nil
 }
+
+func IsClosed(ch <-chan []byte) bool {
+	select {
+	case _, ok := <-ch:
+		return !ok
+	default:
+	}
+	return false
+}

@@ -11,6 +11,8 @@ option go_package = "github.com/kripsy/GophKeeper/pkg/api/GophKeeper";
 service GophKeeperService {
   rpc Register(AuthRequest) returns (AuthResponse);
   rpc Login(AuthRequest) returns (AuthResponse);
+  rpc MiltipartUploadFile(stream MiltipartUploadFileRequest)
+      returns (MiltipartUploadFileResponse);
 }
 
 message AuthRequest {
@@ -20,3 +22,10 @@ message AuthRequest {
 message AuthResponse {
   string token = 1 [ (buf.validate.field).string.min_len = 1 ];
 }
+
+message MiltipartUploadFileRequest {
+  bytes content = 1;
+  string fileName = 2;
+}
+
+message MiltipartUploadFileResponse { string fileId = 1; }

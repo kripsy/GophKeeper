@@ -1,6 +1,8 @@
 BEGIN TRANSACTION;
 
-DROP TABLE secrets ;
-DROP TABLE users ;
+DROP TABLE IF EXISTS secrets;
+DROP TABLE IF EXISTS users;
+DROP INDEX IF EXISTS users_username_key;
+DROP INDEX IF EXISTS idx_secrets_user_id;
 
 COMMIT;

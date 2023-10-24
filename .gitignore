@@ -22,4 +22,5 @@ vendor/
 .vscode
 .DS_Store
 .ru
-cert/*
+cert/*.key
+cert/*.crt

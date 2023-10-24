@@ -67,17 +67,17 @@ func main() {
 	}
 	l.Debug("NewUserRepository initialized")
 
-	secretRepo, err := infrastructure.NewSecretRepository(repo)
-	if err != nil {
-		l.Error("error init secret repository", zap.String("msg", err.Error()))
-		os.Exit(1)
-	}
-	l.Debug("NewSecretRepository initialized")
+	// secretRepo, err := infrastructure.NewSecretRepository(repo)
+	// if err != nil {
+	// 	l.Error("error init secret repository", zap.String("msg", err.Error()))
+	// 	os.Exit(1)
+	// }
+	// l.Debug("NewSecretRepository initialized")
 
 	l.Debug("Start init minio repository")
 	ctxCreateBucket, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
-	_, err = infrastructure.NewMinioRepository(
+	secretRepo, err := infrastructure.NewMinioRepository(
 		ctxCreateBucket,
 		cfg.EndpointMinio,
 		cfg.AccessKeyIDMinio,
@@ -100,7 +100,7 @@ func main() {
 	}
 	l.Debug("userUseCase initialized")
 
-	secretUseCase, err := usecase.InitSecretUseCases(ctx, secretRepo, "", l)
+	secretUseCase, err := usecase.InitSecretUseCases(ctx, userRepo, secretRepo, l)
 	if err != nil {
 		l.Error("error create user usecase instance", zap.String("msg", err.Error()))
 		os.Exit(1)
