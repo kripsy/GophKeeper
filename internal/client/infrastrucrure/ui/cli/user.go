@@ -1,11 +1,12 @@
 package cli
 
 import (
+	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui"
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/manifoldco/promptui"
 )
 
-func GetUser() (models.User, error) {
+func (c CLI) GetUser() (models.User, error) {
 	username := promptui.Prompt{
 		Label:       "Username",
 		Validate:    validateUsername,
@@ -16,15 +17,19 @@ func GetUser() (models.User, error) {
 		Label:       "Password",
 		Validate:    validatePassword,
 		HideEntered: true,
-		Mask:        '⏀',
+		Mask:        '👁',
 	}
 
 	user, err := username.Run()
 	if err != nil {
+		c.checkInterrupt(err)
+
 		return models.User{}, err
 	}
 	password, err := pass.Run()
 	if err != nil {
+		c.checkInterrupt(err)
+
 		return models.User{}, err
 	}
 
@@ -34,22 +39,22 @@ func GetUser() (models.User, error) {
 	}, nil
 }
 
-func TryAgain() bool {
-	defer Clear()
+func (c CLI) TryAgain() bool {
+	defer c.Clear()
 	action := promptui.Select{
 		Label:     "This user does not exist",
-		Items:     []string{"Try Again", "Register", ExitKey},
+		Items:     []string{"Try Again", "Register", ui.ExitKey},
 		Templates: tryAgainTemplate,
 		HideHelp:  true,
 	}
 	_, result, err := action.Run()
 	if err != nil {
-		return TryAgain()
+		return c.TryAgain()
 	}
 
 	switch result {
-	case ExitKey:
-		Exit()
+	case ui.ExitKey:
+		c.Exit()
 	case "Try Again":
 		return true
 	}
@@ -57,7 +62,7 @@ func TryAgain() bool {
 	return false
 }
 
-func IsLocalStorage() bool {
+func (c CLI) IsLocalStorage() bool {
 	isLocal := promptui.Prompt{
 		Label:     "Do you want to synchronize your secrets across devices?",
 		IsConfirm: true,

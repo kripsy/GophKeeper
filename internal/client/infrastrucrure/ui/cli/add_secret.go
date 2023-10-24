@@ -2,16 +2,17 @@ package cli
 
 import (
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/filemanager"
+	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui"
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/manifoldco/promptui"
 )
 
-func SecretType() (int, bool) {
-	defer Clear()
+func (c CLI) ChooseSecretType() (int, bool) {
+	defer c.Clear()
 	items := filemanager.DataTypeTable
-	items = append(items, ExitKey)
+	items = append(items, ui.ExitKey)
 	action := promptui.Select{
-		Label:     AddSecretKey,
+		Label:     ui.AddSecretKey,
 		Items:     items,
 		Templates: menuTemplate,
 		HideHelp:  true,
@@ -19,22 +20,26 @@ func SecretType() (int, bool) {
 
 	id, _, err := action.Run()
 	if err != nil {
+		c.checkInterrupt(err)
+
 		return 0, false
 	}
-	if items[id] == ExitKey {
+	if items[id] == ui.ExitKey {
 		return 0, false
 	}
 
 	return id, true
 }
 
-func AddNote() (filemanager.Note, error) {
+func (c CLI) AddNote() (filemanager.Note, error) {
 	note := promptui.Prompt{
 		Label: "Note",
 	}
 
 	text, err := note.Run()
 	if err != nil {
+		c.checkInterrupt(err)
+
 		return filemanager.Note{}, err
 	}
 
@@ -43,18 +48,19 @@ func AddNote() (filemanager.Note, error) {
 	}, nil
 }
 
-func AddBasicAuth() (filemanager.BasicAuth, error) {
+func (c CLI) AddBasicAuth() (filemanager.BasicAuth, error) {
 	log := promptui.Prompt{
 		Label: "Login",
 	}
 
 	pass := promptui.Prompt{
 		Label: "Password",
-		//	Mask:        '⏀',
 	}
 
 	login, err := log.Run()
 	if err != nil {
+		c.checkInterrupt(err)
+
 		return filemanager.BasicAuth{}, err
 	}
 	password, err := pass.Run()
@@ -68,7 +74,7 @@ func AddBasicAuth() (filemanager.BasicAuth, error) {
 	}, nil
 }
 
-func AddCard() (filemanager.CardData, error) {
+func (c CLI) AddCard() (filemanager.CardData, error) {
 	cardNum := promptui.Prompt{
 		Label:    "Card Number",
 		Validate: validateCardNumber,
@@ -107,7 +113,7 @@ func AddCard() (filemanager.CardData, error) {
 	}, nil
 }
 
-func AddMetaInfo() (models.DataInfo, error) {
+func (c CLI) AddMetaInfo() (models.DataInfo, error) {
 	dataName := promptui.Prompt{
 		Label:       "Secret name",
 		HideEntered: true,

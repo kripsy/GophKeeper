@@ -2,12 +2,15 @@ package cli
 
 import (
 	"errors"
+	"github.com/manifoldco/promptui"
 	"strconv"
 )
 
+var errStyle = promptui.Styler(promptui.BGRed, promptui.FGBold, promptui.FGBlack)
+
 func validatePassword(input string) error {
 	if len(input) < 6 {
-		return errors.New("Password must have more than 6 characters")
+		return errors.New(errStyle("Password must have more than 6 characters"))
 	}
 
 	return nil
@@ -15,7 +18,7 @@ func validatePassword(input string) error {
 
 func validateUsername(input string) error {
 	if len(input) < 6 {
-		return errors.New("Username must have more than 6 characters")
+		return errors.New(errStyle("Username must have more than 6 characters"))
 	}
 
 	return nil

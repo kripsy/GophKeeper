@@ -2,17 +2,18 @@ package cli
 
 import (
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/filemanager"
+	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui"
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/manifoldco/promptui"
 	"sort"
 	"strings"
 )
 
-func GetSecret(metaData models.MetaData) (string, bool) {
-	return chooseSecret(metaData, SecretsKey, chooseSecretTemplate)
+func (c CLI) GetSecret(metaData models.MetaData) (string, bool) {
+	return c.chooseSecret(metaData, ui.SecretsKey, chooseSecretTemplate)
 }
 
-func chooseSecret(metaData models.MetaData, label string, template *promptui.SelectTemplates) (string, bool) {
+func (c CLI) chooseSecret(metaData models.MetaData, label string, template *promptui.SelectTemplates) (string, bool) {
 	dataInfos := getForTemplate(metaData)
 
 	searcher := func(input string, index int) bool {
@@ -35,7 +36,7 @@ func chooseSecret(metaData models.MetaData, label string, template *promptui.Sel
 
 	i, _, err := prompt.Run()
 	if err != nil {
-		return GetSecret(metaData)
+		return c.GetSecret(metaData)
 	}
 
 	_, isSecret := metaData[dataInfos[i].Name]
@@ -62,7 +63,7 @@ func getForTemplate(md models.MetaData) []TemplateInfo {
 		return dataInfo[i].Name < dataInfo[j].Name
 	})
 
-	dataInfo = append(dataInfo, TemplateInfo{Name: ExitKey, Description: "return to Menu", DataType: "◀"})
+	dataInfo = append(dataInfo, TemplateInfo{Name: ui.ExitKey, Description: "return to Menu", DataType: "◀"})
 
 	return dataInfo
 }

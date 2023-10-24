@@ -1,12 +1,13 @@
 package cli
 
 import (
+	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui"
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/manifoldco/promptui"
 )
 
-func DeleteSecret(metaData models.MetaData) (string, bool) {
-	name, ok := chooseSecret(metaData, DeleteSecretKey, deleteSecretTemplate)
+func (c CLI) DeleteSecret(metaData models.MetaData) (string, bool) {
+	name, ok := c.chooseSecret(metaData, ui.DeleteSecretKey, deleteSecretTemplate)
 	if !ok {
 		return "", ok
 	}

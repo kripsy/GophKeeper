@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"github.com/c-bata/go-prompt"
+	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui"
 	"github.com/manifoldco/promptui"
 	"os"
 	"path/filepath"
@@ -19,10 +20,10 @@ const (
 	CustomDir = "I will specify the directory myself"
 )
 
-func UploadFileTo(cfgDir string) (string, bool) {
+func (c CLI) UploadFileTo(cfgDir string) (string, bool) {
 	chooseUpload := promptui.Select{
 		Label:     "Where do you want to move the file to?",
-		Items:     []string{CfgDir, CustomDir, ExitKey},
+		Items:     []string{CfgDir, CustomDir, ui.ExitKey},
 		Templates: menuTemplate,
 		HideHelp:  true,
 	}
@@ -36,21 +37,23 @@ func UploadFileTo(cfgDir string) (string, bool) {
 		return cfgDir, true
 	case CustomDir:
 		var newFilePath string
-		GetNewFilePath(&newFilePath)
+		c.GetNewFilePath(&newFilePath)
 		return newFilePath, true
-	case ExitKey:
+	case ui.ExitKey:
 		return "", false
 	}
 
 	return "", false
 }
 
-func GetFilePath(filePath *string) {
-	defer Clear()
+func (c CLI) GetFilePath() string {
+	defer c.Clear()
+
+	var filePath string
 	fmt.Println("Use Tab:")
 	prompt.New(
-		executor(filePath),
-		completerFile(filePath),
+		executor(&filePath),
+		completerFile(&filePath),
 		prompt.OptionSetExitCheckerOnInput(exit),
 		prompt.OptionPrefix("▶ "),
 		prompt.OptionSelectedSuggestionBGColor(prompt.Yellow),
@@ -62,10 +65,12 @@ func GetFilePath(filePath *string) {
 
 		prompt.OptionPreviewSuggestionTextColor(prompt.Yellow),
 	).Run()
+
+	return filePath
 }
 
-func GetNewFilePath(filePath *string) {
-	defer Clear()
+func (c CLI) GetNewFilePath(filePath *string) {
+	defer c.Clear()
 	fmt.Println("Use Tab:")
 	prompt.New(
 		executor(filePath),
@@ -87,7 +92,7 @@ func completerFile(path *string) func(d prompt.Document) []prompt.Suggest {
 	return func(d prompt.Document) []prompt.Suggest {
 		var s []prompt.Suggest
 		current := d.GetWordBeforeCursor()
-		s = append(s, prompt.Suggest{Text: ExitKey, Description: *path})
+		s = append(s, prompt.Suggest{Text: ui.ExitKey, Description: *path})
 		s = append(s, prompt.Suggest{Text: "../", Description: "Parent Directory"})
 
 		files, _ := filepath.Glob(current + "*")
@@ -109,7 +114,7 @@ func completerDir(path *string) func(d prompt.Document) []prompt.Suggest {
 	return func(d prompt.Document) []prompt.Suggest {
 		var s []prompt.Suggest
 		current := d.GetWordBeforeCursor()
-		s = append(s, prompt.Suggest{Text: ExitKey, Description: *path})
+		s = append(s, prompt.Suggest{Text: ui.ExitKey, Description: *path})
 		s = append(s, prompt.Suggest{Text: "../", Description: "Parent Directory"})
 
 		files, _ := filepath.Glob(current + "*")
@@ -131,7 +136,7 @@ func completerDir(path *string) func(d prompt.Document) []prompt.Suggest {
 
 func executor(path *string) func(path string) {
 	return func(p string) {
-		if p != ExitKey {
+		if p != ui.ExitKey {
 			*path = p
 		}
 	}
@@ -146,7 +151,7 @@ func getDescription(info os.FileInfo) string {
 }
 
 func exit(input string, breakLine bool) bool {
-	return input == ExitKey && breakLine
+	return input == ui.ExitKey && breakLine
 }
 
 func convertByte(b int64) string {

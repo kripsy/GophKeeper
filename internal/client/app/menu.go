@@ -3,25 +3,30 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/cli"
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/filemanager"
+	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui"
+	"github.com/manifoldco/promptui"
 	"os"
 	"path/filepath"
 )
 
 func (a *Application) inMenu() {
-	action := cli.MenuTable[cli.Menu()]
+	action := ui.MenuTable[a.ui.Menu(a.userData.Meta.IsLocalStorage)]
 	switch action {
-	case cli.SecretsKey:
-		a.getSecrets(cli.GetSecret(a.userData.Meta.Data)) // todo сторит обдумать метадату на name
-	case cli.AddSecretKey:
-		a.createSecret(cli.SecretType())
-	case cli.UpdateSecretKey: //todo идут строительные работы
-		a.updateSecret(cli.UpdateSecret(a.userData.Meta.Data))
-	case cli.DeleteSecretKey:
-		a.deleteSecret(cli.DeleteSecret(a.userData.Meta.Data))
-	case cli.ExitKey:
-		cli.Exit()
+	case ui.SecretsKey:
+		a.getSecrets(a.ui.GetSecret(a.userData.Meta.Data)) // todo сторит обдумать метадату на name
+	case ui.AddSecretKey:
+		a.createSecret(a.ui.ChooseSecretType())
+	case ui.UpdateSecretKey: //todo идут строительные работы
+		a.updateSecret(a.ui.UpdateSecret(a.userData.Meta.Data))
+	case ui.SyncSecrets:
+		a.sync()
+	case ui.DeleteSecretKey:
+		a.deleteSecret(a.ui.DeleteSecret(a.userData.Meta.Data))
+	case ui.About:
+		a.about()
+	case ui.ExitKey:
+		a.ui.Exit()
 	}
 }
 
@@ -51,7 +56,7 @@ func (a *Application) getSecrets(secretName string, success bool) {
 
 	case filemanager.FileType:
 		var dataStruct filemanager.File
-		newFilePath, ok := cli.UploadFileTo(a.uploadPath)
+		newFilePath, ok := a.ui.UploadFileTo(a.uploadPath)
 		if !ok {
 			return
 		}
@@ -63,7 +68,7 @@ func (a *Application) getSecrets(secretName string, success bool) {
 		}
 		err = os.WriteFile(filepath.Join(newFilePath, *info.FileName), dataStruct.Data, 0777)
 		if err != nil {
-			fmt.Println("Sucsess upload")
+			fmt.Println("Success upload")
 		}
 		fmt.Println(info)
 		fmt.Println(err)
@@ -79,24 +84,23 @@ func (a *Application) createSecret(secretType int, success bool) {
 	//todo handle error
 	switch secretType {
 	case filemanager.NoteType:
-		data, _ := cli.AddNote()
-		info, _ := cli.AddMetaInfo()
+		data, _ := a.ui.AddNote()
+		info, _ := a.ui.AddMetaInfo()
 		info.DataType = secretType
 		a.fileManager.AddToStorage(info.Name, data, info)
 	case filemanager.BasicAuthType:
-		data, _ := cli.AddBasicAuth()
-		info, _ := cli.AddMetaInfo()
+		data, _ := a.ui.AddBasicAuth()
+		info, _ := a.ui.AddMetaInfo()
 		info.DataType = secretType
 		a.fileManager.AddToStorage(info.Name, data, info)
 	case filemanager.CardDataType:
-		data, _ := cli.AddCard()
-		info, _ := cli.AddMetaInfo()
+		data, _ := a.ui.AddCard()
+		info, _ := a.ui.AddMetaInfo()
 		info.DataType = secretType
 		a.fileManager.AddToStorage(info.Name, data, info)
 	case filemanager.FileType:
-		var path string
-		cli.GetFilePath(&path)
-		info, _ := cli.AddMetaInfo()
+		path := a.ui.GetFilePath()
+		info, _ := a.ui.AddMetaInfo()
 		info.DataType = secretType
 		info.SetFileName(path)
 		fmt.Println(info)
@@ -115,9 +119,9 @@ func (a *Application) updateSecret(secretName string, updateType int, success bo
 	}
 	metaInfo := a.userData.Meta.Data[secretName]
 
-	if cli.UpdateItems[updateType] == cli.Info {
+	if ui.UpdateItems[updateType] == ui.Info {
 		fmt.Println(fmt.Sprintf("Before  「 Name: %s, Description: %s 」", metaInfo.Name, metaInfo.Description))
-		info, _ := cli.AddMetaInfo()
+		info, _ := a.ui.AddMetaInfo()
 		a.fileManager.UpdateInfoByName(secretName, info)
 		return
 	}
@@ -125,11 +129,11 @@ func (a *Application) updateSecret(secretName string, updateType int, success bo
 	var data filemanager.Data
 	switch metaInfo.DataType {
 	case filemanager.NoteType:
-		data, _ = cli.AddNote()
+		data, _ = a.ui.AddNote()
 	case filemanager.BasicAuthType:
-		data, _ = cli.AddBasicAuth()
+		data, _ = a.ui.AddBasicAuth()
 	case filemanager.CardDataType:
-		data, _ = cli.AddCard()
+		data, _ = a.ui.AddCard()
 		//case filemanager.FileType:
 		//	var path string        // todo нужно обновлять вместе с FileName что содержится в мета
 		//	cli.GetFilePath(&path)
@@ -143,6 +147,10 @@ func (a *Application) updateSecret(secretName string, updateType int, success bo
 	a.fileManager.UpdateDataByName(secretName, data)
 }
 
+func (a *Application) sync() {
+	fmt.Println("не реализовано")
+}
+
 func (a *Application) deleteSecret(secretName string, success bool) {
 	defer a.inMenu()
 	if !success {
@@ -151,3 +159,18 @@ func (a *Application) deleteSecret(secretName string, success bool) {
 
 	a.fileManager.DeleteByName(secretName)
 }
+
+func (a *Application) about() {
+	defer a.inMenu()
+	fmt.Println(promptui.Styler(
+		promptui.FGItalic,
+		promptui.BGBlue,
+	)(fmt.Sprintf(aboutMsg, a.buildInfo.BuildVersion, a.buildInfo.BuildDate)))
+}
+
+const aboutMsg = `
+「  GophKeeper  」
+This is an Application with the ability to store your secrets locally,
+as well as synchronize between your clients when registering through the server.
+Build version: %s                          Build date: %s
+`

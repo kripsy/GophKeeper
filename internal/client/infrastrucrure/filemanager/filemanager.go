@@ -27,7 +27,7 @@ func NewFileManager(storageDir, uploadDir, userDir string, meta models.UserMeta,
 		}
 	}
 
-	err := meta.GetHash() // todo тут  нужно ?
+	err := meta.GetHash()
 	if err != nil {
 		return nil, err
 	}

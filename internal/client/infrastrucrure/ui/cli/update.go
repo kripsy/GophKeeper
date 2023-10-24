@@ -1,25 +1,20 @@
 package cli
 
 import (
+	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui"
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/manifoldco/promptui"
 )
 
-const (
-	Data = "Data"
-	Info = "Info"
-)
-
-var UpdateItems = []string{Data, Info, ExitKey}
-
-func UpdateSecret(metaData models.MetaData) (string, int, bool) {
-	name, ok := chooseSecret(metaData, UpdateSecretKey, updateSecretTemplate)
+func (c CLI) UpdateSecret(metaData models.MetaData) (string, int, bool) {
+	items := append(ui.UpdateItems, ui.ExitKey)
+	name, ok := c.chooseSecret(metaData, ui.UpdateSecretKey, updateSecretTemplate)
 	if !ok {
 		return "", 0, false
 	}
 	chooseUpdate := promptui.Select{
 		Label:     "Data or Info?",
-		Items:     UpdateItems,
+		Items:     items,
 		Templates: menuTemplate,
 		HideHelp:  true,
 	}
@@ -29,7 +24,7 @@ func UpdateSecret(metaData models.MetaData) (string, int, bool) {
 		return "", 0, false
 	}
 
-	if UpdateItems[i] == ExitKey {
+	if ui.UpdateItems[i] == ui.ExitKey {
 		return "", 0, false
 	}
 
