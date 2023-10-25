@@ -8,6 +8,8 @@ import (
 
 var configPath = "./config.yaml"
 
+const defaultPath = "./"
+
 func GetConfig() Config {
 	var cfg Config
 	f := parseFlags()
@@ -26,6 +28,14 @@ func GetConfig() Config {
 		cfg.ServerAddress = f.ServerAddress
 	}
 
+	if cfg.StoragePath == "" {
+		cfg.StoragePath = defaultPath
+	}
+
+	if cfg.UploadPath == "" {
+		cfg.UploadPath = defaultPath
+	}
+
 	return cfg
 }
 
@@ -35,7 +45,7 @@ type Config struct {
 	ServerAddress string `yaml:"server_address"`
 }
 
-func parseConfig(filePath string, cfg any) {
+func parseConfig(filePath string, cfg any) error {
 	filename, _ := filepath.Abs(filePath)
 	yamlFile, err := os.ReadFile(filename)
 	if err != nil {
@@ -46,4 +56,6 @@ func parseConfig(filePath string, cfg any) {
 	if err != nil {
 		panic(err)
 	}
+
+	return nil
 }

@@ -12,10 +12,11 @@ func (c CLI) ChooseSecretType() (int, bool) {
 	items := filemanager.DataTypeTable
 	items = append(items, ui.ExitKey)
 	action := promptui.Select{
-		Label:     ui.AddSecretKey,
-		Items:     items,
-		Templates: menuTemplate,
-		HideHelp:  true,
+		Label:        ui.AddSecretKey,
+		Items:        items,
+		Templates:    menuTemplate,
+		HideHelp:     true,
+		HideSelected: true,
 	}
 
 	id, _, err := action.Run()
@@ -33,7 +34,8 @@ func (c CLI) ChooseSecretType() (int, bool) {
 
 func (c CLI) AddNote() (filemanager.Note, error) {
 	note := promptui.Prompt{
-		Label: "Note",
+		Label:       "Note",
+		HideEntered: true,
 	}
 
 	text, err := note.Run()
@@ -50,11 +52,13 @@ func (c CLI) AddNote() (filemanager.Note, error) {
 
 func (c CLI) AddBasicAuth() (filemanager.BasicAuth, error) {
 	log := promptui.Prompt{
-		Label: "Login",
+		Label:       "Login",
+		HideEntered: true,
 	}
 
 	pass := promptui.Prompt{
-		Label: "Password",
+		Label:       "Password",
+		HideEntered: true,
 	}
 
 	login, err := log.Run()
@@ -76,12 +80,14 @@ func (c CLI) AddBasicAuth() (filemanager.BasicAuth, error) {
 
 func (c CLI) AddCard() (filemanager.CardData, error) {
 	cardNum := promptui.Prompt{
-		Label:    "Card Number",
-		Validate: validateCardNumber,
+		Label:       "Card Number",
+		Validate:    validateCardNumber,
+		HideEntered: true,
 	}
 
 	cardDate := promptui.Prompt{
-		Label: "Card Date",
+		Label:       "Card Date",
+		HideEntered: true,
 	}
 
 	cardCvv := promptui.Prompt{

@@ -30,6 +30,7 @@ func (c CLI) chooseSecret(metaData models.MetaData, label string, template *prom
 		Templates:         template,
 		StartInSearchMode: true,
 		HideHelp:          true,
+		HideSelected:      true,
 		Size:              6,
 		Searcher:          searcher,
 	}

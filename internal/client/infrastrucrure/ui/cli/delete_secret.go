@@ -13,8 +13,9 @@ func (c CLI) DeleteSecret(metaData models.MetaData) (string, bool) {
 	}
 
 	isDelete := promptui.Prompt{
-		Label:     "Secret will be deleted from the device, are you sure?",
-		IsConfirm: true,
+		Label:       "Secret will be deleted from the device, are you sure?",
+		IsConfirm:   true,
+		HideEntered: true,
 	}
 
 	_, err := isDelete.Run()

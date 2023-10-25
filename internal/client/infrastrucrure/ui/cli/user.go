@@ -7,17 +7,17 @@ import (
 )
 
 func (c CLI) GetUser() (models.User, error) {
+
 	username := promptui.Prompt{
 		Label:       "Username",
 		Validate:    validateUsername,
 		HideEntered: true,
 	}
-
 	pass := promptui.Prompt{
 		Label:       "Password",
 		Validate:    validatePassword,
 		HideEntered: true,
-		Mask:        '👁',
+		Mask:        '#',
 	}
 
 	user, err := username.Run()
@@ -42,10 +42,11 @@ func (c CLI) GetUser() (models.User, error) {
 func (c CLI) TryAgain() bool {
 	defer c.Clear()
 	action := promptui.Select{
-		Label:     "This user does not exist",
-		Items:     []string{"Try Again", "Register", ui.ExitKey},
-		Templates: tryAgainTemplate,
-		HideHelp:  true,
+		Label:        "This user does not exist",
+		Items:        []string{"Try Again", "Register", ui.ExitKey},
+		Templates:    tryAgainTemplate,
+		HideHelp:     true,
+		HideSelected: true,
 	}
 	_, result, err := action.Run()
 	if err != nil {
@@ -64,8 +65,9 @@ func (c CLI) TryAgain() bool {
 
 func (c CLI) IsLocalStorage() bool {
 	isLocal := promptui.Prompt{
-		Label:     "Do you want to synchronize your secrets across devices?",
-		IsConfirm: true,
+		Label:       "Do you want to synchronize your secrets across devices?",
+		HideEntered: true,
+		IsConfirm:   true,
 	}
 
 	_, err := isLocal.Run()

@@ -10,11 +10,12 @@ import (
 type MetaData map[string]DataInfo
 
 type UserMeta struct {
-	Username       string    `json:"user_name"`
-	IsLocalStorage bool      `json:"is_local_storage"`
-	Data           MetaData  `json:"data"`
-	HashData       [32]byte  `json:"-"`
-	UpdatedAt      time.Time `json:"updated_at"`
+	Username         string   `json:"user_name"`
+	IsLocalStorage   bool     `json:"is_local_storage"`
+	Data             MetaData `json:"data"`
+	HashData         [32]byte `json:"-"`
+	PreviousHashData [32]byte `json:"-"` //todo хранить
+	//UpdatedAt      time.Time `json:"updated_at"`
 }
 
 type DataInfo struct {

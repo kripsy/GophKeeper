@@ -148,7 +148,7 @@ func (fm *FileManager) DeleteByName(name string) error {
 }
 
 func (fm *FileManager) saveMetaData(updatedAt time.Time) error {
-	fm.meta.UpdatedAt = updatedAt
+	//fm.meta.UpdatedAt = updatedAt
 	data, err := json.Marshal(fm.meta)
 	if err != nil {
 		return err // удалить данные в случае ошибки, загрузите повторно

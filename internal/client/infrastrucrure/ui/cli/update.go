@@ -13,10 +13,11 @@ func (c CLI) UpdateSecret(metaData models.MetaData) (string, int, bool) {
 		return "", 0, false
 	}
 	chooseUpdate := promptui.Select{
-		Label:     "Data or Info?",
-		Items:     items,
-		Templates: menuTemplate,
-		HideHelp:  true,
+		Label:        "Data or Info?",
+		Items:        items,
+		Templates:    menuTemplate,
+		HideHelp:     true,
+		HideSelected: true,
 	}
 
 	i, _, err := chooseUpdate.Run()

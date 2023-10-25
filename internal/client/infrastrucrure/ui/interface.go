@@ -25,6 +25,7 @@ type UserInterface interface {
 	UploadFileTo(cfgDir string) (string, bool)
 	GetFilePath() string
 
+	Sync(done <-chan struct{})
 	Clear()
 	Exit()
 }

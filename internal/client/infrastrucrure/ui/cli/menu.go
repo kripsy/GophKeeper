@@ -13,12 +13,13 @@ func (c CLI) Menu(isLocalStorage bool) int {
 		items = ui.LocalMenuTable
 	}
 	action := promptui.Select{
-		Label:     "Menu",
-		Items:     items,
-		CursorPos: 2,
-		Size:      len(items),
-		Templates: menuTemplate,
-		HideHelp:  true,
+		Label:        "Menu",
+		Items:        items,
+		CursorPos:    2,
+		Size:         len(items),
+		Templates:    menuTemplate,
+		HideHelp:     true,
+		HideSelected: true,
 	}
 
 	id, _, err := action.Run()

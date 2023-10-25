@@ -11,8 +11,15 @@ run/client:
 
 #-secure=false
 
-build/client:
+build/client/linux:
 	go build -o ./cmd/client/client \
+	-ldflags "-X main.buildVersion=$(CLIENT_VERSION) \
+		  -X main.buildDate=$(shell date '+%Y/%m/%d[%H:%M:%S]')" \
+	./cmd/client/*.go
+
+
+build/client/windows:
+	GOOS=windows GOARCH=amd64 go build -o ./cmd/client/client.exe  \
 	-ldflags "-X main.buildVersion=$(CLIENT_VERSION) \
 		  -X main.buildDate=$(shell date '+%Y/%m/%d[%H:%M:%S]')" \
 	./cmd/client/*.go
