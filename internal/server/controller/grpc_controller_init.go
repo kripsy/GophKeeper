@@ -18,6 +18,7 @@ type GrpcServer struct {
 	userUseCase   UserUseCase
 	secretUseCase SecretUseCase
 	secret        string
+	syncStatus    *entity.SyncStatus
 }
 
 type UserUseCase interface {
@@ -26,11 +27,13 @@ type UserUseCase interface {
 }
 
 func InitGrpcServer(userUseCase UserUseCase, secretUseCase SecretUseCase, secret string, isSecure bool, logger *zap.Logger) (*grpc.Server, error) {
+	syncStatus := entity.NewSyncStatus()
 	s := &GrpcServer{
 		userUseCase:   userUseCase,
 		secretUseCase: secretUseCase,
 		secret:        secret,
 		logger:        logger,
+		syncStatus:    syncStatus,
 	}
 	// interceptors := []grpc.UnaryServerInterceptor{}
 

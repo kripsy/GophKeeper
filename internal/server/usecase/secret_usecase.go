@@ -50,7 +50,7 @@ loop:
 				break loop
 			}
 			uc.logger.Debug("we got simple data", zap.Any("context", ctx))
-			fmt.Println(data)
+			uc.logger.Debug("got data", zap.Binary("msg", data))
 		case <-ctx.Done():
 			uc.logger.Debug("ctx in MiltipartUploadFile usecase exeed")
 			dataIdChan <- ""

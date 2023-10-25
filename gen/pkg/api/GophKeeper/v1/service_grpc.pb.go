@@ -22,6 +22,7 @@ const (
 	GophKeeperService_Register_FullMethodName            = "/pkg.api.gophkeeper.v1.GophKeeperService/Register"
 	GophKeeperService_Login_FullMethodName               = "/pkg.api.gophkeeper.v1.GophKeeperService/Login"
 	GophKeeperService_MiltipartUploadFile_FullMethodName = "/pkg.api.gophkeeper.v1.GophKeeperService/MiltipartUploadFile"
+	GophKeeperService_SyncClient_FullMethodName          = "/pkg.api.gophkeeper.v1.GophKeeperService/SyncClient"
 )
 
 // GophKeeperServiceClient is the client API for GophKeeperService service.
@@ -31,6 +32,7 @@ type GophKeeperServiceClient interface {
 	Register(ctx context.Context, in *AuthRequest, opts ...grpc.CallOption) (*AuthResponse, error)
 	Login(ctx context.Context, in *AuthRequest, opts ...grpc.CallOption) (*AuthResponse, error)
 	MiltipartUploadFile(ctx context.Context, opts ...grpc.CallOption) (GophKeeperService_MiltipartUploadFileClient, error)
+	SyncClient(ctx context.Context, opts ...grpc.CallOption) (GophKeeperService_SyncClientClient, error)
 }
 
 type gophKeeperServiceClient struct {
@@ -93,6 +95,40 @@ func (x *gophKeeperServiceMiltipartUploadFileClient) CloseAndRecv() (*MiltipartU
 	return m, nil
 }
 
+func (c *gophKeeperServiceClient) SyncClient(ctx context.Context, opts ...grpc.CallOption) (GophKeeperService_SyncClientClient, error) {
+	stream, err := c.cc.NewStream(ctx, &GophKeeperService_ServiceDesc.Streams[1], GophKeeperService_SyncClient_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &gophKeeperServiceSyncClientClient{stream}
+	return x, nil
+}
+
+type GophKeeperService_SyncClientClient interface {
+	Send(*SyncRequest) error
+	CloseAndRecv() (*SyncResponse, error)
+	grpc.ClientStream
+}
+
+type gophKeeperServiceSyncClientClient struct {
+	grpc.ClientStream
+}
+
+func (x *gophKeeperServiceSyncClientClient) Send(m *SyncRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *gophKeeperServiceSyncClientClient) CloseAndRecv() (*SyncResponse, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(SyncResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // GophKeeperServiceServer is the server API for GophKeeperService service.
 // All implementations must embed UnimplementedGophKeeperServiceServer
 // for forward compatibility
@@ -100,6 +136,7 @@ type GophKeeperServiceServer interface {
 	Register(context.Context, *AuthRequest) (*AuthResponse, error)
 	Login(context.Context, *AuthRequest) (*AuthResponse, error)
 	MiltipartUploadFile(GophKeeperService_MiltipartUploadFileServer) error
+	SyncClient(GophKeeperService_SyncClientServer) error
 	mustEmbedUnimplementedGophKeeperServiceServer()
 }
 
@@ -115,6 +152,9 @@ func (UnimplementedGophKeeperServiceServer) Login(context.Context, *AuthRequest)
 }
 func (UnimplementedGophKeeperServiceServer) MiltipartUploadFile(GophKeeperService_MiltipartUploadFileServer) error {
 	return status.Errorf(codes.Unimplemented, "method MiltipartUploadFile not implemented")
+}
+func (UnimplementedGophKeeperServiceServer) SyncClient(GophKeeperService_SyncClientServer) error {
+	return status.Errorf(codes.Unimplemented, "method SyncClient not implemented")
 }
 func (UnimplementedGophKeeperServiceServer) mustEmbedUnimplementedGophKeeperServiceServer() {}
 
@@ -191,6 +231,32 @@ func (x *gophKeeperServiceMiltipartUploadFileServer) Recv() (*MiltipartUploadFil
 	return m, nil
 }
 
+func _GophKeeperService_SyncClient_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(GophKeeperServiceServer).SyncClient(&gophKeeperServiceSyncClientServer{stream})
+}
+
+type GophKeeperService_SyncClientServer interface {
+	SendAndClose(*SyncResponse) error
+	Recv() (*SyncRequest, error)
+	grpc.ServerStream
+}
+
+type gophKeeperServiceSyncClientServer struct {
+	grpc.ServerStream
+}
+
+func (x *gophKeeperServiceSyncClientServer) SendAndClose(m *SyncResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *gophKeeperServiceSyncClientServer) Recv() (*SyncRequest, error) {
+	m := new(SyncRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // GophKeeperService_ServiceDesc is the grpc.ServiceDesc for GophKeeperService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -211,6 +277,11 @@ var GophKeeperService_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "MiltipartUploadFile",
 			Handler:       _GophKeeperService_MiltipartUploadFile_Handler,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "SyncClient",
+			Handler:       _GophKeeperService_SyncClient_Handler,
 			ClientStreams: true,
 		},
 	},

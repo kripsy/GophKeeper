@@ -31,15 +31,18 @@ type Server struct {
 	userUseCase   UserUseCase
 	secretUseCase SecretUseCase
 	secret        string
+
 	// middleware  *deviceHandlerMiddleware
 }
 
 func InitNewServer(userUseCase UserUseCase, secretUseCase SecretUseCase, secret string, logger *zap.Logger) *Server {
+
 	s := &Server{
 		server:        echo.New(),
 		userUseCase:   userUseCase,
 		secretUseCase: secretUseCase,
 		secret:        secret,
+
 		// middleware:  InitDeviceHandlerMiddleware(logger),
 	}
 	s.setRouting(logger)

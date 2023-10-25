@@ -13,6 +13,7 @@ service GophKeeperService {
   rpc Login(AuthRequest) returns (AuthResponse);
   rpc MiltipartUploadFile(stream MiltipartUploadFileRequest)
       returns (MiltipartUploadFileResponse);
+  rpc SyncClient(stream SyncRequest) returns (SyncResponse);
 }
 
 message AuthRequest {
@@ -29,3 +30,10 @@ message MiltipartUploadFileRequest {
 }
 
 message MiltipartUploadFileResponse { string fileId = 1; }
+
+message SyncRequest {
+  string GUID = 1;
+  bool isFinish = 2;
+}
+
+message SyncResponse { string status = 1; }
