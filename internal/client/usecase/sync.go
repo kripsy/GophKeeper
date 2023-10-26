@@ -1,104 +1,105 @@
 package usecase
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/kripsy/GophKeeper/internal/models"
+	"github.com/kripsy/GophKeeper/internal/utils"
 	"time"
 )
 
 func (c *ClientUsecase) sync() {
+	not := c.grpc.IsNotAvailable()
+	try := c.grpc.TryToConnect()
+	if not && try {
+		fmt.Println("Failed connect to server")
+		return
+	}
+
+	//	oldHashMeta := user.Meta.HashData
+
 	done := make(chan struct{})
+	errSync := make(chan struct{})
 	defer close(done)
+	defer close(errSync)
 	defer c.InMenu()
 
 	newUUID, err := uuid.NewUUID()
 	if err != nil {
 		c.log.Error().Err(err).Msg("failed get uuid")
 	}
+
 	syncKey := newUUID.String()
-	go c.startSync(syncKey, done)
+
+	go c.blockSync(syncKey, done, errSync)
+	serverMeta, err := c.downloadServerMeta()
+	toDownload, toUpload := findDifferences(c.userData.Meta.Data, serverMeta)
+	_, _ = toUpload, toDownload
+	//	for id, meta := range download {
+	//		data, err = g.DownloadSecret(id, user.Meta.HashData)
+	//		if err != nil {
+	//
+	//		}
+	//		//err:=filemanager.AddEncrypedData(meta.Name, data, meta)
+	//		_, _ = data, meta // чтобы не краснел
+	//	}
+	//	for id, _ := range upload {
+	//		//data,err:= filemanager.GetDataByID(id)
+	//		g.UploadSecret(id, []byte("data"), [32]byte{}, user.Meta.HashData)
+	//	}
 
 	time.Sleep(time.Second * 4)
-	c.finishSync(syncKey, done)
+	errSync <- struct{}{}
+	//c.finishSync(done)
 }
 
-func (c *ClientUsecase) startSync(syncKey string, done <-chan struct{}) {
+func (c *ClientUsecase) downloadServerMeta() (models.MetaData, error) {
+	//c.grpc.Download(c.userData.User.GetMetaFileName(),)
+	key, err := c.userData.User.GetUserKey()
+	if err != nil {
+
+		return nil, err
+	}
+	data, err := utils.Decrypt(nil, key)
+	if err != nil {
+
+		return nil, err
+	}
+	var serverData models.UserData
+	if err := json.Unmarshal(data, &serverData); err != nil {
+
+		return nil, err
+	}
+
+	return serverData.Meta.Data, nil
+}
+
+func (c *ClientUsecase) blockSync(syncKey string, done chan struct{}, err <-chan struct{}) {
 	go c.ui.Sync(done)
+	_ = c.userData.User.Token
+
 	for {
 		select {
 		case <-done:
-			return
-		default:
-			_ = c.userData.User.Token
 			//c.grpc.BlockSync(secretKey)
-			time.Sleep(time.Millisecond * 700)
+			fmt.Println("Success sync")
+			return
+		case <-err:
+			done <- struct{}{}
+			fmt.Println("Failed sync")
+			return
+		case <-time.Tick(time.Second):
+			//c.grpc.BlockSync(secretKey)
 		}
 	}
 }
 
-func (c *ClientUsecase) finishSync(syncKey string, done chan struct{}) {
-	defer close(done)
+func (c *ClientUsecase) finishSync(done chan struct{}) {
 	done <- struct{}{}
-
 }
 
-//func (c *ClientUsecase) SyncSecrets(user models.UserData) {
-//	oldHashMeta := user.Meta.HashData
-//
-//	serverMetaData, err := g.SecretComparison(oldHashMeta)
-//	if errors.Is(err, errors.New("CONFLICT")) {
-//		fmt.Print("Another client is synchronizing, try later")
-//
-//		return
-//	}
-//	if serverMetaData == nil {
-//		fmt.Print("Secret synchronized")
-//
-//		return
-//	}
-//
-//	key, err := user.User.GetUserKey()
-//	if err != nil {
-//		//
-//		return
-//	}
-//	data, err := utils.Decrypt(serverMetaData, key)
-//	if err != nil {
-//		//
-//		return
-//	}
-//	var serverMeta models.UserMeta
-//	if err := json.Unmarshal(data, &serverMeta); err != nil {
-//		//
-//		return
-//	}
-//
-//	go func() { //отвельная функция
-//		for {
-//			g.SyncProcess(user.Meta.HashData)
-//			time.Sleep(time.Second * 5)
-//		}
-//	}()
-//
-//	download, upload := FindDifferences(user.Meta.Data, serverMeta.Data)
-//	for id, meta := range download {
-//		data, err = g.DownloadSecret(id, user.Meta.HashData)
-//		if err != nil {
-//
-//		}
-//		//err:=filemanager.AddEncrypedData(meta.Name, data, meta)
-//		_, _ = data, meta // чтобы не краснел
-//	}
-//	for id, _ := range upload {
-//		//data,err:= filemanager.GetDataByID(id)
-//		g.UploadSecret(id, []byte("data"), [32]byte{}, user.Meta.HashData)
-//	}
-//
-//	g.SyncCompleted(oldHashMeta, user.Meta.HashData) // на каждое добавление скачанного секрета обновляется хэш мета
-//	// internal/client/infrastrucrure/filemanager/filemanager.go:166
-//}
-
-func FindDifferences(local, server models.MetaData) (needDownload, needUpload models.MetaData) {
+func findDifferences(local, server models.MetaData) (needDownload, needUpload models.MetaData) {
 	needDownload = make(models.MetaData)
 	needUpload = make(models.MetaData)
 

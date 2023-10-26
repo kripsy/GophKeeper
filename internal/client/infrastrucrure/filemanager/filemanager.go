@@ -20,6 +20,16 @@ type FileManager struct {
 	meta       models.UserMeta
 }
 
+type FileStorage interface {
+	AddToStorage(name string, data Data, info models.DataInfo) error
+	AddEncryptedToStorage(name string, data []byte, info models.DataInfo) error
+	GetByName(name string) ([]byte, models.DataInfo, error)
+	GetEncryptedByName(name string) ([]byte, error)
+	UpdateDataByName(name string, data Data) error
+	UpdateInfoByName(name string, info models.DataInfo) error
+	DeleteByName(name string) error
+}
+
 func NewFileManager(storageDir, uploadDir, userDir string, meta models.UserMeta, key []byte) (*FileManager, error) {
 	if _, err := os.Stat(storageDir); os.IsNotExist(err) {
 		if err = os.MkdirAll(storageDir, dirMode); err != nil {
@@ -70,6 +80,21 @@ func (fm *FileManager) AddToStorage(name string, data Data, info models.DataInfo
 	return fm.saveMetaData(info.UpdatedAt)
 }
 
+func (fm *FileManager) AddEncryptedToStorage(name string, data []byte, info models.DataInfo) error {
+	_, ok := fm.meta.Data[name]
+	if ok {
+		return fm.AddEncryptedToStorage(fm.getUniqueName(name), data, info)
+	}
+
+	if err := os.WriteFile(filepath.Join(fm.storageDir, info.DataID), data, fileMode); err != nil {
+		return err
+	}
+
+	fm.meta.Data[name] = info
+
+	return fm.saveMetaData(info.UpdatedAt)
+}
+
 func (fm *FileManager) GetByName(name string) ([]byte, models.DataInfo, error) {
 	info, ok := fm.meta.Data[name]
 	if !ok {
@@ -87,6 +112,20 @@ func (fm *FileManager) GetByName(name string) ([]byte, models.DataInfo, error) {
 	}
 
 	return decryptedData, info, nil
+}
+
+func (fm *FileManager) GetEncryptedByName(name string) ([]byte, error) {
+	info, ok := fm.meta.Data[name]
+	if !ok {
+		return nil, errors.New("not found secret")
+	}
+
+	data, err := os.ReadFile(filepath.Join(fm.storageDir, info.DataID))
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }
 
 func (fm *FileManager) UpdateDataByName(name string, data Data) error {

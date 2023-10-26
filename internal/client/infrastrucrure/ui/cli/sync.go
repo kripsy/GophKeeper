@@ -7,20 +7,19 @@ import (
 
 var syncProgress = []string{"", ".", "..", "...", "..."}
 
-func (c CLI) Sync(done <-chan struct{}) {
+func (c CLI) Sync(stop <-chan struct{}) {
 	var counter int
 	for {
 		select {
-		case <-done:
+		case <-stop:
 			return
-		default:
+		case <-time.Tick(time.Millisecond * 700):
 			if counter == len(syncProgress) {
 				counter = 0
 			}
 			c.Clear()
 			fmt.Print("Synchronization" + syncProgress[counter])
 			counter++
-			time.Sleep(time.Millisecond * 700)
 		}
 	}
 }

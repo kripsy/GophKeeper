@@ -38,3 +38,7 @@ func (u User) GetHashedPass() (string, error) {
 func (u User) GetDir(dataPath string) string {
 	return filepath.Join(dataPath, u.Username+metaPostfix)
 }
+
+func (u User) GetMetaFileName() string {
+	return u.Username + metaPostfix
+}

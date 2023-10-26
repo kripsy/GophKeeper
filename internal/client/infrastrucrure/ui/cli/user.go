@@ -7,7 +7,6 @@ import (
 )
 
 func (c CLI) GetUser() (models.User, error) {
-
 	username := promptui.Prompt{
 		Label:       "Username",
 		Validate:    validateUsername,
@@ -37,6 +36,24 @@ func (c CLI) GetUser() (models.User, error) {
 		Username: user,
 		Password: password,
 	}, nil
+}
+
+func (c CLI) GetRepeatedPassword() (string, error) {
+	pass := promptui.Prompt{
+		Label:       "Repeat Password",
+		Validate:    validatePassword,
+		HideEntered: true,
+		Mask:        '#',
+	}
+
+	password, err := pass.Run()
+	if err != nil {
+		c.checkInterrupt(err)
+
+		return "", err
+	}
+
+	return password, nil
 }
 
 func (c CLI) TryAgain() bool {

@@ -3,19 +3,18 @@ package main
 import (
 	"github.com/kripsy/GophKeeper/internal/client/app"
 	"github.com/kripsy/GophKeeper/internal/client/config"
-	"github.com/rs/zerolog"
-	"os"
+	"github.com/kripsy/GophKeeper/internal/client/log"
 )
 
 func main() {
 	bi := getBuildInfo()
 	cfg := config.GetConfig()
 
-	log := zerolog.New(os.Stdout).With().Timestamp().Logger() //todo filelog
+	l := log.InitLogger(cfg.StoragePath)
 
-	a, err := app.NewApplication(cfg, bi, log)
+	a, err := app.NewApplication(cfg, bi, l)
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed create application")
+		l.Fatal().Err(err).Msg("failed create application")
 	}
 	a.PrepareApp()
 	a.Run()

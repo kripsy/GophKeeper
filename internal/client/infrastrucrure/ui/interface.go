@@ -7,6 +7,7 @@ import (
 
 type UserInterface interface {
 	GetUser() (models.User, error)
+	GetRepeatedPassword() (string, error)
 	TryAgain() bool
 	IsLocalStorage() bool
 
@@ -25,7 +26,7 @@ type UserInterface interface {
 	UploadFileTo(cfgDir string) (string, bool)
 	GetFilePath() string
 
-	Sync(done <-chan struct{})
+	Sync(stop <-chan struct{})
 	Clear()
 	Exit()
 }
