@@ -10,7 +10,7 @@ const fileName = "client.log"
 
 func InitLogger(logPath string) zerolog.Logger {
 	if _, err := os.Stat(logPath); os.IsNotExist(err) {
-		if err = os.MkdirAll(logPath, 0644); err != nil {
+		if err = os.MkdirAll(logPath, 0700); err != nil {
 			panic(err)
 		}
 	}

@@ -9,6 +9,7 @@ import (
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui"
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/rs/zerolog"
+	"os"
 )
 
 type ClientUsecase struct {
@@ -63,6 +64,7 @@ func (c *ClientUsecase) SetUser() error {
 			if err := c.handleUserRegistration(userAuth); err != nil {
 				return err
 			}
+			return nil
 		} else {
 			if err := c.handleUserLogin(userAuth); err != nil {
 				fmt.Println(err)
@@ -89,7 +91,7 @@ func (c *ClientUsecase) handleUserRegistration(userAuth *filemanager.UserAuth) e
 
 	if c.userData.User.Password != repeatedPass {
 		fmt.Println("Password mismatch")
-		c.SetUser()
+		os.Exit(9)
 		return nil
 	}
 
