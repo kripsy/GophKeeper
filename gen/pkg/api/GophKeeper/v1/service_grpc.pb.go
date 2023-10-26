@@ -22,7 +22,7 @@ const (
 	GophKeeperService_Register_FullMethodName            = "/pkg.api.gophkeeper.v1.GophKeeperService/Register"
 	GophKeeperService_Login_FullMethodName               = "/pkg.api.gophkeeper.v1.GophKeeperService/Login"
 	GophKeeperService_MiltipartUploadFile_FullMethodName = "/pkg.api.gophkeeper.v1.GophKeeperService/MiltipartUploadFile"
-	GophKeeperService_SyncClient_FullMethodName          = "/pkg.api.gophkeeper.v1.GophKeeperService/SyncClient"
+	GophKeeperService_BlockStore_FullMethodName          = "/pkg.api.gophkeeper.v1.GophKeeperService/BlockStore"
 )
 
 // GophKeeperServiceClient is the client API for GophKeeperService service.
@@ -32,7 +32,7 @@ type GophKeeperServiceClient interface {
 	Register(ctx context.Context, in *AuthRequest, opts ...grpc.CallOption) (*AuthResponse, error)
 	Login(ctx context.Context, in *AuthRequest, opts ...grpc.CallOption) (*AuthResponse, error)
 	MiltipartUploadFile(ctx context.Context, opts ...grpc.CallOption) (GophKeeperService_MiltipartUploadFileClient, error)
-	SyncClient(ctx context.Context, opts ...grpc.CallOption) (GophKeeperService_SyncClientClient, error)
+	BlockStore(ctx context.Context, opts ...grpc.CallOption) (GophKeeperService_BlockStoreClient, error)
 }
 
 type gophKeeperServiceClient struct {
@@ -95,34 +95,34 @@ func (x *gophKeeperServiceMiltipartUploadFileClient) CloseAndRecv() (*MiltipartU
 	return m, nil
 }
 
-func (c *gophKeeperServiceClient) SyncClient(ctx context.Context, opts ...grpc.CallOption) (GophKeeperService_SyncClientClient, error) {
-	stream, err := c.cc.NewStream(ctx, &GophKeeperService_ServiceDesc.Streams[1], GophKeeperService_SyncClient_FullMethodName, opts...)
+func (c *gophKeeperServiceClient) BlockStore(ctx context.Context, opts ...grpc.CallOption) (GophKeeperService_BlockStoreClient, error) {
+	stream, err := c.cc.NewStream(ctx, &GophKeeperService_ServiceDesc.Streams[1], GophKeeperService_BlockStore_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &gophKeeperServiceSyncClientClient{stream}
+	x := &gophKeeperServiceBlockStoreClient{stream}
 	return x, nil
 }
 
-type GophKeeperService_SyncClientClient interface {
-	Send(*SyncRequest) error
-	CloseAndRecv() (*SyncResponse, error)
+type GophKeeperService_BlockStoreClient interface {
+	Send(*BlockStoreRequest) error
+	CloseAndRecv() (*BlockStoreResponse, error)
 	grpc.ClientStream
 }
 
-type gophKeeperServiceSyncClientClient struct {
+type gophKeeperServiceBlockStoreClient struct {
 	grpc.ClientStream
 }
 
-func (x *gophKeeperServiceSyncClientClient) Send(m *SyncRequest) error {
+func (x *gophKeeperServiceBlockStoreClient) Send(m *BlockStoreRequest) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *gophKeeperServiceSyncClientClient) CloseAndRecv() (*SyncResponse, error) {
+func (x *gophKeeperServiceBlockStoreClient) CloseAndRecv() (*BlockStoreResponse, error) {
 	if err := x.ClientStream.CloseSend(); err != nil {
 		return nil, err
 	}
-	m := new(SyncResponse)
+	m := new(BlockStoreResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -136,7 +136,7 @@ type GophKeeperServiceServer interface {
 	Register(context.Context, *AuthRequest) (*AuthResponse, error)
 	Login(context.Context, *AuthRequest) (*AuthResponse, error)
 	MiltipartUploadFile(GophKeeperService_MiltipartUploadFileServer) error
-	SyncClient(GophKeeperService_SyncClientServer) error
+	BlockStore(GophKeeperService_BlockStoreServer) error
 	mustEmbedUnimplementedGophKeeperServiceServer()
 }
 
@@ -153,8 +153,8 @@ func (UnimplementedGophKeeperServiceServer) Login(context.Context, *AuthRequest)
 func (UnimplementedGophKeeperServiceServer) MiltipartUploadFile(GophKeeperService_MiltipartUploadFileServer) error {
 	return status.Errorf(codes.Unimplemented, "method MiltipartUploadFile not implemented")
 }
-func (UnimplementedGophKeeperServiceServer) SyncClient(GophKeeperService_SyncClientServer) error {
-	return status.Errorf(codes.Unimplemented, "method SyncClient not implemented")
+func (UnimplementedGophKeeperServiceServer) BlockStore(GophKeeperService_BlockStoreServer) error {
+	return status.Errorf(codes.Unimplemented, "method BlockStore not implemented")
 }
 func (UnimplementedGophKeeperServiceServer) mustEmbedUnimplementedGophKeeperServiceServer() {}
 
@@ -231,26 +231,26 @@ func (x *gophKeeperServiceMiltipartUploadFileServer) Recv() (*MiltipartUploadFil
 	return m, nil
 }
 
-func _GophKeeperService_SyncClient_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(GophKeeperServiceServer).SyncClient(&gophKeeperServiceSyncClientServer{stream})
+func _GophKeeperService_BlockStore_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(GophKeeperServiceServer).BlockStore(&gophKeeperServiceBlockStoreServer{stream})
 }
 
-type GophKeeperService_SyncClientServer interface {
-	SendAndClose(*SyncResponse) error
-	Recv() (*SyncRequest, error)
+type GophKeeperService_BlockStoreServer interface {
+	SendAndClose(*BlockStoreResponse) error
+	Recv() (*BlockStoreRequest, error)
 	grpc.ServerStream
 }
 
-type gophKeeperServiceSyncClientServer struct {
+type gophKeeperServiceBlockStoreServer struct {
 	grpc.ServerStream
 }
 
-func (x *gophKeeperServiceSyncClientServer) SendAndClose(m *SyncResponse) error {
+func (x *gophKeeperServiceBlockStoreServer) SendAndClose(m *BlockStoreResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *gophKeeperServiceSyncClientServer) Recv() (*SyncRequest, error) {
-	m := new(SyncRequest)
+func (x *gophKeeperServiceBlockStoreServer) Recv() (*BlockStoreRequest, error) {
+	m := new(BlockStoreRequest)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -280,8 +280,8 @@ var GophKeeperService_ServiceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 		{
-			StreamName:    "SyncClient",
-			Handler:       _GophKeeperService_SyncClient_Handler,
+			StreamName:    "BlockStore",
+			Handler:       _GophKeeperService_BlockStore_Handler,
 			ClientStreams: true,
 		},
 	},

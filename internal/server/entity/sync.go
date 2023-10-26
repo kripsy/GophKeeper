@@ -75,13 +75,18 @@ func (ss *SyncStatus) RemoveClientSync(userID int, syncID uuid.UUID) error {
 	return nil
 }
 
-func (ss *SyncStatus) GetSync(userID int) (uuid.UUID, error) {
+func (ss *SyncStatus) IsSyncExists(userID int, syncID uuid.UUID) (bool, error) {
 	ss.rwMutex.RLock()
-	defer ss.rwMutex.RUnlock()
+	fmt.Println("start lock r IsSyncExists")
+	val, ok := ss.syncClients[userID]
+	fmt.Println("try unlock r IsSyncExists")
+	ss.rwMutex.RUnlock()
+	if ok && val == syncID {
+		fmt.Println("sync already exist for user")
 
-	if val, ok := ss.syncClients[userID]; ok {
-		return val, nil
+		return true, nil
 	}
+	fmt.Println("this sync is not exist")
 
-	return uuid.UUID{}, errors.New("Sync for this user not exists")
+	return false, nil
 }

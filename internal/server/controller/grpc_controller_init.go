@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	pb "github.com/kripsy/GophKeeper/gen/pkg/api/GophKeeper/v1"
 	"github.com/kripsy/GophKeeper/internal/server/entity"
 	"github.com/kripsy/GophKeeper/internal/utils"
@@ -35,7 +36,10 @@ func InitGrpcServer(userUseCase UserUseCase, secretUseCase SecretUseCase, secret
 		logger:        logger,
 		syncStatus:    syncStatus,
 	}
-	// interceptors := []grpc.UnaryServerInterceptor{}
+
+	m := InitMyMiddleware(logger)
+
+	interceptors := []grpc.UnaryServerInterceptor{m.AuthInterceptor}
 
 	var srv *grpc.Server
 	if isSecure {
@@ -46,10 +50,10 @@ func InitGrpcServer(userUseCase UserUseCase, secretUseCase SecretUseCase, secret
 
 			return nil, fmt.Errorf("%w", err)
 		}
-		srv = grpc.NewServer(grpc.Creds(creds)) //grpc.UnaryInterceptor(grpcmiddleware.ChainUnaryServer(interceptors...)))
+		srv = grpc.NewServer(grpc.Creds(creds), grpc.UnaryInterceptor(grpcmiddleware.ChainUnaryServer(interceptors...)))
 	} else {
 		logger.Debug("no secure grpc")
-		srv = grpc.NewServer()
+		srv = grpc.NewServer(grpc.UnaryInterceptor(grpcmiddleware.ChainUnaryServer(interceptors...)))
 	}
 
 	pb.RegisterGophKeeperServiceServer(srv, s)
