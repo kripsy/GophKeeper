@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/bufbuild/protovalidate-go"
+	"github.com/golang/protobuf/ptypes/empty"
 	pb "github.com/kripsy/GophKeeper/gen/pkg/api/GophKeeper/v1"
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/kripsy/GophKeeper/internal/server/entity"
@@ -92,4 +93,10 @@ func (s *GrpcServer) Login(ctx context.Context, req *pb.AuthRequest) (*pb.AuthRe
 	return &pb.AuthResponse{
 		Token: token,
 	}, nil
+}
+
+func (s *GrpcServer) Ping(ctx context.Context, req *empty.Empty) (*empty.Empty, error) {
+	s.logger.Debug("start Ping")
+
+	return &empty.Empty{}, nil
 }

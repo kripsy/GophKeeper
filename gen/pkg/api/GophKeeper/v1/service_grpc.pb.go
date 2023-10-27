@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -23,6 +24,7 @@ const (
 	GophKeeperService_Login_FullMethodName               = "/pkg.api.gophkeeper.v1.GophKeeperService/Login"
 	GophKeeperService_MiltipartUploadFile_FullMethodName = "/pkg.api.gophkeeper.v1.GophKeeperService/MiltipartUploadFile"
 	GophKeeperService_BlockStore_FullMethodName          = "/pkg.api.gophkeeper.v1.GophKeeperService/BlockStore"
+	GophKeeperService_Ping_FullMethodName                = "/pkg.api.gophkeeper.v1.GophKeeperService/Ping"
 )
 
 // GophKeeperServiceClient is the client API for GophKeeperService service.
@@ -33,6 +35,7 @@ type GophKeeperServiceClient interface {
 	Login(ctx context.Context, in *AuthRequest, opts ...grpc.CallOption) (*AuthResponse, error)
 	MiltipartUploadFile(ctx context.Context, opts ...grpc.CallOption) (GophKeeperService_MiltipartUploadFileClient, error)
 	BlockStore(ctx context.Context, opts ...grpc.CallOption) (GophKeeperService_BlockStoreClient, error)
+	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type gophKeeperServiceClient struct {
@@ -129,6 +132,15 @@ func (x *gophKeeperServiceBlockStoreClient) CloseAndRecv() (*BlockStoreResponse,
 	return m, nil
 }
 
+func (c *gophKeeperServiceClient) Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, GophKeeperService_Ping_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GophKeeperServiceServer is the server API for GophKeeperService service.
 // All implementations must embed UnimplementedGophKeeperServiceServer
 // for forward compatibility
@@ -137,6 +149,7 @@ type GophKeeperServiceServer interface {
 	Login(context.Context, *AuthRequest) (*AuthResponse, error)
 	MiltipartUploadFile(GophKeeperService_MiltipartUploadFileServer) error
 	BlockStore(GophKeeperService_BlockStoreServer) error
+	Ping(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	mustEmbedUnimplementedGophKeeperServiceServer()
 }
 
@@ -155,6 +168,9 @@ func (UnimplementedGophKeeperServiceServer) MiltipartUploadFile(GophKeeperServic
 }
 func (UnimplementedGophKeeperServiceServer) BlockStore(GophKeeperService_BlockStoreServer) error {
 	return status.Errorf(codes.Unimplemented, "method BlockStore not implemented")
+}
+func (UnimplementedGophKeeperServiceServer) Ping(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
 }
 func (UnimplementedGophKeeperServiceServer) mustEmbedUnimplementedGophKeeperServiceServer() {}
 
@@ -257,6 +273,24 @@ func (x *gophKeeperServiceBlockStoreServer) Recv() (*BlockStoreRequest, error) {
 	return m, nil
 }
 
+func _GophKeeperService_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GophKeeperServiceServer).Ping(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GophKeeperService_Ping_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GophKeeperServiceServer).Ping(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // GophKeeperService_ServiceDesc is the grpc.ServiceDesc for GophKeeperService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -271,6 +305,10 @@ var GophKeeperService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Login",
 			Handler:    _GophKeeperService_Login_Handler,
+		},
+		{
+			MethodName: "Ping",
+			Handler:    _GophKeeperService_Ping_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
