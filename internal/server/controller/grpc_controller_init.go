@@ -13,6 +13,8 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
+const maxStreams = 20
+
 type GrpcServer struct {
 	pb.UnimplementedGophKeeperServiceServer
 	logger        *zap.Logger
@@ -50,10 +52,14 @@ func InitGrpcServer(userUseCase UserUseCase, secretUseCase SecretUseCase, secret
 
 			return nil, fmt.Errorf("%w", err)
 		}
-		srv = grpc.NewServer(grpc.Creds(creds), grpc.UnaryInterceptor(grpcmiddleware.ChainUnaryServer(interceptors...)))
+		srv = grpc.NewServer(grpc.Creds(creds), grpc.UnaryInterceptor(grpcmiddleware.ChainUnaryServer(interceptors...)),
+			grpc.MaxConcurrentStreams(maxStreams),
+		)
 	} else {
 		logger.Debug("no secure grpc")
-		srv = grpc.NewServer(grpc.UnaryInterceptor(grpcmiddleware.ChainUnaryServer(interceptors...)))
+		srv = grpc.NewServer(grpc.UnaryInterceptor(grpcmiddleware.ChainUnaryServer(interceptors...)),
+			grpc.MaxConcurrentStreams(maxStreams),
+		)
 	}
 
 	pb.RegisterGophKeeperServiceServer(srv, s)

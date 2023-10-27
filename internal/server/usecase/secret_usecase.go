@@ -4,6 +4,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -37,10 +38,10 @@ func InitSecretUseCases(ctx context.Context, userRepo UserRepository, secretRepo
 	return uc, nil
 }
 
-func (uc *secretUseCase) MiltipartUploadFile(ctx context.Context, dataChan <-chan *pb.MiltipartUploadFileRequest, dataIdChan chan<- string, filename *string) error {
+func (uc *secretUseCase) MiltipartUploadFile(ctx context.Context, dataChan <-chan *pb.MiltipartUploadFileRequest) (bool, error) {
 	// create new uuid in repo (user_id, external_id, hash256, updatetime)
 	// code there
-
+	i := 0
 	// use minio to upload files, using uuid as name
 loop:
 	for {
@@ -50,20 +51,22 @@ loop:
 				uc.logger.Debug("loop getting data ended")
 				break loop
 			}
+			i++
+			if i == 4 {
+				return false, errors.New("test error")
+			}
 			uc.logger.Debug("we got simple data", zap.Any("context", ctx))
 			uc.logger.Debug("file name", zap.String("msg", data.FileName))
 			uc.logger.Debug("hash", zap.String("msg", data.Hash))
 		case <-ctx.Done():
 			uc.logger.Debug("ctx in MiltipartUploadFile usecase exeed")
-			dataIdChan <- ""
+
 			uc.logger.Debug("send empty to dataIdChan from usecase")
-			return ctx.Err()
+			return false, ctx.Err()
 		}
 	}
 
-	fmt.Println("send ID")
-	dataIdChan <- "123-333-44-55-66-77"
-	return nil
+	return true, nil
 }
 
 func (uc *secretUseCase) FinishSaveMultipartSecret(ctx context.Context, secret entity.Secret) (uuid.UUID, error) {

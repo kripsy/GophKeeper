@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"sync"
-	"time"
 
 	"github.com/bufbuild/protovalidate-go"
 	"github.com/google/uuid"
@@ -16,50 +15,26 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// DEADLINEDURATION is a maximum period between stream request batches
-const DEADLINEDURATION = 15 * time.Second
-const SYNCDEADLINEDURATION = 5 * time.Second
-
 type SecretUseCase interface {
-	MiltipartUploadFile(context.Context, <-chan *pb.MiltipartUploadFileRequest, chan<- string, *string) error
+	MiltipartUploadFile(context.Context, <-chan *pb.MiltipartUploadFileRequest) (bool, error)
 }
 
 func (s *GrpcServer) MiltipartUploadFile(stream pb.GophKeeperService_MiltipartUploadFileServer) error {
-	s.logger.Debug("Start UploadFile")
+	s.logger.Debug("Start MiltipartUploadFile")
 	userID := 0
-	deadlineDuration := DEADLINEDURATION
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	reqChan := make(chan *pb.MiltipartUploadFileRequest, 1)
 
-	timer := time.NewTimer(deadlineDuration)
-	defer timer.Stop()
-
-	doneChan := make(chan bool)
 	errChan := make(chan error, 1)
-	fileIdChan := make(chan string, 1)
-	reqChan := make(chan *pb.MiltipartUploadFileRequest)
-	var fileName string
-	var once sync.Once
-	defer func() {
-		s.logger.Debug("defer in ")
-		<-doneChan
-		s.logger.Debug("got doneChan")
-		close(errChan)
-	}()
 
 	go func() {
-		err := s.secretUseCase.MiltipartUploadFile(ctx, reqChan, fileIdChan, &fileName)
-		s.logger.Debug("s.secretUseCase.MiltipartUploadFile ended", zap.Any("error", err))
-		if err != nil {
-			errChan <- err
-		}
-		doneChan <- true
-	}()
-
-	go func() {
+		defer close(reqChan)
+		defer close(errChan)
 		for {
 			req, err := stream.Recv()
+			if err == io.EOF {
+				return
+			}
 			if err != nil {
 				errChan <- err
 				return
@@ -69,60 +44,128 @@ func (s *GrpcServer) MiltipartUploadFile(stream pb.GophKeeperService_MiltipartUp
 				errChan <- err
 				return
 			}
-			if isEbabled, _ := s.syncStatus.IsSyncExists(userID, val); !isEbabled {
+			if isEnabled, _ := s.syncStatus.IsSyncExists(userID, val); !isEnabled {
 				errChan <- errors.New("You should block resource before use it")
 				return
 			}
 			reqChan <- req
 		}
 	}()
-loop:
-	for {
-		s.logger.Debug("it's loop")
-		select {
-		case <-timer.C:
-			s.logger.Debug("get end context in handler")
-			cancel()
 
-			return status.Error(codes.DeadlineExceeded, "No data from timeout")
-		case err := <-errChan:
-			if err == io.EOF {
-				close(reqChan)
-				s.logger.Debug("Got EOF of MiltipartUploadFile")
-				select {
-				case err := <-errChan:
-					return err
+	success, err := s.secretUseCase.MiltipartUploadFile(stream.Context(), reqChan)
+	if err != nil {
+		s.logger.Error("Error in s.secretUseCase.MiltipartUploadFile", zap.Error(err))
 
-				case fileName = <-fileIdChan:
-					break loop
-				}
-			}
+		return err
+	}
 
-			cancel()
-			return fmt.Errorf("%w", err)
-		case req := <-reqChan:
-			s.logger.Debug("update timer")
-			timer.Reset(deadlineDuration)
-			once.Do(func() {
-				fileName = req.FileName
-			})
-			reqChan <- req
-		}
+	select {
+	case err := <-errChan:
+		return err
+	default:
+	}
+
+	if !success {
+		return status.Errorf(codes.Internal, "Failed to upload file")
 	}
 
 	return stream.SendAndClose(&pb.MiltipartUploadFileResponse{
-		FileId: fileName,
+		FileId: "123",
 	})
 }
+
+// func (s *GrpcServer) MiltipartUploadFile(stream pb.GophKeeperService_MiltipartUploadFileServer) error {
+// 	s.logger.Debug("Start UploadFile")
+// 	userID := 0
+// 	streamCtx := stream.Context()
+
+// 	ctx, cancel := context.WithCancel(context.Background())
+// 	defer cancel()
+
+// 	doneChan := make(chan bool)
+// 	errChan := make(chan error, 1)
+// 	reqChan := make(chan *pb.MiltipartUploadFileRequest)
+// 	var resultUsecase bool
+
+// 	defer func() {
+// 		close(errChan)
+// 		close(doneChan)
+
+// 	}()
+
+// 	go func() {
+// 		res, err := s.secretUseCase.MiltipartUploadFile(ctx, reqChan)
+// 		resultUsecase = res
+// 		s.logger.Debug("s.secretUseCase.MiltipartUploadFile ended", zap.Any("error", err))
+// 		if err != nil {
+// 			errChan <- err
+
+// 			return
+// 		}
+// 		s.logger.Debug("Write to done chan")
+// 		doneChan <- true
+// 		s.logger.Debug("Wrote to done chan")
+// 	}()
+
+// 	go func() {
+// 		for {
+// 			req, err := stream.Recv()
+// 			if err != nil {
+// 				errChan <- err
+// 				return
+// 			}
+// 			val, err := uuid.Parse(req.Guid)
+// 			if err != nil {
+// 				errChan <- err
+// 				return
+// 			}
+// 			if isEbabled, _ := s.syncStatus.IsSyncExists(userID, val); !isEbabled {
+// 				errChan <- errors.New("You should block resource before use it")
+// 				return
+// 			}
+// 			reqChan <- req
+// 		}
+// 	}()
+// loop:
+// 	for {
+// 		s.logger.Debug("it's loop")
+// 		select {
+// 		case <-streamCtx.Done():
+// 			s.logger.Debug("get end context in handler")
+// 			cancel()
+
+// 			return status.Error(codes.DeadlineExceeded, "No data from timeout")
+// 		case err := <-errChan:
+// 			if err == io.EOF {
+
+// 				s.logger.Debug("Got EOF of MiltipartUploadFile")
+// 				close(reqChan)
+// 				s.logger.Debug("Waiting done chan")
+// 				<-doneChan
+// 				s.logger.Debug("Got done chan")
+// 				s.logger.Debug("Result usecase", zap.Bool("Succes?", resultUsecase))
+// 				break loop
+// 			}
+// 			cancel()
+
+// 			return fmt.Errorf("%w", err)
+// 		case req := <-reqChan:
+// 			s.logger.Debug("got new stream data")
+// 			reqChan <- req
+// 		}
+// 	}
+
+// 	return stream.SendAndClose(&pb.MiltipartUploadFileResponse{
+// 		FileId: "123",
+// 	})
+// }
 
 func (s *GrpcServer) BlockStore(stream pb.GophKeeperService_BlockStoreServer) error {
 
 	s.logger.Debug("start Register")
-
-	deadlineDuration := SYNCDEADLINEDURATION
+	streamCtx := stream.Context()
 	errChan := make(chan error, 1)
 	reqChan := make(chan *pb.BlockStoreRequest)
-	timer := time.NewTimer(deadlineDuration)
 
 	var guid uuid.UUID
 	var userID int
@@ -131,7 +174,6 @@ func (s *GrpcServer) BlockStore(stream pb.GophKeeperService_BlockStoreServer) er
 	var syncEnable bool
 	defer func() {
 		s.logger.Debug("Close main goroutine BlockStore")
-		defer timer.Stop()
 		if syncEnable {
 			s.syncStatus.RemoveClientSync(userID, guid)
 		}
@@ -140,10 +182,15 @@ func (s *GrpcServer) BlockStore(stream pb.GophKeeperService_BlockStoreServer) er
 	go func() {
 		defer func() {
 			s.logger.Debug("Close goroutine in BlockStore receivong data stream")
+			s.logger.Debug("Close errChan")
+			close(errChan)
+			close(reqChan)
 		}()
 		v, err := protovalidate.New()
 		if err != nil {
+			s.logger.Error("Error init validator", zap.Error(err))
 			errChan <- fmt.Errorf("%w", status.Error(codes.Internal, err.Error()))
+
 			return
 		}
 
@@ -151,11 +198,13 @@ func (s *GrpcServer) BlockStore(stream pb.GophKeeperService_BlockStoreServer) er
 			req, err := stream.Recv()
 			if err != nil {
 				errChan <- err
+
 				return
 			}
 			if err = v.Validate(req); err != nil {
 				s.logger.Error("No valid req data", zap.Any("msg", req))
 				errChan <- fmt.Errorf("%w", status.Error(codes.InvalidArgument, err.Error()))
+
 				return
 			}
 
@@ -166,10 +215,12 @@ func (s *GrpcServer) BlockStore(stream pb.GophKeeperService_BlockStoreServer) er
 				}
 				guid = val
 				syncEnable, _ = s.syncStatus.AddSync(userID, val)
-				fmt.Println(syncEnable)
+				s.logger.Error("Sync", zap.Bool("msg", syncEnable))
 			})
 			if !syncEnable {
+				s.logger.Error("Sync not enabled")
 				errChan <- errors.New("Sync for this user already exists")
+
 				return
 			}
 
@@ -179,8 +230,10 @@ func (s *GrpcServer) BlockStore(stream pb.GophKeeperService_BlockStoreServer) er
 loop:
 	for {
 		select {
-		case <-timer.C:
-			return status.Error(codes.DeadlineExceeded, "Timeout reached")
+		case <-streamCtx.Done():
+			s.logger.Debug("stream context canceled")
+
+			return status.Error(codes.Aborted, "stream context canceled")
 		case err := <-errChan:
 			if err == io.EOF {
 				s.logger.Debug("Got EOF of BlockStore")
@@ -191,11 +244,11 @@ loop:
 			return status.Error(codes.Internal, err.Error())
 		case req := <-reqChan:
 			if !syncEnable {
+				s.logger.Error("Sync not enabled")
 
 				return status.Error(codes.ResourceExhausted, "Sync not enable")
 			}
-			fmt.Println(req.Guid)
-			timer.Reset(deadlineDuration)
+
 			s.logger.Debug("update timer for sync", zap.Int("userID", userID), zap.String("GUID", req.Guid), zap.Bool("sync is finish?", req.IsFinish))
 
 		}
