@@ -39,7 +39,7 @@ func InitGrpcServer(userUseCase UserUseCase, secretUseCase SecretUseCase, secret
 		syncStatus:    syncStatus,
 	}
 
-	m := InitMyMiddleware(logger)
+	m := InitMyMiddleware(logger, secret)
 
 	interceptors := []grpc.UnaryServerInterceptor{m.AuthInterceptor}
 
@@ -54,11 +54,13 @@ func InitGrpcServer(userUseCase UserUseCase, secretUseCase SecretUseCase, secret
 		}
 		srv = grpc.NewServer(grpc.Creds(creds), grpc.UnaryInterceptor(grpcmiddleware.ChainUnaryServer(interceptors...)),
 			grpc.MaxConcurrentStreams(maxStreams),
+			grpc.StreamInterceptor(m.StreamAuthInterceptor),
 		)
 	} else {
 		logger.Debug("no secure grpc")
 		srv = grpc.NewServer(grpc.UnaryInterceptor(grpcmiddleware.ChainUnaryServer(interceptors...)),
 			grpc.MaxConcurrentStreams(maxStreams),
+			grpc.StreamInterceptor(m.StreamAuthInterceptor),
 		)
 	}
 

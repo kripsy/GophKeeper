@@ -8,7 +8,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	pb "github.com/kripsy/GophKeeper/gen/pkg/api/GophKeeper/v1"
+	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/kripsy/GophKeeper/internal/server/entity"
 	"go.uber.org/zap"
 )
@@ -38,7 +38,7 @@ func InitSecretUseCases(ctx context.Context, userRepo UserRepository, secretRepo
 	return uc, nil
 }
 
-func (uc *secretUseCase) MiltipartUploadFile(ctx context.Context, dataChan <-chan *pb.MiltipartUploadFileRequest) (bool, error) {
+func (uc *secretUseCase) MiltipartUploadFile(ctx context.Context, dataChan <-chan *models.MiltipartUploadFileData) (bool, error) {
 	// create new uuid in repo (user_id, external_id, hash256, updatetime)
 	// code there
 	i := 0
@@ -55,9 +55,8 @@ loop:
 			if i == 4 {
 				return false, errors.New("test error")
 			}
-			uc.logger.Debug("we got simple data", zap.Any("context", ctx))
-			uc.logger.Debug("file name", zap.String("msg", data.FileName))
-			uc.logger.Debug("hash", zap.String("msg", data.Hash))
+			uc.logger.Debug("we got simple data", zap.Any("context", data))
+
 		case <-ctx.Done():
 			uc.logger.Debug("ctx in MiltipartUploadFile usecase exeed")
 

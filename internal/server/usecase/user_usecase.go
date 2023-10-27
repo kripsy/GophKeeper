@@ -46,7 +46,7 @@ func (uc *userUseCase) RegisterUser(ctx context.Context, user entity.User) (stri
 		return "", fmt.Errorf("%w", err)
 	}
 
-	token, err := utils.BuildJWTString(userID, uc.secret, uc.tokenExp)
+	token, err := utils.BuildJWTString(userID, user.Username, uc.secret, uc.tokenExp)
 	if err != nil {
 		return "", fmt.Errorf("%w", err)
 	}
@@ -79,7 +79,7 @@ func (uc *userUseCase) LoginUser(ctx context.Context, user entity.User) (string,
 		return "", fmt.Errorf("%w", err)
 	}
 
-	token, err := utils.BuildJWTString(userID, uc.secret, uc.tokenExp)
+	token, err := utils.BuildJWTString(userID, user.Username, uc.secret, uc.tokenExp)
 	if err != nil {
 		return "", fmt.Errorf("%w", err)
 	}

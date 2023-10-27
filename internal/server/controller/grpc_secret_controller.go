@@ -10,20 +10,25 @@ import (
 	"github.com/bufbuild/protovalidate-go"
 	"github.com/google/uuid"
 	pb "github.com/kripsy/GophKeeper/gen/pkg/api/GophKeeper/v1"
+	"github.com/kripsy/GophKeeper/internal/models"
+	"github.com/kripsy/GophKeeper/internal/utils"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 type SecretUseCase interface {
-	MiltipartUploadFile(context.Context, <-chan *pb.MiltipartUploadFileRequest) (bool, error)
+	MiltipartUploadFile(context.Context, <-chan *models.MiltipartUploadFileData) (bool, error)
 }
 
 func (s *GrpcServer) MiltipartUploadFile(stream pb.GophKeeperService_MiltipartUploadFileServer) error {
 	s.logger.Debug("Start MiltipartUploadFile")
-	userID := 0
 
-	reqChan := make(chan *pb.MiltipartUploadFileRequest, 1)
+	var username string
+	var userID int
+	var once sync.Once
+
+	reqChan := make(chan *models.MiltipartUploadFileData, 1)
 
 	errChan := make(chan error, 1)
 
@@ -48,7 +53,23 @@ func (s *GrpcServer) MiltipartUploadFile(stream pb.GophKeeperService_MiltipartUp
 				errChan <- errors.New("You should block resource before use it")
 				return
 			}
-			reqChan <- req
+			once.Do(func() {
+				_username, ok := utils.ExtractUsernameFromContext(stream.Context())
+				if !ok {
+					errChan <- errors.New("Couldn't get userID from context")
+					return
+				}
+				username = _username
+				s.logger.Debug("Username from req", zap.String("msg", username))
+			})
+
+			reqChan <- &models.MiltipartUploadFileData{
+				Content:  req.GetContent(),
+				FileName: req.GetFileName(),
+				Guid:     req.GetGuid(),
+				Hash:     req.GetHash(),
+				Username: username,
+			}
 		}
 	}()
 
@@ -73,92 +94,6 @@ func (s *GrpcServer) MiltipartUploadFile(stream pb.GophKeeperService_MiltipartUp
 		FileId: "123",
 	})
 }
-
-// func (s *GrpcServer) MiltipartUploadFile(stream pb.GophKeeperService_MiltipartUploadFileServer) error {
-// 	s.logger.Debug("Start UploadFile")
-// 	userID := 0
-// 	streamCtx := stream.Context()
-
-// 	ctx, cancel := context.WithCancel(context.Background())
-// 	defer cancel()
-
-// 	doneChan := make(chan bool)
-// 	errChan := make(chan error, 1)
-// 	reqChan := make(chan *pb.MiltipartUploadFileRequest)
-// 	var resultUsecase bool
-
-// 	defer func() {
-// 		close(errChan)
-// 		close(doneChan)
-
-// 	}()
-
-// 	go func() {
-// 		res, err := s.secretUseCase.MiltipartUploadFile(ctx, reqChan)
-// 		resultUsecase = res
-// 		s.logger.Debug("s.secretUseCase.MiltipartUploadFile ended", zap.Any("error", err))
-// 		if err != nil {
-// 			errChan <- err
-
-// 			return
-// 		}
-// 		s.logger.Debug("Write to done chan")
-// 		doneChan <- true
-// 		s.logger.Debug("Wrote to done chan")
-// 	}()
-
-// 	go func() {
-// 		for {
-// 			req, err := stream.Recv()
-// 			if err != nil {
-// 				errChan <- err
-// 				return
-// 			}
-// 			val, err := uuid.Parse(req.Guid)
-// 			if err != nil {
-// 				errChan <- err
-// 				return
-// 			}
-// 			if isEbabled, _ := s.syncStatus.IsSyncExists(userID, val); !isEbabled {
-// 				errChan <- errors.New("You should block resource before use it")
-// 				return
-// 			}
-// 			reqChan <- req
-// 		}
-// 	}()
-// loop:
-// 	for {
-// 		s.logger.Debug("it's loop")
-// 		select {
-// 		case <-streamCtx.Done():
-// 			s.logger.Debug("get end context in handler")
-// 			cancel()
-
-// 			return status.Error(codes.DeadlineExceeded, "No data from timeout")
-// 		case err := <-errChan:
-// 			if err == io.EOF {
-
-// 				s.logger.Debug("Got EOF of MiltipartUploadFile")
-// 				close(reqChan)
-// 				s.logger.Debug("Waiting done chan")
-// 				<-doneChan
-// 				s.logger.Debug("Got done chan")
-// 				s.logger.Debug("Result usecase", zap.Bool("Succes?", resultUsecase))
-// 				break loop
-// 			}
-// 			cancel()
-
-// 			return fmt.Errorf("%w", err)
-// 		case req := <-reqChan:
-// 			s.logger.Debug("got new stream data")
-// 			reqChan <- req
-// 		}
-// 	}
-
-// 	return stream.SendAndClose(&pb.MiltipartUploadFileResponse{
-// 		FileId: "123",
-// 	})
-// }
 
 func (s *GrpcServer) BlockStore(stream pb.GophKeeperService_BlockStoreServer) error {
 
