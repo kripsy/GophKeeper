@@ -25,8 +25,8 @@ type GrpcServer struct {
 }
 
 type UserUseCase interface {
-	RegisterUser(ctx context.Context, user entity.User) (string, error)
-	LoginUser(ctx context.Context, user entity.User) (string, error)
+	RegisterUser(ctx context.Context, user entity.User) (string, int, error)
+	LoginUser(ctx context.Context, user entity.User) (string, int, error)
 }
 
 func InitGrpcServer(userUseCase UserUseCase, secretUseCase SecretUseCase, secret string, isSecure bool, logger *zap.Logger) (*grpc.Server, error) {

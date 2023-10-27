@@ -17,6 +17,7 @@ const (
 	TOKENPREFIX         = ""
 	TOKENCONTEXTKEY     = "token"
 	USERNAMECONTEXTKEY  = "username"
+	USERIDCONTEXTKEY    = "userID"
 )
 
 type Claims struct {
@@ -100,6 +101,21 @@ func GetUsernameFromToken(tokenString, secretKey string) (string, error) {
 
 	return claims.Username, nil
 }
+func GetUseIDFromToken(tokenString, secretKey string) (int, error) {
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
+		return []byte(secretKey), nil
+	})
+	if err != nil {
+		return 0, fmt.Errorf("%w", err)
+	}
+
+	if !token.Valid {
+		return 0, fmt.Errorf("%w", err)
+	}
+
+	return claims.UserID, nil
+}
 
 func DeriveKey(password, salt string) ([]byte, error) {
 
@@ -128,4 +144,10 @@ func ExtractUsernameFromContext(ctx context.Context) (string, bool) {
 	username, ok := ctx.Value(USERNAMECONTEXTKEY).(string)
 	fmt.Println(ctx.Value("username"))
 	return username, ok
+}
+
+func ExtractUserIDFromContext(ctx context.Context) (int, bool) {
+	userID, ok := ctx.Value(USERIDCONTEXTKEY).(int)
+	fmt.Println(ctx.Value("userID"))
+	return userID, ok
 }

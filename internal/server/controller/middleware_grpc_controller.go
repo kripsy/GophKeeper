@@ -122,10 +122,20 @@ func (m MyMiddleware) StreamAuthInterceptor(srv interface{}, ss grpc.ServerStrea
 		return status.Error(codes.Unauthenticated, "token empty or not valid")
 	}
 
+	userID, err := utils.GetUseIDFromToken(token, m.secret)
+	if err != nil {
+		m.myLogger.Debug("cannot get userID")
+		return status.Error(codes.Unauthenticated, "token empty or not valid")
+	}
+
 	// Добавляем имя пользователя в контекст
 	newCtx := context.WithValue(ctx, utils.USERNAMECONTEXTKEY, username)
 	// Заменяем старый контекст новым в потоковом сервере
 	wrappedStream := grpc_middleware.WrapServerStream(ss)
+	wrappedStream.WrappedContext = newCtx
+
+	newCtx = context.WithValue(newCtx, utils.USERIDCONTEXTKEY, userID)
+	wrappedStream = grpc_middleware.WrapServerStream(ss)
 	wrappedStream.WrappedContext = newCtx
 
 	return handler(srv, wrappedStream)

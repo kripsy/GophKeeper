@@ -4,8 +4,8 @@ package usecase
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/google/uuid"
 	"github.com/kripsy/GophKeeper/internal/models"
@@ -13,8 +13,9 @@ import (
 	"go.uber.org/zap"
 )
 
-type SecretRepository interface {
-
+type MinioRepository interface {
+	MiltipartUploadFile(context.Context, *models.MiltipartUploadFileData, int, string) (*models.ObjectPart, error)
+	CreateBucketSecret(ctx context.Context, username string, userID int) (bool, error)
 	// SaveSecret(ctx context.Context, secret entity.Secret) (int, error)
 	// GetSecretByID(ctx context.Context, secretID, userID int) (entity.Secret, error)
 	// DeleteSecret(ctx context.Context, secretID int) error
@@ -24,11 +25,11 @@ type SecretRepository interface {
 type secretUseCase struct {
 	ctx        context.Context
 	userRepo   UserRepository
-	secretRepo SecretRepository
+	secretRepo MinioRepository
 	logger     *zap.Logger
 }
 
-func InitSecretUseCases(ctx context.Context, userRepo UserRepository, secretRepo SecretRepository, l *zap.Logger) (*secretUseCase, error) {
+func InitSecretUseCases(ctx context.Context, userRepo UserRepository, secretRepo MinioRepository, l *zap.Logger) (*secretUseCase, error) {
 	uc := &secretUseCase{
 		ctx:        ctx,
 		userRepo:   userRepo,
@@ -38,11 +39,15 @@ func InitSecretUseCases(ctx context.Context, userRepo UserRepository, secretRepo
 	return uc, nil
 }
 
-func (uc *secretUseCase) MiltipartUploadFile(ctx context.Context, dataChan <-chan *models.MiltipartUploadFileData) (bool, error) {
-	// create new uuid in repo (user_id, external_id, hash256, updatetime)
-	// code there
-	i := 0
-	// use minio to upload files, using uuid as name
+func (uc *secretUseCase) MiltipartUploadFile(ctx context.Context, dataChan <-chan *models.MiltipartUploadFileData, bucketName string) (bool, error) {
+
+	parts := []models.ObjectPart{}
+	var partNum int
+	var fileName string
+
+	uc.logger.Debug("MiltipartUploadFile", zap.String("bucketname", bucketName))
+	var once sync.Once
+
 loop:
 	for {
 		select {
@@ -51,11 +56,20 @@ loop:
 				uc.logger.Debug("loop getting data ended")
 				break loop
 			}
-			i++
-			if i == 4 {
-				return false, errors.New("test error")
-			}
 			uc.logger.Debug("we got simple data", zap.Any("context", data))
+
+			partNum++
+			part, err := uc.secretRepo.MiltipartUploadFile(ctx, data, partNum, bucketName)
+			if err != nil {
+				uc.logger.Error("Error upload in usecase", zap.Error(err))
+
+				return false, fmt.Errorf("%w", err)
+			}
+			uc.logger.Debug("success upload part", zap.Int("part number", partNum))
+			parts = append(parts, *part)
+			once.Do(func() {
+				fileName = data.FileName
+			})
 
 		case <-ctx.Done():
 			uc.logger.Debug("ctx in MiltipartUploadFile usecase exeed")
@@ -65,6 +79,7 @@ loop:
 		}
 	}
 
+	uc.logger.Debug("Multipart upload success", zap.String("filename", fileName))
 	return true, nil
 }
 
@@ -76,6 +91,10 @@ func (uc *secretUseCase) FinishSaveMultipartSecret(ctx context.Context, secret e
 		return uuid.UUID{}, fmt.Errorf("%w", err)
 	}
 	return id, nil
+}
+
+func (uc *secretUseCase) CreateBucketSecret(ctx context.Context, username string, userID int) (bool, error) {
+	return uc.secretRepo.CreateBucketSecret(ctx, username, userID)
 }
 
 // // SaveSecret saves the provided secret to the database.

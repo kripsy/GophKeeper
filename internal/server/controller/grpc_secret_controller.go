@@ -18,50 +18,96 @@ import (
 )
 
 type SecretUseCase interface {
-	MiltipartUploadFile(context.Context, <-chan *models.MiltipartUploadFileData) (bool, error)
+	MiltipartUploadFile(context.Context, <-chan *models.MiltipartUploadFileData, string) (bool, error)
+	CreateBucketSecret(ctx context.Context, username string, userID int) (bool, error)
 }
 
 func (s *GrpcServer) MiltipartUploadFile(stream pb.GophKeeperService_MiltipartUploadFileServer) error {
 	s.logger.Debug("Start MiltipartUploadFile")
 
-	var username string
-	var userID int
-	var once sync.Once
+	ctx := stream.Context()
+	userID, ok := utils.ExtractUserIDFromContext(ctx)
+	if !ok {
+		s.logger.Error("cannot get userID from context")
+
+		return status.Errorf(codes.Internal, "Failed to extract userID")
+	}
+
+	username, ok := utils.ExtractUsernameFromContext(ctx)
+	if !ok {
+		s.logger.Error("cannot get username from context")
+
+		return status.Errorf(codes.Internal, "Failed to extract username")
+	}
+
+	bucketName, err := utils.FromUser2BucketName(ctx, username, userID)
+	if err != nil {
+		s.logger.Error("cannot get bucketName")
+
+		return status.Errorf(codes.Internal, "Failed to extract bucketName")
+	}
+	s.logger.Debug("bucket name", zap.String("msg", bucketName))
+
+	// var once sync.Once
+	s.logger.Debug("", zap.Any("FUCK", stream.Context()))
 
 	reqChan := make(chan *models.MiltipartUploadFileData, 1)
 
 	errChan := make(chan error, 1)
+	var wg sync.WaitGroup
+	wg.Add(1)
 
 	go func() {
-		defer close(reqChan)
+		defer wg.Done()
 		defer close(errChan)
+		defer close(reqChan)
 		for {
 			req, err := stream.Recv()
 			if err == io.EOF {
 				return
 			}
 			if err != nil {
+				s.logger.Error("Error get data from stream", zap.Error(err))
 				errChan <- err
 				return
 			}
 			val, err := uuid.Parse(req.Guid)
 			if err != nil {
+				s.logger.Error("Couldn't parse GUID", zap.Error(err))
+
 				errChan <- err
 				return
 			}
 			if isEnabled, _ := s.syncStatus.IsSyncExists(userID, val); !isEnabled {
+				s.logger.Error("You should block resource before use it", zap.Error(err))
 				errChan <- errors.New("You should block resource before use it")
 				return
 			}
-			once.Do(func() {
-				_username, ok := utils.ExtractUsernameFromContext(stream.Context())
-				if !ok {
-					errChan <- errors.New("Couldn't get userID from context")
-					return
-				}
-				username = _username
-				s.logger.Debug("Username from req", zap.String("msg", username))
-			})
+			// once.Do(func() {
+			// 	userID, ok := utils.ExtractUserIDFromContext(stream.Context())
+			// 	if !ok {
+			// 		s.logger.Error("Couldn't get userID from context", zap.Error(err))
+			// 		errChan <- errors.New("Couldn't get userID from context")
+
+			// 		return
+			// 	}
+			// 	username_, ok := utils.ExtractUsernameFromContext(stream.Context())
+			// 	if !ok {
+			// 		s.logger.Error("Couldn't get username from context", zap.Error(err))
+			// 		errChan <- errors.New("Couldn't get username from context")
+
+			// 		return
+			// 	}
+			// 	bucketName_, err := utils.FromUser2BucketName(stream.Context(), username, userID)
+			// 	if err != nil {
+			// 		s.logger.Error("Couldn't get bucketName", zap.Error(err))
+			// 		errChan <- errors.New("Couldn't get bucketName")
+
+			// 		return
+			// 	}
+			// 	bucketName = bucketName_
+			// 	username = username_
+			// })
 
 			reqChan <- &models.MiltipartUploadFileData{
 				Content:  req.GetContent(),
@@ -73,25 +119,21 @@ func (s *GrpcServer) MiltipartUploadFile(stream pb.GophKeeperService_MiltipartUp
 		}
 	}()
 
-	success, err := s.secretUseCase.MiltipartUploadFile(stream.Context(), reqChan)
+	success, err := s.secretUseCase.MiltipartUploadFile(stream.Context(), reqChan, bucketName)
 	if err != nil {
 		s.logger.Error("Error in s.secretUseCase.MiltipartUploadFile", zap.Error(err))
 
 		return err
 	}
-
-	select {
-	case err := <-errChan:
-		return err
-	default:
-	}
-
 	if !success {
+		s.logger.Error("failed upload file", zap.Error(err))
+
 		return status.Errorf(codes.Internal, "Failed to upload file")
 	}
+	s.logger.Debug("end upload")
 
 	return stream.SendAndClose(&pb.MiltipartUploadFileResponse{
-		FileId: "123",
+		FileId: "1",
 	})
 }
 
@@ -103,8 +145,14 @@ func (s *GrpcServer) BlockStore(stream pb.GophKeeperService_BlockStoreServer) er
 	reqChan := make(chan *pb.BlockStoreRequest)
 
 	var guid uuid.UUID
-	var userID int
-	userID = 0
+	ctx := stream.Context()
+	userID, ok := utils.ExtractUserIDFromContext(ctx)
+	if !ok {
+		s.logger.Error("cannot get userID from context")
+
+		return status.Errorf(codes.Internal, "Failed to extract userID")
+	}
+
 	var once sync.Once
 	var syncEnable bool
 	defer func() {
@@ -150,7 +198,7 @@ func (s *GrpcServer) BlockStore(stream pb.GophKeeperService_BlockStoreServer) er
 				}
 				guid = val
 				syncEnable, _ = s.syncStatus.AddSync(userID, val)
-				s.logger.Error("Sync", zap.Bool("msg", syncEnable))
+				s.logger.Debug("Sync", zap.Bool("msg", syncEnable))
 			})
 			if !syncEnable {
 				s.logger.Error("Sync not enabled")

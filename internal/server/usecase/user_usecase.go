@@ -40,18 +40,18 @@ func InitUseCases(ctx context.Context, db UserRepository, secret string, tokenEx
 // At the first step we check is user exists. If exists - return error conflict.
 // If user not exists we get new user ID.
 // After register new user we generate new jwt token.
-func (uc *userUseCase) RegisterUser(ctx context.Context, user entity.User) (string, error) {
+func (uc *userUseCase) RegisterUser(ctx context.Context, user entity.User) (string, int, error) {
 	userID, err := uc.db.RegisterUser(ctx, user)
 	if err != nil {
-		return "", fmt.Errorf("%w", err)
+		return "", 0, fmt.Errorf("%w", err)
 	}
 
 	token, err := utils.BuildJWTString(userID, user.Username, uc.secret, uc.tokenExp)
 	if err != nil {
-		return "", fmt.Errorf("%w", err)
+		return "", 0, fmt.Errorf("%w", err)
 	}
 
-	return token, nil
+	return token, userID, nil
 }
 
 // LoginUser authenticates a user based on the provided credentials.
@@ -73,16 +73,16 @@ func (uc *userUseCase) RegisterUser(ctx context.Context, user entity.User) (stri
 //	}
 //
 // fmt.Println("Generated JWT token:", token)
-func (uc *userUseCase) LoginUser(ctx context.Context, user entity.User) (string, error) {
+func (uc *userUseCase) LoginUser(ctx context.Context, user entity.User) (string, int, error) {
 	userID, err := uc.db.LoginUser(ctx, user)
 	if err != nil {
-		return "", fmt.Errorf("%w", err)
+		return "", 0, fmt.Errorf("%w", err)
 	}
 
 	token, err := utils.BuildJWTString(userID, user.Username, uc.secret, uc.tokenExp)
 	if err != nil {
-		return "", fmt.Errorf("%w", err)
+		return "", 0, fmt.Errorf("%w", err)
 	}
 
-	return token, nil
+	return token, userID, nil
 }

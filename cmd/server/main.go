@@ -77,7 +77,7 @@ func main() {
 	l.Debug("Start init minio repository")
 	ctxCreateBucket, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
-	secretRepo, err := infrastructure.NewMinioRepository(
+	minioRepo, err := infrastructure.NewMinioRepository(
 		ctxCreateBucket,
 		cfg.EndpointMinio,
 		cfg.AccessKeyIDMinio,
@@ -100,14 +100,13 @@ func main() {
 	}
 	l.Debug("userUseCase initialized")
 
-	secretUseCase, err := usecase.InitSecretUseCases(ctx, userRepo, secretRepo, l)
+	secretUseCase, err := usecase.InitSecretUseCases(ctx, userRepo, minioRepo, l)
 	if err != nil {
 		l.Error("error create user usecase instance", zap.String("msg", err.Error()))
 		os.Exit(1)
 	}
 	l.Debug("secretUseCase initialized")
 
-	// s := controller.InitNewServer(userUseCase, secretUseCase, cfg.Secret, l)
 	s, err := controller.InitGrpcServer(userUseCase, secretUseCase, cfg.Secret, cfg.IsSecure, l)
 
 	if err != nil {

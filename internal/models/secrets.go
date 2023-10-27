@@ -7,3 +7,8 @@ type MiltipartUploadFileData struct {
 	Hash     string
 	Username string
 }
+
+type ObjectPart struct {
+	PartNumber int
+	ETag       string
+}
