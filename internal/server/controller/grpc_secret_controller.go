@@ -48,8 +48,10 @@ func (s *GrpcServer) MiltipartUploadFile(stream pb.GophKeeperService_MiltipartUp
 	}
 	s.logger.Debug("bucket name", zap.String("msg", bucketName))
 
-	// var once sync.Once
+	var once sync.Once
 	s.logger.Debug("", zap.Any("FUCK", stream.Context()))
+
+	var fileID string
 
 	reqChan := make(chan *models.MiltipartUploadFileData, 1)
 
@@ -83,31 +85,10 @@ func (s *GrpcServer) MiltipartUploadFile(stream pb.GophKeeperService_MiltipartUp
 				errChan <- errors.New("You should block resource before use it")
 				return
 			}
-			// once.Do(func() {
-			// 	userID, ok := utils.ExtractUserIDFromContext(stream.Context())
-			// 	if !ok {
-			// 		s.logger.Error("Couldn't get userID from context", zap.Error(err))
-			// 		errChan <- errors.New("Couldn't get userID from context")
+			once.Do(func() {
+				fileID = req.GetFileName()
 
-			// 		return
-			// 	}
-			// 	username_, ok := utils.ExtractUsernameFromContext(stream.Context())
-			// 	if !ok {
-			// 		s.logger.Error("Couldn't get username from context", zap.Error(err))
-			// 		errChan <- errors.New("Couldn't get username from context")
-
-			// 		return
-			// 	}
-			// 	bucketName_, err := utils.FromUser2BucketName(stream.Context(), username, userID)
-			// 	if err != nil {
-			// 		s.logger.Error("Couldn't get bucketName", zap.Error(err))
-			// 		errChan <- errors.New("Couldn't get bucketName")
-
-			// 		return
-			// 	}
-			// 	bucketName = bucketName_
-			// 	username = username_
-			// })
+			})
 
 			reqChan <- &models.MiltipartUploadFileData{
 				Content:  req.GetContent(),
@@ -133,7 +114,7 @@ func (s *GrpcServer) MiltipartUploadFile(stream pb.GophKeeperService_MiltipartUp
 	s.logger.Debug("end upload")
 
 	return stream.SendAndClose(&pb.MiltipartUploadFileResponse{
-		FileId: "1",
+		FileId: fileID,
 	})
 }
 
