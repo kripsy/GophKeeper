@@ -12,9 +12,18 @@ import (
 	"golang.org/x/crypto/scrypt"
 )
 
+const (
+	AUTHORIZATIONHEADER = "authorization"
+	TOKENPREFIX         = ""
+	TOKENCONTEXTKEY     = "token"
+	USERNAMECONTEXTKEY  = "username"
+	USERIDCONTEXTKEY    = "userID"
+)
+
 type Claims struct {
 	jwt.RegisteredClaims
-	UserID int
+	UserID   int
+	Username string
 }
 
 func GetHash(ctx context.Context, password string, logger *zap.Logger) (string, error) {
@@ -30,12 +39,13 @@ func GetHash(ctx context.Context, password string, logger *zap.Logger) (string, 
 
 }
 
-func BuildJWTString(userID int, secretKey string, tokenExp time.Duration) (string, error) {
+func BuildJWTString(userID int, username, secretKey string, tokenExp time.Duration) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExp)),
 		},
-		UserID: userID,
+		UserID:   userID,
+		Username: username,
 	})
 
 	tokenString, err := token.SignedString([]byte(secretKey))
@@ -76,7 +86,22 @@ func IsValidToken(tokenString string, secret string) (bool, error) {
 	return true, nil
 }
 
-func GetUserIDFromToken(tokenString, secretKey string) (int, error) {
+func GetUsernameFromToken(tokenString, secretKey string) (string, error) {
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
+		return []byte(secretKey), nil
+	})
+	if err != nil {
+		return "", fmt.Errorf("%w", err)
+	}
+
+	if !token.Valid {
+		return "", fmt.Errorf("%w", err)
+	}
+
+	return claims.Username, nil
+}
+func GetUseIDFromToken(tokenString, secretKey string) (int, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
 		return []byte(secretKey), nil
@@ -108,4 +133,21 @@ func DeriveKey(password, salt string) ([]byte, error) {
 	}
 
 	return key, nil
+}
+
+func ExtractTokenFromContext(ctx context.Context) (string, bool) {
+	token, ok := ctx.Value(TOKENCONTEXTKEY).(string)
+	return token, ok
+}
+
+func ExtractUsernameFromContext(ctx context.Context) (string, bool) {
+	username, ok := ctx.Value(USERNAMECONTEXTKEY).(string)
+	fmt.Println(ctx.Value("username"))
+	return username, ok
+}
+
+func ExtractUserIDFromContext(ctx context.Context) (int, bool) {
+	userID, ok := ctx.Value(USERIDCONTEXTKEY).(int)
+	fmt.Println(ctx.Value("userID"))
+	return userID, ok
 }

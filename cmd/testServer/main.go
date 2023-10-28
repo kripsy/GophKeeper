@@ -5,11 +5,13 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
+	"google.golang.org/grpc"
 )
 
 const BUCKETNAME = "secrets"
@@ -48,6 +50,77 @@ func initMinioRepo(endpoint, accessKeyID, secretAccessKey string, isUseSSL bool)
 }
 
 func main() {
+
+	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("did not connect: %v", err)
+	}
+	defer conn.Close()
+
+	// client := pb.NewGophKeeperServiceClient(conn)
+
+	// stream, err := client.BlockStore(context.Background())
+	// if err != nil {
+	// 	log.Fatalf("Error opening stream: %v", err)
+	// }
+
+	// go func(stream pb.GophKeeperService_BlockStoreClient) {
+	// 	for {
+	// 		select {
+	// 		case <-stream.Context().Done():
+	// 			fmt.Println("stream canceled")
+
+	// 			return
+	// 		default:
+	// 			connState := conn.GetState()
+	// 			if connState != connectivity.Ready {
+	// 				fmt.Println("stream canceled or not ready")
+
+	// 				return
+	// 			}
+	// 			fmt.Println("all ok")
+	// 			fmt.Println(conn.GetState())
+	// 			time.Sleep(1 * time.Second)
+	// 		}
+	// 	}
+	// }(stream)
+
+	go func() {
+		for {
+			fmt.Println(conn.GetState())
+			time.Sleep(1 * time.Second)
+		}
+	}()
+
+	// // Отправка нескольких BlockStoreRequest сообщений
+	// for i := 0; i < 10000; i++ {
+	// 	req := &pb.BlockStoreRequest{
+	// 		Guid:     "guid-" + string(i),
+	// 		IsFinish: false,
+	// 	}
+	// 	if err := stream.Send(req); err != nil {
+	// 		log.Fatalf("Failed to send request: %v", err)
+	// 	}
+	// 	time.Sleep(2 * time.Second) // Задержка между отправкой сообщений
+	// }
+
+	// // Завершение стрима с is_finish = true
+	// if err := stream.Send(&pb.BlockStoreRequest{Guid: "final-guid", IsFinish: true}); err != nil {
+	// 	log.Fatalf("Failed to send final request: %v", err)
+	// }
+
+	// // Получение ответа
+	// resp, err := stream.CloseAndRecv()
+	// if err != nil {
+	// 	log.Fatalf("Failed to receive response: %v", err)
+	// }
+	// log.Printf("Response: %s", resp.Status)
+
+	// Для демонстрации: ожидание, чтобы увидеть, как "keepalive" работает
+	time.Sleep(3000 * time.Second)
+}
+
+func main_minio() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	m, err := initMinioRepo(ENDPOINT, ACCESSKEYID, SECRETACCESSKEY, ISUSESSL)

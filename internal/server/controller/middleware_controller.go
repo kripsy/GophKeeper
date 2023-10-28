@@ -37,7 +37,7 @@ func TokenAuthMiddleware(logger *zap.Logger, secret string) echo.MiddlewareFunc 
 
 				if isValid {
 					// If the token is valid, proceed with the next handler
-					userID, err := utils.GetUserIDFromToken(token, secret)
+					// userID, err := utils.GetUserIDFromToken(token, secret)
 					if err != nil {
 						logger.Error("Error get userID from token")
 
@@ -46,7 +46,7 @@ func TokenAuthMiddleware(logger *zap.Logger, secret string) echo.MiddlewareFunc 
 							Error: "Error get userID from token",
 						})
 					}
-					c.Set("user_id", userID)
+					c.Set("user_id", "userID")
 
 					return next(c)
 				}

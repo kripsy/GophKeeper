@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/bufbuild/protovalidate-go"
+	"github.com/golang/protobuf/ptypes/empty"
 	pb "github.com/kripsy/GophKeeper/gen/pkg/api/GophKeeper/v1"
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/kripsy/GophKeeper/internal/server/entity"
@@ -32,7 +33,7 @@ func (s *GrpcServer) Register(ctx context.Context, req *pb.AuthRequest) (*pb.Aut
 		return nil, status.Error(codes.InvalidArgument, "Invalid request payload")
 	}
 
-	token, err := s.userUseCase.RegisterUser(ctx, user)
+	token, userID, err := s.userUseCase.RegisterUser(ctx, user)
 	if err != nil {
 		var userUniqueError *models.UserExistsError
 		if errors.As(err, &userUniqueError) {
@@ -43,6 +44,13 @@ func (s *GrpcServer) Register(ctx context.Context, req *pb.AuthRequest) (*pb.Aut
 		s.logger.Error("Failed to RegisterUser user", zap.Error(err))
 
 		return nil, status.Error(codes.InvalidArgument, "Invalid request payload")
+	}
+
+	_, err = s.secretUseCase.CreateBucketSecret(ctx, user.Username, userID)
+	if err != nil {
+		s.logger.Debug("Failed to CreateBucketSecret", zap.Error(err))
+
+		return nil, fmt.Errorf("%w", status.Error(codes.Internal, err.Error()))
 	}
 
 	return &pb.AuthResponse{
@@ -68,14 +76,27 @@ func (s *GrpcServer) Login(ctx context.Context, req *pb.AuthRequest) (*pb.AuthRe
 		return nil, status.Error(codes.InvalidArgument, "Invalid request payload")
 	}
 
-	token, err := s.userUseCase.LoginUser(ctx, user)
+	token, userID, err := s.userUseCase.LoginUser(ctx, user)
 	if err != nil {
 		s.logger.Error("Failed to LoginUser user", zap.Error(err))
 
 		return nil, status.Error(codes.Unauthenticated, "Failed to login")
 	}
 
+	_, err = s.secretUseCase.CreateBucketSecret(ctx, user.Username, userID)
+	if err != nil {
+		s.logger.Debug("Failed to CreateBucketSecret", zap.Error(err))
+
+		return nil, fmt.Errorf("%w", status.Error(codes.Internal, err.Error()))
+	}
+
 	return &pb.AuthResponse{
 		Token: token,
 	}, nil
+}
+
+func (s *GrpcServer) Ping(ctx context.Context, req *empty.Empty) (*empty.Empty, error) {
+	s.logger.Debug("start Ping")
+
+	return &empty.Empty{}, nil
 }

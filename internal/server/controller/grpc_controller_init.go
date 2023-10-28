@@ -13,6 +13,8 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
+const maxStreams = 20
+
 type GrpcServer struct {
 	pb.UnimplementedGophKeeperServiceServer
 	logger        *zap.Logger
@@ -23,8 +25,8 @@ type GrpcServer struct {
 }
 
 type UserUseCase interface {
-	RegisterUser(ctx context.Context, user entity.User) (string, error)
-	LoginUser(ctx context.Context, user entity.User) (string, error)
+	RegisterUser(ctx context.Context, user entity.User) (string, int, error)
+	LoginUser(ctx context.Context, user entity.User) (string, int, error)
 }
 
 func InitGrpcServer(userUseCase UserUseCase, secretUseCase SecretUseCase, secret string, isSecure bool, logger *zap.Logger) (*grpc.Server, error) {
@@ -37,7 +39,7 @@ func InitGrpcServer(userUseCase UserUseCase, secretUseCase SecretUseCase, secret
 		syncStatus:    syncStatus,
 	}
 
-	m := InitMyMiddleware(logger)
+	m := InitMyMiddleware(logger, secret)
 
 	interceptors := []grpc.UnaryServerInterceptor{m.AuthInterceptor}
 
@@ -50,10 +52,16 @@ func InitGrpcServer(userUseCase UserUseCase, secretUseCase SecretUseCase, secret
 
 			return nil, fmt.Errorf("%w", err)
 		}
-		srv = grpc.NewServer(grpc.Creds(creds), grpc.UnaryInterceptor(grpcmiddleware.ChainUnaryServer(interceptors...)))
+		srv = grpc.NewServer(grpc.Creds(creds), grpc.UnaryInterceptor(grpcmiddleware.ChainUnaryServer(interceptors...)),
+			grpc.MaxConcurrentStreams(maxStreams),
+			grpc.StreamInterceptor(m.StreamAuthInterceptor),
+		)
 	} else {
 		logger.Debug("no secure grpc")
-		srv = grpc.NewServer(grpc.UnaryInterceptor(grpcmiddleware.ChainUnaryServer(interceptors...)))
+		srv = grpc.NewServer(grpc.UnaryInterceptor(grpcmiddleware.ChainUnaryServer(interceptors...)),
+			grpc.MaxConcurrentStreams(maxStreams),
+			grpc.StreamInterceptor(m.StreamAuthInterceptor),
+		)
 	}
 
 	pb.RegisterGophKeeperServiceServer(srv, s)
