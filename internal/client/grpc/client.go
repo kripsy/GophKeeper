@@ -7,6 +7,7 @@ import (
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type Client interface {
@@ -57,11 +58,14 @@ func (c *Grpc) TryToConnect() bool {
 		return false
 	}
 
-	//ping
-
 	c.conn = conn
 	c.Client = pb.NewGophKeeperServiceClient(conn)
-	c.isAvailable = true
 
+	s, err := c.Client.Ping(context.Background(), &emptypb.Empty{})
+	if err != nil {
+		return false
+	}
+	_ = s
+	c.isAvailable = true
 	return true
 }
