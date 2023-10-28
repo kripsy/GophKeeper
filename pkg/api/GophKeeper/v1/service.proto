@@ -13,6 +13,7 @@ service GophKeeperService {
   rpc Login(AuthRequest) returns (AuthResponse);
   rpc MiltipartUploadFile(stream MiltipartUploadFileRequest)
       returns (MiltipartUploadFileResponse);
+  rpc BlockStore(stream BlockStoreRequest) returns (BlockStoreResponse);
 }
 
 message AuthRequest {
@@ -25,7 +26,16 @@ message AuthResponse {
 
 message MiltipartUploadFileRequest {
   bytes content = 1;
-  string fileName = 2;
+  string file_name = 2 [ (buf.validate.field).string.min_len = 1 ];
+  string guid = 3 [ (buf.validate.field).string.min_len = 1 ];
+  string hash = 4 [ (buf.validate.field).string.min_len = 1 ];
 }
 
 message MiltipartUploadFileResponse { string fileId = 1; }
+
+message BlockStoreRequest {
+  string guid = 1 [ (buf.validate.field).string.min_len = 1 ];
+  bool is_finish = 2;
+}
+
+message BlockStoreResponse { string status = 1; }
