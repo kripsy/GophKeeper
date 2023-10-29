@@ -5,21 +5,24 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"io"
+	"sort"
+	"strings"
 	"sync"
 
-	"github.com/google/uuid"
 	"github.com/kripsy/GophKeeper/internal/models"
-	"github.com/kripsy/GophKeeper/internal/server/entity"
+	"github.com/kripsy/GophKeeper/internal/utils"
 	"go.uber.org/zap"
 )
 
 type MinioRepository interface {
-	MiltipartUploadFile(context.Context, *models.MiltipartUploadFileData, int, string) (*models.ObjectPart, error)
+	MultipartUploadFile(context.Context, *models.MultipartUploadFileData, int, string) (*models.ObjectPart, error)
 	CreateBucketSecret(ctx context.Context, username string, userID int) (bool, error)
-	// SaveSecret(ctx context.Context, secret entity.Secret) (int, error)
-	// GetSecretByID(ctx context.Context, secretID, userID int) (entity.Secret, error)
-	// DeleteSecret(ctx context.Context, secretID int) error
-	// GetSecretsByUserID(ctx context.Context, userID, limit, offset int) ([]entity.Secret, error)
+	GetObject(ctx context.Context, bucketName, filename string) (*[]byte, string, error)
+	ListObjects(ctx context.Context, bucketName, prefix string) (*[]string, error)
+	CopyRCFiles(ctx context.Context, bucketName string) error
+	DeleteFilesWithoutRC(ctx context.Context, bucketName string) error
+	DiscardChanges(ctx context.Context, bucketName string) error
 }
 
 type secretUseCase struct {
@@ -39,13 +42,13 @@ func InitSecretUseCases(ctx context.Context, userRepo UserRepository, secretRepo
 	return uc, nil
 }
 
-func (uc *secretUseCase) MiltipartUploadFile(ctx context.Context, dataChan <-chan *models.MiltipartUploadFileData, bucketName string) (bool, error) {
+func (uc *secretUseCase) MultipartUploadFile(ctx context.Context, dataChan <-chan *models.MultipartUploadFileData, bucketName string) (bool, error) {
 
 	parts := []models.ObjectPart{}
 	var partNum int
 	var fileName string
 
-	uc.logger.Debug("MiltipartUploadFile", zap.String("bucketname", bucketName))
+	uc.logger.Debug("MultipartUploadFile", zap.String("bucketname", bucketName))
 	var once sync.Once
 
 loop:
@@ -59,7 +62,7 @@ loop:
 			uc.logger.Debug("we got simple data", zap.Any("context", data))
 
 			partNum++
-			part, err := uc.secretRepo.MiltipartUploadFile(ctx, data, partNum, bucketName)
+			part, err := uc.secretRepo.MultipartUploadFile(ctx, data, partNum, bucketName)
 			if err != nil {
 				uc.logger.Error("Error upload in usecase", zap.Error(err))
 
@@ -72,7 +75,7 @@ loop:
 			})
 
 		case <-ctx.Done():
-			uc.logger.Debug("ctx in MiltipartUploadFile usecase exeed")
+			uc.logger.Debug("ctx in MultipartUploadFile usecase exeed")
 
 			uc.logger.Debug("send empty to dataIdChan from usecase")
 			return false, ctx.Err()
@@ -83,70 +86,108 @@ loop:
 	return true, nil
 }
 
-func (uc *secretUseCase) FinishSaveMultipartSecret(ctx context.Context, secret entity.Secret) (uuid.UUID, error) {
-	id, err := uuid.NewRandom()
-	if err != nil {
-		uc.logger.Error(err.Error())
-
-		return uuid.UUID{}, fmt.Errorf("%w", err)
-	}
-	return id, nil
-}
-
 func (uc *secretUseCase) CreateBucketSecret(ctx context.Context, username string, userID int) (bool, error) {
 	return uc.secretRepo.CreateBucketSecret(ctx, username, userID)
 }
 
-// // SaveSecret saves the provided secret to the database.
-// // Returns the ID of the saved secret.
-// func (uc *secretUseCase) SaveTextSecret(ctx context.Context, secret entity.Secret) (int, error) {
-// 	encryptedData, err := utils.Encrypt(secret.Data, uc.cipherSecret)
-// 	if err != nil {
-// 		return 0, err
-// 	}
-// 	secret.Data = encryptedData
+func (uc *secretUseCase) MultipartDownloadFile(ctx context.Context, req *models.MultipartDownloadFileRequest,
+	bucketName string) (chan *models.MultipartDownloadFileResponse, chan error) {
 
-// 	id, err := uc.db.SaveSecret(ctx, secret)
-// 	if err != nil {
-// 		uc.logger.Error("Error save secret in db", zap.Error(err))
+	dataChan := make(chan *models.MultipartDownloadFileResponse)
+	errChan := make(chan error)
 
-// 		return 0, fmt.Errorf("%w", err)
-// 	}
-// 	// Сохранение секрета в репозитории
+	go func() {
+		defer close(dataChan)
+		defer close(errChan)
 
-// 	return id, nil
-// }
+		// 1. Get list files by `filename-part-*`.
+		prefix := fmt.Sprintf("%s-part-", req.FileName)
+		objectsCh, err := uc.secretRepo.ListObjects(ctx, bucketName, prefix)
+		if err != nil {
+			uc.logger.Error("Error in uc.secretRepo.ListObjects")
+			errChan <- err
+			return
+		}
 
-// func (uc *secretUseCase) GetSecretsByUserID(ctx context.Context, userID, limit, offset int) ([]entity.Secret, error) {
-// 	secrets, err := uc.db.GetSecretsByUserID(ctx, userID, limit, offset)
-// 	if err != nil {
-// 		return []entity.Secret{}, fmt.Errorf("%w", err)
-// 	}
-// 	return secrets, nil
-// }
+		var objectNames []string
+		for _, object := range *objectsCh {
+			// remove files with postfix .rc
+			if !strings.HasSuffix(object, ".rc") {
+				uc.logger.Debug("added into objectNames", zap.String("object", object))
+				objectNames = append(objectNames, object)
+			}
+		}
 
-// // d, _ := utils.Decrypt(encryptedData, uc.cipherSecret)
+		// sort list
+		sort.Slice(objectNames, func(i, j int) bool {
+			iPartNum := utils.ExtractPartNumber(objectNames[i])
+			jPartNum := utils.ExtractPartNumber(objectNames[j])
+			return iPartNum < jPartNum
+		})
 
-// // GetSecret retrieves a secret based on the provided secretID.
-// func (uc *secretUseCase) GetSecretByID(ctx context.Context, secretID, userID int) (entity.Secret, error) {
-// 	secret, err := uc.db.GetSecretByID(ctx, secretID, userID)
-// 	if err != nil {
-// 		return entity.Secret{}, fmt.Errorf("%w", err)
-// 	}
-// 	decryptedData, err := utils.Decrypt(secret.Data, uc.cipherSecret)
-// 	if err != nil {
-// 		return entity.Secret{}, err
-// 	}
-// 	secret.Data = decryptedData
+		uc.logger.Debug("sorted slice", zap.Any("msg", objectNames))
+		// read list and send into chan
+		for _, objectName := range objectNames {
+			select {
+			case <-ctx.Done():
+				// If the context is done, exit the goroutine
+				uc.logger.Debug("Context is done")
+				errChan <- ctx.Err()
 
-// 	return secret, nil
-// }
+				return
+			default:
+				objectContent, hash, err := uc.secretRepo.GetObject(ctx, bucketName, objectName)
+				if err != nil {
+					uc.logger.Error("Error in uc.secretRepo.GetObject", zap.Error(err))
+					errChan <- err
 
-// // DeleteSecret deletes a secret based on the provided secretID.
-// func (uc *secretUseCase) DeleteSecret(ctx context.Context, secretID int) error {
-// 	err := uc.db.DeleteSecret(ctx, secretID)
-// 	if err != nil {
-// 		return fmt.Errorf("%w", err)
-// 	}
-// 	return nil
-// }
+					return
+				}
+
+				data := &models.MultipartDownloadFileResponse{
+					Content:  *objectContent,
+					FileName: req.FileName,
+					Guid:     req.Guid,
+					Hash:     hash,
+				}
+				dataChan <- data
+			}
+		}
+		errChan <- io.EOF
+	}()
+
+	return dataChan, errChan
+}
+
+func (uc *secretUseCase) ApplyChanges(ctx context.Context, bucketName string) (bool, error) {
+	uc.logger.Debug("Start ApplyChanges")
+	err := uc.secretRepo.CopyRCFiles(ctx, bucketName)
+	uc.logger.Debug("End CopyRCFiles")
+	if err != nil {
+		uc.logger.Error("Error in ApplyChanges", zap.Error(err))
+
+		return false, err
+	}
+
+	uc.logger.Debug("Start DeleteFilesWithoutRC")
+	err = uc.secretRepo.DeleteFilesWithoutRC(ctx, bucketName)
+	uc.logger.Debug("End DeleteFilesWithoutRC")
+	if err != nil {
+		uc.logger.Error("Error in DeleteFilesWithoutRC", zap.Error(err))
+
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (uc *secretUseCase) DiscardChanges(ctx context.Context, bucketName string) (bool, error) {
+	err := uc.secretRepo.DiscardChanges(ctx, bucketName)
+	if err != nil {
+		uc.logger.Error("Error in discard changes - usecase", zap.Error(err))
+
+		return false, err
+	}
+
+	return true, nil
+}
