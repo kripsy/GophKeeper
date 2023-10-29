@@ -1,6 +1,6 @@
 package models
 
-type MiltipartUploadFileData struct {
+type MultipartUploadFileData struct {
 	Content  []byte
 	FileName string
 	Guid     string
@@ -11,4 +11,17 @@ type MiltipartUploadFileData struct {
 type ObjectPart struct {
 	PartNumber int
 	ETag       string
+}
+
+type MultipartDownloadFileResponse struct {
+	Content  []byte
+	FileName string
+	Guid     string
+	Hash     string
+}
+
+type MultipartDownloadFileRequest struct {
+	FileName string
+	Guid     string
+	Hash     string
 }

@@ -26,6 +26,12 @@ var (
 	instance *MyMiddleware
 )
 
+const (
+	loginMethod    = "/pkg.api.gophkeeper.v1.GophKeeperService/Login"
+	registerMethod = "/pkg.api.gophkeeper.v1.GophKeeperService/Register"
+	pingMethod     = "/pkg.api.gophkeeper.v1.GophKeeperService/Ping"
+)
+
 func InitMyMiddleware(myLogger *zap.Logger, secret string) *MyMiddleware {
 	once.Do(func() {
 		instance = &MyMiddleware{
@@ -38,9 +44,12 @@ func InitMyMiddleware(myLogger *zap.Logger, secret string) *MyMiddleware {
 }
 
 func (m MyMiddleware) AuthInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+
 	switch info.FullMethod {
-	case "/pkg.api.gophkeeper.v1.GophKeeperService/Login", "/pkg.api.gophkeeper.v1.GophKeeperService/Register":
-		m.myLogger.Debug("No protected method")
+	case loginMethod,
+		registerMethod,
+		pingMethod:
+		m.myLogger.Debug("No protected method", zap.String("method", info.FullMethod))
 
 		return handler(ctx, req)
 	}
@@ -84,11 +93,14 @@ func (m MyMiddleware) StreamAuthInterceptor(srv interface{}, ss grpc.ServerStrea
 	// Получаем контекст из потокового сервера
 	ctx := ss.Context()
 
-	switch info.FullMethod {
-	case "/pkg.api.gophkeeper.v1.GophKeeperService/LoginStream", "/pkg.api.gophkeeper.v1.GophKeeperService/RegisterStream":
-		m.myLogger.Debug("No protected method")
-		return handler(srv, ss)
-	}
+	// switch info.FullMethod {
+	// case "/pkg.api.gophkeeper.v1.GophKeeperService/LoginStream",
+	// 	"/pkg.api.gophkeeper.v1.GophKeeperService/RegisterStream",
+	// 	"/pkg.api.gophkeeper.v1.GophKeeperService/Ping":
+	// 	m.myLogger.Debug("No protected method", zap.String("method", info.FullMethod))
+
+	// 	return handler(srv, ss)
+	// }
 
 	m.myLogger.Debug("Protected method")
 	m.myLogger.Debug(info.FullMethod)

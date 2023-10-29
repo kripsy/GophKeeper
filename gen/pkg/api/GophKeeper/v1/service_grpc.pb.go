@@ -20,11 +20,12 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	GophKeeperService_Register_FullMethodName            = "/pkg.api.gophkeeper.v1.GophKeeperService/Register"
-	GophKeeperService_Login_FullMethodName               = "/pkg.api.gophkeeper.v1.GophKeeperService/Login"
-	GophKeeperService_MiltipartUploadFile_FullMethodName = "/pkg.api.gophkeeper.v1.GophKeeperService/MiltipartUploadFile"
-	GophKeeperService_BlockStore_FullMethodName          = "/pkg.api.gophkeeper.v1.GophKeeperService/BlockStore"
-	GophKeeperService_Ping_FullMethodName                = "/pkg.api.gophkeeper.v1.GophKeeperService/Ping"
+	GophKeeperService_Register_FullMethodName              = "/pkg.api.gophkeeper.v1.GophKeeperService/Register"
+	GophKeeperService_Login_FullMethodName                 = "/pkg.api.gophkeeper.v1.GophKeeperService/Login"
+	GophKeeperService_MultipartUploadFile_FullMethodName   = "/pkg.api.gophkeeper.v1.GophKeeperService/MultipartUploadFile"
+	GophKeeperService_BlockStore_FullMethodName            = "/pkg.api.gophkeeper.v1.GophKeeperService/BlockStore"
+	GophKeeperService_Ping_FullMethodName                  = "/pkg.api.gophkeeper.v1.GophKeeperService/Ping"
+	GophKeeperService_MultipartDownloadFile_FullMethodName = "/pkg.api.gophkeeper.v1.GophKeeperService/MultipartDownloadFile"
 )
 
 // GophKeeperServiceClient is the client API for GophKeeperService service.
@@ -33,9 +34,10 @@ const (
 type GophKeeperServiceClient interface {
 	Register(ctx context.Context, in *AuthRequest, opts ...grpc.CallOption) (*AuthResponse, error)
 	Login(ctx context.Context, in *AuthRequest, opts ...grpc.CallOption) (*AuthResponse, error)
-	MiltipartUploadFile(ctx context.Context, opts ...grpc.CallOption) (GophKeeperService_MiltipartUploadFileClient, error)
+	MultipartUploadFile(ctx context.Context, opts ...grpc.CallOption) (GophKeeperService_MultipartUploadFileClient, error)
 	BlockStore(ctx context.Context, opts ...grpc.CallOption) (GophKeeperService_BlockStoreClient, error)
 	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	MultipartDownloadFile(ctx context.Context, in *MultipartDownloadFileRequest, opts ...grpc.CallOption) (GophKeeperService_MultipartDownloadFileClient, error)
 }
 
 type gophKeeperServiceClient struct {
@@ -64,34 +66,34 @@ func (c *gophKeeperServiceClient) Login(ctx context.Context, in *AuthRequest, op
 	return out, nil
 }
 
-func (c *gophKeeperServiceClient) MiltipartUploadFile(ctx context.Context, opts ...grpc.CallOption) (GophKeeperService_MiltipartUploadFileClient, error) {
-	stream, err := c.cc.NewStream(ctx, &GophKeeperService_ServiceDesc.Streams[0], GophKeeperService_MiltipartUploadFile_FullMethodName, opts...)
+func (c *gophKeeperServiceClient) MultipartUploadFile(ctx context.Context, opts ...grpc.CallOption) (GophKeeperService_MultipartUploadFileClient, error) {
+	stream, err := c.cc.NewStream(ctx, &GophKeeperService_ServiceDesc.Streams[0], GophKeeperService_MultipartUploadFile_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &gophKeeperServiceMiltipartUploadFileClient{stream}
+	x := &gophKeeperServiceMultipartUploadFileClient{stream}
 	return x, nil
 }
 
-type GophKeeperService_MiltipartUploadFileClient interface {
-	Send(*MiltipartUploadFileRequest) error
-	CloseAndRecv() (*MiltipartUploadFileResponse, error)
+type GophKeeperService_MultipartUploadFileClient interface {
+	Send(*MultipartUploadFileRequest) error
+	CloseAndRecv() (*MultipartUploadFileResponse, error)
 	grpc.ClientStream
 }
 
-type gophKeeperServiceMiltipartUploadFileClient struct {
+type gophKeeperServiceMultipartUploadFileClient struct {
 	grpc.ClientStream
 }
 
-func (x *gophKeeperServiceMiltipartUploadFileClient) Send(m *MiltipartUploadFileRequest) error {
+func (x *gophKeeperServiceMultipartUploadFileClient) Send(m *MultipartUploadFileRequest) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *gophKeeperServiceMiltipartUploadFileClient) CloseAndRecv() (*MiltipartUploadFileResponse, error) {
+func (x *gophKeeperServiceMultipartUploadFileClient) CloseAndRecv() (*MultipartUploadFileResponse, error) {
 	if err := x.ClientStream.CloseSend(); err != nil {
 		return nil, err
 	}
-	m := new(MiltipartUploadFileResponse)
+	m := new(MultipartUploadFileResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -141,15 +143,48 @@ func (c *gophKeeperServiceClient) Ping(ctx context.Context, in *emptypb.Empty, o
 	return out, nil
 }
 
+func (c *gophKeeperServiceClient) MultipartDownloadFile(ctx context.Context, in *MultipartDownloadFileRequest, opts ...grpc.CallOption) (GophKeeperService_MultipartDownloadFileClient, error) {
+	stream, err := c.cc.NewStream(ctx, &GophKeeperService_ServiceDesc.Streams[2], GophKeeperService_MultipartDownloadFile_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &gophKeeperServiceMultipartDownloadFileClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type GophKeeperService_MultipartDownloadFileClient interface {
+	Recv() (*MultipartDownloadFileResponse, error)
+	grpc.ClientStream
+}
+
+type gophKeeperServiceMultipartDownloadFileClient struct {
+	grpc.ClientStream
+}
+
+func (x *gophKeeperServiceMultipartDownloadFileClient) Recv() (*MultipartDownloadFileResponse, error) {
+	m := new(MultipartDownloadFileResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // GophKeeperServiceServer is the server API for GophKeeperService service.
 // All implementations must embed UnimplementedGophKeeperServiceServer
 // for forward compatibility
 type GophKeeperServiceServer interface {
 	Register(context.Context, *AuthRequest) (*AuthResponse, error)
 	Login(context.Context, *AuthRequest) (*AuthResponse, error)
-	MiltipartUploadFile(GophKeeperService_MiltipartUploadFileServer) error
+	MultipartUploadFile(GophKeeperService_MultipartUploadFileServer) error
 	BlockStore(GophKeeperService_BlockStoreServer) error
 	Ping(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
+	MultipartDownloadFile(*MultipartDownloadFileRequest, GophKeeperService_MultipartDownloadFileServer) error
 	mustEmbedUnimplementedGophKeeperServiceServer()
 }
 
@@ -163,14 +198,17 @@ func (UnimplementedGophKeeperServiceServer) Register(context.Context, *AuthReque
 func (UnimplementedGophKeeperServiceServer) Login(context.Context, *AuthRequest) (*AuthResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Login not implemented")
 }
-func (UnimplementedGophKeeperServiceServer) MiltipartUploadFile(GophKeeperService_MiltipartUploadFileServer) error {
-	return status.Errorf(codes.Unimplemented, "method MiltipartUploadFile not implemented")
+func (UnimplementedGophKeeperServiceServer) MultipartUploadFile(GophKeeperService_MultipartUploadFileServer) error {
+	return status.Errorf(codes.Unimplemented, "method MultipartUploadFile not implemented")
 }
 func (UnimplementedGophKeeperServiceServer) BlockStore(GophKeeperService_BlockStoreServer) error {
 	return status.Errorf(codes.Unimplemented, "method BlockStore not implemented")
 }
 func (UnimplementedGophKeeperServiceServer) Ping(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
+}
+func (UnimplementedGophKeeperServiceServer) MultipartDownloadFile(*MultipartDownloadFileRequest, GophKeeperService_MultipartDownloadFileServer) error {
+	return status.Errorf(codes.Unimplemented, "method MultipartDownloadFile not implemented")
 }
 func (UnimplementedGophKeeperServiceServer) mustEmbedUnimplementedGophKeeperServiceServer() {}
 
@@ -221,26 +259,26 @@ func _GophKeeperService_Login_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _GophKeeperService_MiltipartUploadFile_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(GophKeeperServiceServer).MiltipartUploadFile(&gophKeeperServiceMiltipartUploadFileServer{stream})
+func _GophKeeperService_MultipartUploadFile_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(GophKeeperServiceServer).MultipartUploadFile(&gophKeeperServiceMultipartUploadFileServer{stream})
 }
 
-type GophKeeperService_MiltipartUploadFileServer interface {
-	SendAndClose(*MiltipartUploadFileResponse) error
-	Recv() (*MiltipartUploadFileRequest, error)
+type GophKeeperService_MultipartUploadFileServer interface {
+	SendAndClose(*MultipartUploadFileResponse) error
+	Recv() (*MultipartUploadFileRequest, error)
 	grpc.ServerStream
 }
 
-type gophKeeperServiceMiltipartUploadFileServer struct {
+type gophKeeperServiceMultipartUploadFileServer struct {
 	grpc.ServerStream
 }
 
-func (x *gophKeeperServiceMiltipartUploadFileServer) SendAndClose(m *MiltipartUploadFileResponse) error {
+func (x *gophKeeperServiceMultipartUploadFileServer) SendAndClose(m *MultipartUploadFileResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *gophKeeperServiceMiltipartUploadFileServer) Recv() (*MiltipartUploadFileRequest, error) {
-	m := new(MiltipartUploadFileRequest)
+func (x *gophKeeperServiceMultipartUploadFileServer) Recv() (*MultipartUploadFileRequest, error) {
+	m := new(MultipartUploadFileRequest)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -291,6 +329,27 @@ func _GophKeeperService_Ping_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GophKeeperService_MultipartDownloadFile_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(MultipartDownloadFileRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(GophKeeperServiceServer).MultipartDownloadFile(m, &gophKeeperServiceMultipartDownloadFileServer{stream})
+}
+
+type GophKeeperService_MultipartDownloadFileServer interface {
+	Send(*MultipartDownloadFileResponse) error
+	grpc.ServerStream
+}
+
+type gophKeeperServiceMultipartDownloadFileServer struct {
+	grpc.ServerStream
+}
+
+func (x *gophKeeperServiceMultipartDownloadFileServer) Send(m *MultipartDownloadFileResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 // GophKeeperService_ServiceDesc is the grpc.ServiceDesc for GophKeeperService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -313,14 +372,19 @@ var GophKeeperService_ServiceDesc = grpc.ServiceDesc{
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "MiltipartUploadFile",
-			Handler:       _GophKeeperService_MiltipartUploadFile_Handler,
+			StreamName:    "MultipartUploadFile",
+			Handler:       _GophKeeperService_MultipartUploadFile_Handler,
 			ClientStreams: true,
 		},
 		{
 			StreamName:    "BlockStore",
 			Handler:       _GophKeeperService_BlockStore_Handler,
 			ClientStreams: true,
+		},
+		{
+			StreamName:    "MultipartDownloadFile",
+			Handler:       _GophKeeperService_MultipartDownloadFile_Handler,
+			ServerStreams: true,
 		},
 	},
 	Metadata: "pkg/api/GophKeeper/v1/service.proto",

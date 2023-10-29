@@ -18,12 +18,15 @@ import (
 )
 
 type SecretUseCase interface {
-	MiltipartUploadFile(context.Context, <-chan *models.MiltipartUploadFileData, string) (bool, error)
+	MultipartUploadFile(context.Context, <-chan *models.MultipartUploadFileData, string) (bool, error)
 	CreateBucketSecret(ctx context.Context, username string, userID int) (bool, error)
+	MultipartDownloadFile(context.Context,
+		*models.MultipartDownloadFileRequest,
+		string) (chan *models.MultipartDownloadFileResponse, chan error)
 }
 
-func (s *GrpcServer) MiltipartUploadFile(stream pb.GophKeeperService_MiltipartUploadFileServer) error {
-	s.logger.Debug("Start MiltipartUploadFile")
+func (s *GrpcServer) MultipartUploadFile(stream pb.GophKeeperService_MultipartUploadFileServer) error {
+	s.logger.Debug("Start MultipartUploadFile")
 
 	ctx := stream.Context()
 	userID, ok := utils.ExtractUserIDFromContext(ctx)
@@ -49,18 +52,13 @@ func (s *GrpcServer) MiltipartUploadFile(stream pb.GophKeeperService_MiltipartUp
 	s.logger.Debug("bucket name", zap.String("msg", bucketName))
 
 	var once sync.Once
-	s.logger.Debug("", zap.Any("FUCK", stream.Context()))
-
 	var fileID string
 
-	reqChan := make(chan *models.MiltipartUploadFileData, 1)
-
+	reqChan := make(chan *models.MultipartUploadFileData, 1)
 	errChan := make(chan error, 1)
-	var wg sync.WaitGroup
-	wg.Add(1)
+	doneChan := make(chan bool)
 
 	go func() {
-		defer wg.Done()
 		defer close(errChan)
 		defer close(reqChan)
 		for {
@@ -90,7 +88,7 @@ func (s *GrpcServer) MiltipartUploadFile(stream pb.GophKeeperService_MiltipartUp
 
 			})
 
-			reqChan <- &models.MiltipartUploadFileData{
+			reqChan <- &models.MultipartUploadFileData{
 				Content:  req.GetContent(),
 				FileName: req.GetFileName(),
 				Guid:     req.GetGuid(),
@@ -100,20 +98,32 @@ func (s *GrpcServer) MiltipartUploadFile(stream pb.GophKeeperService_MiltipartUp
 		}
 	}()
 
-	success, err := s.secretUseCase.MiltipartUploadFile(stream.Context(), reqChan, bucketName)
-	if err != nil {
-		s.logger.Error("Error in s.secretUseCase.MiltipartUploadFile", zap.Error(err))
+	go func() {
+		success, err := s.secretUseCase.MultipartUploadFile(stream.Context(), reqChan, bucketName)
+		if err != nil {
+			s.logger.Error("Error in s.secretUseCase.MultipartUploadFile", zap.Error(err))
+			errChan <- err
+			return
+		}
+		if !success {
+			s.logger.Error("failed upload file")
+			errChan <- errors.New("Failed to upload file")
+			return
+		}
+		doneChan <- true
+	}()
 
-		return err
+	select {
+	case <-doneChan:
+		s.logger.Debug("end upload")
+
+	case err := <-errChan:
+		if err != nil {
+			s.logger.Debug("was some error", zap.Any("msg", err))
+			return status.Error(codes.Internal, err.Error())
+		}
 	}
-	if !success {
-		s.logger.Error("failed upload file", zap.Error(err))
-
-		return status.Errorf(codes.Internal, "Failed to upload file")
-	}
-	s.logger.Debug("end upload")
-
-	return stream.SendAndClose(&pb.MiltipartUploadFileResponse{
+	return stream.SendAndClose(&pb.MultipartUploadFileResponse{
 		FileId: fileID,
 	})
 }
@@ -212,10 +222,97 @@ loop:
 
 				return status.Error(codes.ResourceExhausted, "Sync not enable")
 			}
-
 			s.logger.Debug("update timer for sync", zap.Int("userID", userID), zap.String("GUID", req.Guid), zap.Bool("sync is finish?", req.IsFinish))
-
 		}
 	}
 	return stream.SendAndClose(&pb.BlockStoreResponse{Status: "All ok"})
+}
+
+func (s *GrpcServer) MultipartDownloadFile(req *pb.MultipartDownloadFileRequest, stream pb.GophKeeperService_MultipartDownloadFileServer) error {
+	s.logger.Debug("Start MultipartDownloadFile")
+
+	ctx := stream.Context()
+	userID, ok := utils.ExtractUserIDFromContext(ctx)
+	if !ok {
+		s.logger.Error("cannot get userID from context")
+		return status.Errorf(codes.Internal, "Failed to extract userID")
+	}
+
+	username, ok := utils.ExtractUsernameFromContext(ctx)
+	if !ok {
+		s.logger.Error("cannot get username from context")
+		return status.Errorf(codes.Internal, "Failed to extract username")
+	}
+
+	bucketName, err := utils.FromUser2BucketName(ctx, username, userID)
+	if err != nil {
+		s.logger.Error("cannot get bucketName")
+		return status.Errorf(codes.Internal, "Failed to extract bucketName")
+	}
+	s.logger.Debug("bucket name", zap.String("msg", bucketName))
+
+	val, err := uuid.Parse(req.Guid)
+	if err != nil {
+		s.logger.Error("Couldn't parse GUID", zap.Error(err))
+
+		return status.Errorf(codes.Internal, "Couldn't parse GUID")
+
+	}
+	if isEnabled, _ := s.syncStatus.IsSyncExists(userID, val); !isEnabled {
+		s.logger.Error("You should block resource before use it", zap.Error(err))
+
+		return status.Errorf(codes.Internal, "You should block resource before use it")
+	}
+
+	multipartDownloadFileRequest := &models.MultipartDownloadFileRequest{
+		FileName: req.FileName,
+		Guid:     req.Guid,
+		Hash:     req.Hash,
+	}
+	newCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	dataChan, errChan := s.secretUseCase.MultipartDownloadFile(newCtx, multipartDownloadFileRequest, bucketName)
+	for {
+		select {
+		case data, ok := <-dataChan:
+			if !ok {
+				s.logger.Debug("dataChan reading false")
+				dataChan = nil
+				continue
+			}
+			response := &pb.MultipartDownloadFileResponse{
+				FileName: data.FileName,
+				Guid:     data.Guid,
+				Content:  data.Content,
+				Hash:     data.Hash,
+			}
+			if err := stream.Send(response); err != nil {
+				s.logger.Error("Error send response", zap.Error(err))
+
+				return err
+			}
+		case err := <-errChan:
+			if err == io.EOF {
+				s.logger.Debug("We got EOF")
+				errChan = nil
+				continue
+			} else {
+				s.logger.Error("Error in secretUseCase.MultipartDownloadFile", zap.Error(err))
+				return err
+			}
+		case <-ctx.Done():
+			s.logger.Debug("stream context canceled")
+
+			return status.Error(codes.Aborted, "stream context canceled")
+
+		}
+		if dataChan == nil && errChan == nil {
+			s.logger.Debug("All channel is nil")
+			break
+		}
+	}
+
+	s.logger.Debug("end download")
+
+	return nil
 }
