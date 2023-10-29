@@ -23,6 +23,7 @@ type SecretUseCase interface {
 	MultipartDownloadFile(context.Context,
 		*models.MultipartDownloadFileRequest,
 		string) (chan *models.MultipartDownloadFileResponse, chan error)
+	ApplyChanges(ctx context.Context, bucketName string) (bool, error)
 }
 
 func (s *GrpcServer) MultipartUploadFile(stream pb.GophKeeperService_MultipartUploadFileServer) error {
@@ -315,4 +316,83 @@ func (s *GrpcServer) MultipartDownloadFile(req *pb.MultipartDownloadFileRequest,
 	s.logger.Debug("end download")
 
 	return nil
+}
+
+func (s *GrpcServer) ApplyChanges(ctx context.Context,
+	req *pb.ApplyChangesRequest) (*pb.ApplyChangesResponse, error) {
+	s.logger.Debug("start ApplyChanges")
+	v, err := protovalidate.New()
+	if err != nil {
+		return nil, fmt.Errorf("%w", status.Error(codes.Internal, err.Error()))
+	}
+
+	if err = v.Validate(req); err != nil {
+		return nil, fmt.Errorf("%w", status.Error(codes.InvalidArgument, err.Error()))
+	}
+
+	userID, ok := utils.ExtractUserIDFromContext(ctx)
+	if !ok {
+		s.logger.Error("cannot get userID from context")
+		return nil, status.Errorf(codes.Internal, "Failed to extract userID")
+	}
+
+	username, ok := utils.ExtractUsernameFromContext(ctx)
+	if !ok {
+		s.logger.Error("cannot get username from context")
+		return nil, status.Errorf(codes.Internal, "Failed to extract username")
+	}
+
+	bucketName, err := utils.FromUser2BucketName(ctx, username, userID)
+	if err != nil {
+		s.logger.Error("cannot get bucketName")
+		return nil, status.Errorf(codes.Internal, "Failed to extract bucketName")
+	}
+	s.logger.Debug("bucket name", zap.String("msg", bucketName))
+
+	val, err := uuid.Parse(req.Guid)
+	if err != nil {
+		s.logger.Error("Couldn't parse GUID", zap.Error(err))
+
+		return nil, status.Errorf(codes.Internal, "Couldn't parse GUID")
+
+	}
+	if isEnabled, _ := s.syncStatus.IsSyncExists(userID, val); !isEnabled {
+		s.logger.Error("You should block resource before use it", zap.Error(err))
+
+		return nil, status.Errorf(codes.Internal, "You should block resource before use it")
+	}
+	s.logger.Debug("Start apply changes")
+	ctx, cancel := context.WithCancel(ctx)
+	doneChan := make(chan interface{})
+	go func() {
+		for {
+			select {
+			case <-doneChan:
+				s.logger.Debug("main func done, closing goruitine")
+				return
+			default:
+				if isEnabled, _ := s.syncStatus.IsSyncExists(userID, val); !isEnabled {
+					s.logger.Error("You should block resource before use it", zap.Error(err))
+					cancel()
+					return
+				}
+			}
+		}
+	}()
+	success, err := s.secretUseCase.ApplyChanges(ctx, bucketName)
+	if err != nil {
+		s.logger.Error("Error s.secretUseCase.ApplyChanges", zap.Error(err))
+
+		return nil, fmt.Errorf("%w", status.Error(codes.Internal, err.Error()))
+	}
+
+	if !success {
+		s.logger.Debug("Failed s.secretUseCase.ApplyChanges", zap.Error(err))
+
+		return nil, fmt.Errorf("%w", status.Error(codes.Internal, "Failed to apply changes"))
+	}
+
+	return &pb.ApplyChangesResponse{
+		Guid: req.Guid,
+	}, nil
 }

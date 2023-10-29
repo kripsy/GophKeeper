@@ -26,6 +26,7 @@ const (
 	GophKeeperService_BlockStore_FullMethodName            = "/pkg.api.gophkeeper.v1.GophKeeperService/BlockStore"
 	GophKeeperService_Ping_FullMethodName                  = "/pkg.api.gophkeeper.v1.GophKeeperService/Ping"
 	GophKeeperService_MultipartDownloadFile_FullMethodName = "/pkg.api.gophkeeper.v1.GophKeeperService/MultipartDownloadFile"
+	GophKeeperService_ApplyChanges_FullMethodName          = "/pkg.api.gophkeeper.v1.GophKeeperService/ApplyChanges"
 )
 
 // GophKeeperServiceClient is the client API for GophKeeperService service.
@@ -38,6 +39,7 @@ type GophKeeperServiceClient interface {
 	BlockStore(ctx context.Context, opts ...grpc.CallOption) (GophKeeperService_BlockStoreClient, error)
 	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	MultipartDownloadFile(ctx context.Context, in *MultipartDownloadFileRequest, opts ...grpc.CallOption) (GophKeeperService_MultipartDownloadFileClient, error)
+	ApplyChanges(ctx context.Context, in *ApplyChangesRequest, opts ...grpc.CallOption) (*ApplyChangesResponse, error)
 }
 
 type gophKeeperServiceClient struct {
@@ -175,6 +177,15 @@ func (x *gophKeeperServiceMultipartDownloadFileClient) Recv() (*MultipartDownloa
 	return m, nil
 }
 
+func (c *gophKeeperServiceClient) ApplyChanges(ctx context.Context, in *ApplyChangesRequest, opts ...grpc.CallOption) (*ApplyChangesResponse, error) {
+	out := new(ApplyChangesResponse)
+	err := c.cc.Invoke(ctx, GophKeeperService_ApplyChanges_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GophKeeperServiceServer is the server API for GophKeeperService service.
 // All implementations must embed UnimplementedGophKeeperServiceServer
 // for forward compatibility
@@ -185,6 +196,7 @@ type GophKeeperServiceServer interface {
 	BlockStore(GophKeeperService_BlockStoreServer) error
 	Ping(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	MultipartDownloadFile(*MultipartDownloadFileRequest, GophKeeperService_MultipartDownloadFileServer) error
+	ApplyChanges(context.Context, *ApplyChangesRequest) (*ApplyChangesResponse, error)
 	mustEmbedUnimplementedGophKeeperServiceServer()
 }
 
@@ -209,6 +221,9 @@ func (UnimplementedGophKeeperServiceServer) Ping(context.Context, *emptypb.Empty
 }
 func (UnimplementedGophKeeperServiceServer) MultipartDownloadFile(*MultipartDownloadFileRequest, GophKeeperService_MultipartDownloadFileServer) error {
 	return status.Errorf(codes.Unimplemented, "method MultipartDownloadFile not implemented")
+}
+func (UnimplementedGophKeeperServiceServer) ApplyChanges(context.Context, *ApplyChangesRequest) (*ApplyChangesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ApplyChanges not implemented")
 }
 func (UnimplementedGophKeeperServiceServer) mustEmbedUnimplementedGophKeeperServiceServer() {}
 
@@ -350,6 +365,24 @@ func (x *gophKeeperServiceMultipartDownloadFileServer) Send(m *MultipartDownload
 	return x.ServerStream.SendMsg(m)
 }
 
+func _GophKeeperService_ApplyChanges_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ApplyChangesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GophKeeperServiceServer).ApplyChanges(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GophKeeperService_ApplyChanges_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GophKeeperServiceServer).ApplyChanges(ctx, req.(*ApplyChangesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // GophKeeperService_ServiceDesc is the grpc.ServiceDesc for GophKeeperService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -368,6 +401,10 @@ var GophKeeperService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Ping",
 			Handler:    _GophKeeperService_Ping_Handler,
+		},
+		{
+			MethodName: "ApplyChanges",
+			Handler:    _GophKeeperService_ApplyChanges_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

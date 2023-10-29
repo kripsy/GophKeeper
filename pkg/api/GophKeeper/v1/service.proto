@@ -17,6 +17,7 @@ service GophKeeperService {
   rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty);
   rpc MultipartDownloadFile(MultipartDownloadFileRequest)
       returns (stream MultipartDownloadFileResponse);
+  rpc ApplyChanges(ApplyChangesRequest) returns (ApplyChangesResponse);
 }
 
 message AuthRequest {
@@ -55,3 +56,11 @@ message BlockStoreRequest {
 }
 
 message BlockStoreResponse { string status = 1; }
+
+message ApplyChangesRequest {
+  string guid = 1 [ (buf.validate.field).string.min_len = 1 ];
+}
+
+message ApplyChangesResponse {
+  string guid = 1 [ (buf.validate.field).string.min_len = 1 ];
+}

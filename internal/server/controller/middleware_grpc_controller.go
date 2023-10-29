@@ -84,7 +84,14 @@ func (m MyMiddleware) AuthInterceptor(ctx context.Context, req interface{}, info
 		return nil, status.Error(codes.Unauthenticated, "token empty or not valid")
 	}
 
+	userID, err := utils.GetUseIDFromToken(token, m.secret)
+	if err != nil {
+		m.myLogger.Debug("cannot get userID")
+		return nil, status.Error(codes.Unauthenticated, "token empty or not valid")
+	}
+
 	newCtx := context.WithValue(ctx, utils.USERNAMECONTEXTKEY, username)
+	newCtx = context.WithValue(newCtx, utils.USERIDCONTEXTKEY, userID)
 
 	return handler(newCtx, req)
 }
@@ -92,15 +99,6 @@ func (m MyMiddleware) AuthInterceptor(ctx context.Context, req interface{}, info
 func (m MyMiddleware) StreamAuthInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 	// Получаем контекст из потокового сервера
 	ctx := ss.Context()
-
-	// switch info.FullMethod {
-	// case "/pkg.api.gophkeeper.v1.GophKeeperService/LoginStream",
-	// 	"/pkg.api.gophkeeper.v1.GophKeeperService/RegisterStream",
-	// 	"/pkg.api.gophkeeper.v1.GophKeeperService/Ping":
-	// 	m.myLogger.Debug("No protected method", zap.String("method", info.FullMethod))
-
-	// 	return handler(srv, ss)
-	// }
 
 	m.myLogger.Debug("Protected method")
 	m.myLogger.Debug(info.FullMethod)

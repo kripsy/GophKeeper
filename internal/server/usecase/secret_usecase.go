@@ -10,9 +10,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/google/uuid"
 	"github.com/kripsy/GophKeeper/internal/models"
-	"github.com/kripsy/GophKeeper/internal/server/entity"
 	"github.com/kripsy/GophKeeper/internal/utils"
 	"go.uber.org/zap"
 )
@@ -22,6 +20,8 @@ type MinioRepository interface {
 	CreateBucketSecret(ctx context.Context, username string, userID int) (bool, error)
 	GetObject(ctx context.Context, bucketName, filename string) (*[]byte, string, error)
 	ListObjects(ctx context.Context, bucketName, prefix string) (*[]string, error)
+	CopyRCFiles(ctx context.Context, bucketName string) error
+	DeleteFilesWithoutRC(ctx context.Context, bucketName string) error
 }
 
 type secretUseCase struct {
@@ -83,16 +83,6 @@ loop:
 
 	uc.logger.Debug("Multipart upload success", zap.String("filename", fileName))
 	return true, nil
-}
-
-func (uc *secretUseCase) FinishSaveMultipartSecret(ctx context.Context, secret entity.Secret) (uuid.UUID, error) {
-	id, err := uuid.NewRandom()
-	if err != nil {
-		uc.logger.Error(err.Error())
-
-		return uuid.UUID{}, fmt.Errorf("%w", err)
-	}
-	return id, nil
 }
 
 func (uc *secretUseCase) CreateBucketSecret(ctx context.Context, username string, userID int) (bool, error) {
@@ -166,4 +156,26 @@ func (uc *secretUseCase) MultipartDownloadFile(ctx context.Context, req *models.
 	}()
 
 	return dataChan, errChan
+}
+
+func (uc *secretUseCase) ApplyChanges(ctx context.Context, bucketName string) (bool, error) {
+	uc.logger.Debug("Start ApplyChanges")
+	err := uc.secretRepo.CopyRCFiles(ctx, bucketName)
+	uc.logger.Debug("End CopyRCFiles")
+	if err != nil {
+		uc.logger.Error("Error in ApplyChanges", zap.Error(err))
+
+		return false, err
+	}
+
+	uc.logger.Debug("Start DeleteFilesWithoutRC")
+	err = uc.secretRepo.DeleteFilesWithoutRC(ctx, bucketName)
+	uc.logger.Debug("End DeleteFilesWithoutRC")
+	if err != nil {
+		uc.logger.Error("Error in DeleteFilesWithoutRC", zap.Error(err))
+
+		return false, err
+	}
+
+	return true, nil
 }

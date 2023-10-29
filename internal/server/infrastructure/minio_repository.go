@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"strings"
 
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/kripsy/GophKeeper/internal/utils"
@@ -14,19 +15,20 @@ import (
 	"go.uber.org/zap"
 )
 
-type MinioRepository interface {
-	MultipartUploadFile(context.Context, *models.MultipartUploadFileData, int, string) (*models.ObjectPart, error)
-	CreateBucketSecret(ctx context.Context, username string, userID int) (bool, error)
-	GetObject(ctx context.Context, bucketName, filename string) (*[]byte, string, error)
-	ListObjects(ctx context.Context, bucketName, prefix string) (*[]string, error)
-}
+// type MinioRepository interface {
+// 	MultipartUploadFile(context.Context, *models.MultipartUploadFileData, int, string) (*models.ObjectPart, error)
+// 	CreateBucketSecret(ctx context.Context, username string, userID int) (bool, error)
+// 	GetObject(ctx context.Context, bucketName, filename string) (*[]byte, string, error)
+// 	ListObjects(ctx context.Context, bucketName, prefix string) (*[]string, error)
+// 	CopyRCFiles(ctx context.Context, bucketName string) error
+// }
 
 type minioRepository struct {
 	client *minio.Client
 	logger *zap.Logger
 }
 
-func NewMinioRepository(ctx context.Context, endpoint, accessKeyID, secretAccessKey, bucketName string, isUseSSL bool, l *zap.Logger) (MinioRepository, error) {
+func NewMinioRepository(ctx context.Context, endpoint, accessKeyID, secretAccessKey, bucketName string, isUseSSL bool, l *zap.Logger) (*minioRepository, error) {
 	l.Debug("start init minio repository")
 	client, err := initMinioClient(endpoint, accessKeyID, secretAccessKey, isUseSSL)
 
@@ -177,4 +179,79 @@ func (m *minioRepository) GetObject(ctx context.Context,
 	m.logger.Debug("Hash data", zap.String("msg", hash))
 
 	return &content, hash, nil
+}
+
+func (m *minioRepository) ListFilesWithPostfix(bucketName, postfix string) ([]string, error) {
+	var fileList []string
+
+	// Создаем канал для получения объектов
+	objectCh := m.client.ListObjects(context.Background(), bucketName, minio.ListObjectsOptions{})
+
+	for object := range objectCh {
+		if object.Err != nil {
+			log.Println("Error listing objects:", object.Err)
+			return nil, object.Err
+		}
+
+		// Проверяем, оканчивается ли имя файла на заданный постфикс
+		if strings.HasSuffix(object.Key, postfix) {
+			fileList = append(fileList, object.Key)
+		}
+	}
+
+	return fileList, nil
+}
+
+func (m *minioRepository) CopyRCFiles(ctx context.Context, bucketName string) error {
+	postfix := ".rc"
+	files, err := m.ListFilesWithPostfix(bucketName, postfix)
+	if err != nil {
+		return err
+	}
+
+	for _, file := range files {
+		srcOpts := minio.CopySrcOptions{
+			Bucket: bucketName,
+			Object: file,
+		}
+		dst := strings.TrimSuffix(file, postfix)
+		dstOpts := minio.CopyDestOptions{
+			Bucket: bucketName,
+			Object: dst,
+		}
+
+		_, err := m.client.CopyObject(ctx, dstOpts, srcOpts)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (m *minioRepository) DeleteFilesWithoutRC(ctx context.Context, bucketName string) error {
+	postfix := ".rc"
+	rcFiles, err := m.ListFilesWithPostfix(bucketName, postfix)
+	if err != nil {
+		return err
+	}
+
+	rcMap := make(map[string]bool)
+	for _, file := range rcFiles {
+		rcMap[strings.TrimSuffix(file, postfix)] = true
+	}
+
+	allFiles, err := m.ListFilesWithPostfix(bucketName, "")
+	if err != nil {
+		return err
+	}
+
+	for _, file := range allFiles {
+		if !rcMap[file] {
+			err := m.client.RemoveObject(ctx, bucketName, file, minio.RemoveObjectOptions{})
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
