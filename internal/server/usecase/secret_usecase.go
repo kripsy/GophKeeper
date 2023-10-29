@@ -22,6 +22,7 @@ type MinioRepository interface {
 	ListObjects(ctx context.Context, bucketName, prefix string) (*[]string, error)
 	CopyRCFiles(ctx context.Context, bucketName string) error
 	DeleteFilesWithoutRC(ctx context.Context, bucketName string) error
+	DiscardChanges(ctx context.Context, bucketName string) error
 }
 
 type secretUseCase struct {
@@ -173,6 +174,17 @@ func (uc *secretUseCase) ApplyChanges(ctx context.Context, bucketName string) (b
 	uc.logger.Debug("End DeleteFilesWithoutRC")
 	if err != nil {
 		uc.logger.Error("Error in DeleteFilesWithoutRC", zap.Error(err))
+
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (uc *secretUseCase) DiscardChanges(ctx context.Context, bucketName string) (bool, error) {
+	err := uc.secretRepo.DiscardChanges(ctx, bucketName)
+	if err != nil {
+		uc.logger.Error("Error in discard changes - usecase", zap.Error(err))
 
 		return false, err
 	}

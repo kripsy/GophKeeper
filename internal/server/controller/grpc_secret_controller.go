@@ -24,6 +24,7 @@ type SecretUseCase interface {
 		*models.MultipartDownloadFileRequest,
 		string) (chan *models.MultipartDownloadFileResponse, chan error)
 	ApplyChanges(ctx context.Context, bucketName string) (bool, error)
+	DiscardChanges(ctx context.Context, bucketName string) (bool, error)
 }
 
 func (s *GrpcServer) MultipartUploadFile(stream pb.GophKeeperService_MultipartUploadFileServer) error {
@@ -144,6 +145,41 @@ func (s *GrpcServer) BlockStore(stream pb.GophKeeperService_BlockStoreServer) er
 
 		return status.Errorf(codes.Internal, "Failed to extract userID")
 	}
+	// clear temp files
+	defer func(ctx context.Context) {
+		userID, ok := utils.ExtractUserIDFromContext(ctx)
+		if !ok {
+			s.logger.Error("cannot get userID from context")
+			return
+		}
+
+		username, ok := utils.ExtractUsernameFromContext(ctx)
+		if !ok {
+			s.logger.Error("cannot get username from context")
+			return
+		}
+
+		bucketName, err := utils.FromUser2BucketName(ctx, username, userID)
+		if err != nil {
+			s.logger.Error("cannot get bucketName")
+			return
+		}
+		s.logger.Debug("bucket name", zap.String("msg", bucketName))
+		s.logger.Debug("Start discard changes")
+		newCtx := context.Background()
+		success, err := s.secretUseCase.DiscardChanges(newCtx, bucketName)
+		if err != nil {
+			s.logger.Error("Error discard changes", zap.Error(err))
+
+			return
+		}
+		if !success {
+			s.logger.Debug("Fail discard changes", zap.Error(err))
+
+			return
+		}
+		return
+	}(ctx)
 
 	var once sync.Once
 	var syncEnable bool

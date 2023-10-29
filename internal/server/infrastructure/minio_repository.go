@@ -255,3 +255,19 @@ func (m *minioRepository) DeleteFilesWithoutRC(ctx context.Context, bucketName s
 	}
 	return nil
 }
+
+func (m *minioRepository) DiscardChanges(ctx context.Context, bucketName string) error {
+	postfix := ".rc"
+	rcFiles, err := m.ListFilesWithPostfix(bucketName, postfix)
+	if err != nil {
+		return err
+	}
+
+	for _, file := range rcFiles {
+		err := m.client.RemoveObject(ctx, bucketName, file, minio.RemoveObjectOptions{})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
