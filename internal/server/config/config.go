@@ -50,7 +50,7 @@ func InitConfig() (*Config, error) {
 	URLServer := flag.String("a", "localhost:8080", "Enter address exec http server as ip_address:port. Or use SERVER_ADDRESS env")
 	logLevel := flag.String("l", "Info", "log level: Debug, Info, Warn, Error and etc... Or use LOG_LEVEL env")
 	databaseDsn := flag.String("d",
-		"postgres://secretkeeper:secret@localhost:5433/secret_keeper_server?sslmode=disable",
+		"postgres://gophkeeperdb:gophkeeperdbpwd@localhost:5432/gophkeeperdb?sslmode=disable",
 		`set path for database... Or use DATABASE_DSN env. 
 		Example postgres://username:password@hostname:port/databasename?sslmode=disable`)
 
