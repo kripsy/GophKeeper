@@ -1,0 +1,3 @@
+storage_path: "./ClientPath/Data"
+upload_path: "./ClientPath/Upload"
+server_address: "127.0.0.1:50051"

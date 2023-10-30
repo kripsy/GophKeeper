@@ -1,39 +1,21 @@
 package main
 
 import (
-	"context"
-	"crypto/tls"
-	"log"
-	"time"
-
-	pb "github.com/kripsy/GophKeeper/gen/pkg/api/gophkeeper/v1"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
+	"github.com/kripsy/GophKeeper/internal/client/app"
+	"github.com/kripsy/GophKeeper/internal/client/config"
+	"github.com/kripsy/GophKeeper/internal/client/log"
 )
 
 func main() {
-	address := "127.0.0.1:50051"
+	bi := getBuildInfo()
+	cfg := config.GetConfig()
 
-	creds := credentials.NewTLS(&tls.Config{
-		InsecureSkipVerify: true,
-	})
+	l := log.InitLogger(cfg.StoragePath)
 
-	conn, err := grpc.Dial(address, grpc.WithTransportCredentials(creds))
+	a, err := app.NewApplication(cfg, bi, l)
 	if err != nil {
-		log.Fatalf("did not connect: %v", err)
+		l.Fatal().Err(err).Msg("failed create application")
 	}
-	defer conn.Close()
-
-	client := pb.NewShortenerServiceClient(conn)
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-
-	r, err := client.Hello(ctx, &pb.HelloRequest{Url: "your_url_here"})
-	if err != nil {
-		log.Fatalf("could not greet: %v", err)
-	}
-
-	log.Printf("Response: %s", r.GetResult())
+	a.PrepareApp()
+	a.Run()
 }
