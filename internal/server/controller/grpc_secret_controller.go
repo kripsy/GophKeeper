@@ -260,9 +260,12 @@ loop:
 				return status.Error(codes.ResourceExhausted, "Sync not enable")
 			}
 			s.logger.Debug("update timer for sync", zap.Int("userID", userID), zap.String("GUID", req.Guid), zap.Bool("sync is finish?", req.IsFinish))
+			stream.Send(&pb.BlockStoreResponse{
+				Guid: req.Guid,
+			})
 		}
 	}
-	return stream.SendAndClose(&pb.BlockStoreResponse{Status: "All ok"})
+	return nil
 }
 
 func (s *GrpcServer) MultipartDownloadFile(req *pb.MultipartDownloadFileRequest, stream pb.GophKeeperService_MultipartDownloadFileServer) error {
@@ -309,6 +312,7 @@ func (s *GrpcServer) MultipartDownloadFile(req *pb.MultipartDownloadFileRequest,
 	newCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	dataChan, errChan := s.secretUseCase.MultipartDownloadFile(newCtx, multipartDownloadFileRequest, bucketName)
+loop:
 	for {
 		select {
 		case data, ok := <-dataChan:
@@ -341,11 +345,11 @@ func (s *GrpcServer) MultipartDownloadFile(req *pb.MultipartDownloadFileRequest,
 			s.logger.Debug("stream context canceled")
 
 			return status.Error(codes.Aborted, "stream context canceled")
-
-		}
-		if dataChan == nil && errChan == nil {
-			s.logger.Debug("All channel is nil")
-			break
+		default:
+			if dataChan == nil && errChan == nil {
+				s.logger.Debug("All channel is nil")
+				break loop
+			}
 		}
 	}
 

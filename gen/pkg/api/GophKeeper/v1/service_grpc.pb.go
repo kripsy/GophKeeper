@@ -113,7 +113,7 @@ func (c *gophKeeperServiceClient) BlockStore(ctx context.Context, opts ...grpc.C
 
 type GophKeeperService_BlockStoreClient interface {
 	Send(*BlockStoreRequest) error
-	CloseAndRecv() (*BlockStoreResponse, error)
+	Recv() (*BlockStoreResponse, error)
 	grpc.ClientStream
 }
 
@@ -125,10 +125,7 @@ func (x *gophKeeperServiceBlockStoreClient) Send(m *BlockStoreRequest) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *gophKeeperServiceBlockStoreClient) CloseAndRecv() (*BlockStoreResponse, error) {
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
+func (x *gophKeeperServiceBlockStoreClient) Recv() (*BlockStoreResponse, error) {
 	m := new(BlockStoreResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -305,7 +302,7 @@ func _GophKeeperService_BlockStore_Handler(srv interface{}, stream grpc.ServerSt
 }
 
 type GophKeeperService_BlockStoreServer interface {
-	SendAndClose(*BlockStoreResponse) error
+	Send(*BlockStoreResponse) error
 	Recv() (*BlockStoreRequest, error)
 	grpc.ServerStream
 }
@@ -314,7 +311,7 @@ type gophKeeperServiceBlockStoreServer struct {
 	grpc.ServerStream
 }
 
-func (x *gophKeeperServiceBlockStoreServer) SendAndClose(m *BlockStoreResponse) error {
+func (x *gophKeeperServiceBlockStoreServer) Send(m *BlockStoreResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -416,6 +413,7 @@ var GophKeeperService_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "BlockStore",
 			Handler:       _GophKeeperService_BlockStore_Handler,
+			ServerStreams: true,
 			ClientStreams: true,
 		},
 		{
