@@ -29,13 +29,13 @@ func main() {
 	cfg, err := config.InitConfig()
 	if err != nil {
 		fmt.Printf("Error init cfg: %v", err)
-		os.Exit(1)
+		return
 	}
 
 	l, err := logger.InitLog(cfg.LoggerLevel)
 	if err != nil {
 		fmt.Printf("Error init logger: %v", err)
-		os.Exit(1)
+		return
 	}
 
 	if cfg.IsSecure {
@@ -57,22 +57,15 @@ func main() {
 	repo, err := infrastructure.InitNewRepository(cfg.DatabaseDsn, l)
 	if err != nil {
 		l.Error("error create db instance", zap.String("msg", err.Error()))
-		os.Exit(1)
+		return
 	}
 
 	userRepo, err := infrastructure.NewUserRepository(repo)
 	if err != nil {
 		l.Error("error init user repository", zap.String("msg", err.Error()))
-		os.Exit(1)
+		return
 	}
 	l.Debug("NewUserRepository initialized")
-
-	// secretRepo, err := infrastructure.NewSecretRepository(repo)
-	// if err != nil {
-	// 	l.Error("error init secret repository", zap.String("msg", err.Error()))
-	// 	os.Exit(1)
-	// }
-	// l.Debug("NewSecretRepository initialized")
 
 	l.Debug("Start init minio repository")
 	ctxCreateBucket, cancel := context.WithTimeout(ctx, time.Second)
@@ -89,21 +82,21 @@ func main() {
 	if err != nil {
 		l.Error("Error init minio repository", zap.Error(err))
 
-		//	return
+		return
 	}
 	l.Debug("Success init minio repository")
 
 	userUseCase, err := usecase.InitUseCases(ctx, userRepo, cfg.Secret, cfg.TokenExp, l)
 	if err != nil {
 		l.Error("error create user usecase instance", zap.String("msg", err.Error()))
-		os.Exit(1)
+		return
 	}
 	l.Debug("userUseCase initialized")
 
 	secretUseCase, err := usecase.InitSecretUseCases(ctx, userRepo, minioRepo, l)
 	if err != nil {
 		l.Error("error create user usecase instance", zap.String("msg", err.Error()))
-		os.Exit(1)
+		return
 	}
 	l.Debug("secretUseCase initialized")
 
@@ -147,7 +140,7 @@ func main() {
 	l.Debug("close repository")
 	if err := repo.Close(); err != nil {
 		l.Error("Failed to close repository", zap.Error(err))
-		os.Exit(1)
+		return
 	}
 	l.Debug("I'm leaving, bye!")
 }
