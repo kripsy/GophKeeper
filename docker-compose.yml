@@ -14,7 +14,7 @@ services:
       - LOG_LEVEL=Info
       - DATABASE_DSN=postgres://gophkeeperdb:gophkeeperdbpwd@postgres_db:5432/gophkeeperdb?sslmode=disable
       - SECRET=supersecret
-      - ISSECURE=false
+      - ISSECURE=true
       - ENDPOINTMINIO=minio:9000
       - ACCESSKEYIDMINIO=masoud
       - SECRETACCESSKEYMINIO=Strong#Pass#2022
