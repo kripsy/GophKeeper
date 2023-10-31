@@ -5,8 +5,7 @@ import (
 )
 
 func (c *ClientUsecase) InMenu() {
-	action := ui.MenuTable[c.ui.Menu(c.userData.Meta.IsLocalStorage)]
-	switch action {
+	switch ui.MenuTable[c.ui.Menu(c.userData.Meta.IsLocalStorage)] {
 	case ui.SecretsKey:
 		c.getSecrets(c.ui.GetSecret(c.userData.Meta.Data)) // todo сторит обдумать метадату на name
 	case ui.AddSecretKey:

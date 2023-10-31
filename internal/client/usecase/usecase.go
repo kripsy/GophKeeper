@@ -106,7 +106,7 @@ func (c *ClientUsecase) handleUserRegistration(userAuth *filemanager.UserAuth) e
 			return err
 		}
 
-		resp, err := c.grpc.Register(context.Background(), &pb.AuthRequest{
+		err = c.grpc.Register(context.Background(), &pb.AuthRequest{
 			Username: c.userData.User.Username,
 			Password: hash,
 		})
@@ -114,7 +114,6 @@ func (c *ClientUsecase) handleUserRegistration(userAuth *filemanager.UserAuth) e
 			c.log.Err(err).Str("user", c.userData.User.Username).Msg("failed register user")
 			return err
 		}
-		c.userData.User.Token = resp.Token
 	}
 
 	meta, err := userAuth.CreateUser(&c.userData.User, isLocalStorage)
@@ -136,16 +135,14 @@ func (c *ClientUsecase) handleUserLogin(userAuth *filemanager.UserAuth) error {
 			return err
 		}
 
-		resp, err := c.grpc.Login(context.Background(), &pb.AuthRequest{
+		err = c.grpc.Login(context.Background(), &pb.AuthRequest{
 			Username: c.userData.User.Username,
 			Password: hash,
 		})
 		if err != nil {
 			c.log.Err(err).Str("user", c.userData.User.Username).Msg("failed login user")
 		}
-		if resp != nil {
-			c.userData.User.Token = resp.Token
-		}
+
 	case false:
 		fmt.Println("Could not connect to the server, data synchronization will not be available")
 	}

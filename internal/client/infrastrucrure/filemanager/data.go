@@ -1,7 +1,9 @@
 package filemanager
 
 import (
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"github.com/kripsy/GophKeeper/internal/utils"
 )
 
@@ -20,6 +22,11 @@ const (
 	NameCardDataType  = "BankCard"
 	NameFileType      = "File"
 )
+
+type Data interface {
+	EncryptedData(key []byte) ([]byte, error)
+	GetHash() (string, error)
+}
 
 var DataTypeTable = []string{NameNoteType, NameBasicAuthType, NameCardDataType, NameFileType}
 
@@ -86,6 +93,38 @@ func (a BasicAuth) EncryptedData(key []byte) ([]byte, error) {
 	return utils.Encrypt(data, key)
 }
 
-type Data interface {
-	EncryptedData(key []byte) ([]byte, error)
+func (f File) GetHash() (string, error) {
+	data, err := json.Marshal(f)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%x", sha256.Sum256(data)), nil
+}
+
+func (c CardData) GetHash() (string, error) {
+	data, err := json.Marshal(c)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%x", sha256.Sum256(data)), nil
+}
+
+func (n Note) GetHash() (string, error) {
+	data, err := json.Marshal(n)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%x", sha256.Sum256(data)), nil
+}
+
+func (a BasicAuth) GetHash() (string, error) {
+	data, err := json.Marshal(a)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%x", sha256.Sum256(data)), nil
 }

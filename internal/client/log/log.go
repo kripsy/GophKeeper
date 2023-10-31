@@ -20,8 +20,5 @@ func InitLogger(logPath string) zerolog.Logger {
 		panic(err)
 	}
 
-	// Create a Zerolog logger that writes to the file writer.
-	log := zerolog.New(fileWriter).With().Timestamp().Logger()
-	log.Log().Msg("test")
-	return log
+	return zerolog.New(fileWriter).With().Caller().Timestamp().Logger()
 }
