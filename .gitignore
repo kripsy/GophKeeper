@@ -24,3 +24,5 @@ vendor/
 .ru
 cert/*.key
 cert/*.crt
+tempFiles/*
+!tempFiles/README.md

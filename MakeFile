@@ -1,0 +1,25 @@
+	CLIENT_VERSION=v1.0.0
+
+ci:
+	golangci-lint run -v -c .golangci.yml
+
+run/server:
+	go run ./cmd/server/main.go
+
+run/client:
+	go run ./cmd/client/
+
+#-secure=false
+
+build/client/linux:
+	go build -o ./cmd/client/client \
+	-ldflags "-X main.buildVersion=$(CLIENT_VERSION) \
+		  -X main.buildDate=$(shell date '+%Y/%m/%d[%H:%M:%S]')" \
+	./cmd/client/*.go
+
+
+build/client/windows:
+	GOOS=windows GOARCH=amd64 go build -o ./cmd/client/client.exe  \
+	-ldflags "-X main.buildVersion=$(CLIENT_VERSION) \
+		  -X main.buildDate=$(shell date '+%Y/%m/%d[%H:%M:%S]')" \
+	./cmd/client/*.go
