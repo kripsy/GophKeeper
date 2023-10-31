@@ -119,14 +119,10 @@ func (c *ClientUsecase) uploadSecrets(ctx context.Context, syncKey string, toUpl
 }
 
 func (c *ClientUsecase) downloadServerMeta(ctx context.Context, syncKey string) (models.MetaData, error) {
-	//err := c.grpc.DownloadFile(ctx, c.userData.User.GetMetaFileName(), "", syncKey, nil)
-	//if err != nil {
-	//	return nil, err
-	//}
+	sd := make(models.MetaData)
+	return sd, nil // return empty MetaData
 
-	//sd := make(models.MetaData)
-	//	return sd, nil
-	data := make(chan []byte, 1) // буферизированный канал, чтобы избежать блокирования
+	data := make(chan []byte, 1)
 	done := make(chan struct{}, 1)
 	//close(data)
 
@@ -175,7 +171,6 @@ func (c *ClientUsecase) downloadServerMeta(ctx context.Context, syncKey string) 
 	}
 
 	return serverData.Meta.Data, nil
-	return nil, nil
 }
 
 func (c *ClientUsecase) blockSync(ctx context.Context, syncKey string, done chan struct{}) {
