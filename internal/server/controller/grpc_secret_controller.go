@@ -57,12 +57,14 @@ func (s *GrpcServer) MultipartUploadFile(stream pb.GophKeeperService_MultipartUp
 	var fileID string
 
 	reqChan := make(chan *models.MultipartUploadFileData, 1)
-	errChan := make(chan error, 1)
+	errChanStream := make(chan error, 1)
+	errChanUsecase := make(chan error, 1)
 	doneChan := make(chan bool)
-
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
-		defer close(errChan)
 		defer close(reqChan)
+		defer close(errChanStream)
 		for {
 			req, err := stream.Recv()
 			if err == io.EOF {
@@ -70,19 +72,19 @@ func (s *GrpcServer) MultipartUploadFile(stream pb.GophKeeperService_MultipartUp
 			}
 			if err != nil {
 				s.logger.Error("Error get data from stream", zap.Error(err))
-				errChan <- err
+				errChanStream <- err
 				return
 			}
 			val, err := uuid.Parse(req.Guid)
 			if err != nil {
 				s.logger.Error("Couldn't parse GUID", zap.Error(err))
 
-				errChan <- err
+				errChanStream <- err
 				return
 			}
 			if isEnabled, _ := s.syncStatus.IsSyncExists(userID, val); !isEnabled {
 				s.logger.Error("You should block resource before use it", zap.Error(err))
-				errChan <- errors.New("You should block resource before use it")
+				errChanStream <- errors.New("You should block resource before use it")
 				return
 			}
 			once.Do(func() {
@@ -101,15 +103,16 @@ func (s *GrpcServer) MultipartUploadFile(stream pb.GophKeeperService_MultipartUp
 	}()
 
 	go func() {
+		defer close(errChanUsecase)
 		success, err := s.secretUseCase.MultipartUploadFile(stream.Context(), reqChan, bucketName)
 		if err != nil {
 			s.logger.Error("Error in s.secretUseCase.MultipartUploadFile", zap.Error(err))
-			errChan <- err
+			errChanUsecase <- err
 			return
 		}
 		if !success {
 			s.logger.Error("failed upload file")
-			errChan <- errors.New("Failed to upload file")
+			errChanUsecase <- errors.New("Failed to upload file")
 			return
 		}
 		doneChan <- true
@@ -119,12 +122,19 @@ func (s *GrpcServer) MultipartUploadFile(stream pb.GophKeeperService_MultipartUp
 	case <-doneChan:
 		s.logger.Debug("end upload")
 
-	case err := <-errChan:
+	case err := <-errChanStream:
 		if err != nil {
-			s.logger.Debug("was some error", zap.Any("msg", err))
+			s.logger.Debug("was some error in receive data", zap.Any("msg", err))
+			return status.Error(codes.Internal, err.Error())
+		}
+
+	case err := <-errChanUsecase:
+		if err != nil {
+			s.logger.Debug("was some error in usecase", zap.Any("msg", err))
 			return status.Error(codes.Internal, err.Error())
 		}
 	}
+
 	return stream.SendAndClose(&pb.MultipartUploadFileResponse{
 		FileId: fileID,
 	})
