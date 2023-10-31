@@ -11,13 +11,16 @@ RUN go mod download
 
 RUN mkdir -p -m 0600 ./bin
 COPY ./cmd/server ./cmd/server
-COPY ./db/server ./db/server
-COPY ./docs/server ./docs/server
 COPY ./internal/server ./internal/server
-COPY ./internal/common ./internal/common
+COPY ./internal/utils ./internal/utils
+COPY ./internal/logger ./internal/logger
+COPY ./internal/models ./internal/models
+COPY ./pkg ./pkg
+COPY ./gen ./gen
+COPY ./cert ./cert
 COPY ./*.md ./
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o ./bin/server ./cmd/server/main.go
 CMD ["./bin/server"]
 
-EXPOSE 8080
+EXPOSE 8080 50051

@@ -12,15 +12,16 @@ services:
     environment:
       - SERVER_ADDRESS=server:8080
       - LOG_LEVEL=Info
-      - DATABASE_DSN=postgres://gophkeeperdb:gophkeeperdbpwd@localhost:5432/gophkeeperdb?sslmode=disable
+      - DATABASE_DSN=postgres://gophkeeperdb:gophkeeperdbpwd@postgres_db:5432/gophkeeperdb?sslmode=disable
       - SECRET=supersecret
-      - ISSECURE=true
-      - ENDPOINTMINIO=localhost:9000
+      - ISSECURE=false
+      - ENDPOINTMINIO=minio:9000
       - ACCESSKEYIDMINIO=masoud
       - SECRETACCESSKEYMINIO=Strong#Pass#2022
       - BUCKETNAMEMINIO=secrets
       - ISUSESSLMINIO=false
-      
+    ports:
+      - 50051:50051
     depends_on:
       - postgres_db
       - minio
