@@ -89,7 +89,7 @@ func main() {
 	if err != nil {
 		l.Error("Error init minio repository", zap.Error(err))
 
-		//	return
+		return
 	}
 	l.Debug("Success init minio repository")
 

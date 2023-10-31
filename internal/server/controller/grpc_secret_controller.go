@@ -260,9 +260,12 @@ loop:
 				return status.Error(codes.ResourceExhausted, "Sync not enable")
 			}
 			s.logger.Debug("update timer for sync", zap.Int("userID", userID), zap.String("GUID", req.Guid), zap.Bool("sync is finish?", req.IsFinish))
+			stream.Send(&pb.BlockStoreResponse{
+				Guid: req.Guid,
+			})
 		}
 	}
-	return stream.SendAndClose(&pb.BlockStoreResponse{Status: "All ok"})
+	return nil
 }
 
 func (s *GrpcServer) MultipartDownloadFile(req *pb.MultipartDownloadFileRequest, stream pb.GophKeeperService_MultipartDownloadFileServer) error {

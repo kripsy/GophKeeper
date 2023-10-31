@@ -7,10 +7,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/kripsy/GophKeeper/internal/utils"
+	"io"
 	"os"
 	"path/filepath"
 	"time"
 )
+
+const chunkSize = 3 * 1024 * 1024 // 5 МБ
 
 type FileManager struct {
 	storageDir string
@@ -22,9 +25,9 @@ type FileManager struct {
 
 type FileStorage interface {
 	AddToStorage(name string, data Data, info models.DataInfo) error
-	AddEncryptedToStorage(name string, data []byte, info models.DataInfo) error
+	AddEncryptedToStorage(name string, data chan []byte, info models.DataInfo) error
 	GetByName(name string) ([]byte, models.DataInfo, error)
-	GetEncryptedByName(name string) ([]byte, error)
+	ReadEncryptedByName(name string, data chan []byte, done chan struct{}) error
 	UpdateDataByName(name string, data Data) error
 	UpdateInfoByName(name string, info models.DataInfo) error
 	DeleteByName(name string) error
@@ -60,16 +63,17 @@ func (fm *FileManager) AddToStorage(name string, data Data, info models.DataInfo
 		return fm.AddToStorage(fm.getUniqueName(name), data, info)
 	}
 
-	newUUID, err := uuid.NewUUID()
-	if err != nil {
-		return err
-	}
-	info.DataID = newUUID.String()
+	info.DataID = uuid.New().String()
 	info.UpdatedAt = time.Now()
 	encryptedData, err := data.EncryptedData(fm.key)
 	if err != nil {
 		return err
 	}
+	hash, err := data.GetHash()
+	if err != nil {
+		return err
+	}
+	info.Hash = hash
 
 	if err = os.WriteFile(filepath.Join(fm.storageDir, info.DataID), encryptedData, fileMode); err != nil {
 		return err
@@ -80,15 +84,37 @@ func (fm *FileManager) AddToStorage(name string, data Data, info models.DataInfo
 	return fm.saveMetaData(info.UpdatedAt)
 }
 
-func (fm *FileManager) AddEncryptedToStorage(name string, data []byte, info models.DataInfo) error {
+func (fm *FileManager) AddEncryptedToStorage(name string, data chan []byte, info models.DataInfo) error {
 	_, ok := fm.meta.Data[name]
 	if ok {
 		return fm.AddEncryptedToStorage(fm.getUniqueName(name), data, info)
 	}
 
-	if err := os.WriteFile(filepath.Join(fm.storageDir, info.DataID), data, fileMode); err != nil {
-		return err
+	outFile, err := os.Create(filepath.Join(fm.storageDir, info.DataID))
+	if err != nil {
+		return fmt.Errorf("%w", err)
 	}
+
+	defer outFile.Close()
+
+loop:
+	for {
+		data, ok := <-data
+		if ok {
+			if _, writeErr := outFile.Write(data); writeErr != nil {
+
+			}
+
+		} else {
+			break loop
+		}
+
+	}
+
+	//if err := os.WriteFile(filepath.Join(fm.storageDir, info.DataID), data, fileMode); err != nil {
+	//if err := os.WriteFile(filepath.Join(fm.storageDir, info.DataID), data, fileMode); err != nil {
+	//	return err
+	//}
 
 	fm.meta.Data[name] = info
 
@@ -114,18 +140,30 @@ func (fm *FileManager) GetByName(name string) ([]byte, models.DataInfo, error) {
 	return decryptedData, info, nil
 }
 
-func (fm *FileManager) GetEncryptedByName(name string) ([]byte, error) {
-	info, ok := fm.meta.Data[name]
-	if !ok {
-		return nil, errors.New("not found secret")
-	}
-
-	data, err := os.ReadFile(filepath.Join(fm.storageDir, info.DataID))
+func (fm *FileManager) ReadEncryptedByName(dataID string, data chan []byte, done chan struct{}) error {
+	file, err := os.Open(filepath.Join(fm.storageDir, dataID))
 	if err != nil {
-		return nil, err
+		//fm.log.Err(err).Msg("Failed to open file")
+
+		return err
+	}
+	defer file.Close()
+
+	buffer := make([]byte, chunkSize)
+
+	for {
+		n, err := file.Read(buffer)
+		if err != nil {
+			if err == io.EOF { // конец файла
+				done <- struct{}{}
+				break
+			}
+			//c.log.Err(err).Msg("Failed to read from file")
+		}
+		data <- buffer[:n]
 	}
 
-	return data, nil
+	return nil
 }
 
 func (fm *FileManager) UpdateDataByName(name string, data Data) error {

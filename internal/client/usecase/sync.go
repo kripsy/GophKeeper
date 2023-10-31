@@ -1,18 +1,18 @@
 package usecase
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/kripsy/GophKeeper/internal/utils"
-	"time"
+	"sync"
 )
 
 func (c *ClientUsecase) sync() {
-	not := c.grpc.IsNotAvailable()
-	try := c.grpc.TryToConnect()
-	if not && try {
+	defer c.InMenu()
+	if c.grpc.IsNotAvailable() || !c.grpc.TryToConnect() {
 		fmt.Println("Failed connect to server")
 		return
 	}
@@ -21,77 +21,187 @@ func (c *ClientUsecase) sync() {
 
 	done := make(chan struct{})
 	errSync := make(chan struct{})
-	defer close(done)
 	defer close(errSync)
-	defer c.InMenu()
+	defer close(done)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	_ = cancel
+	syncKey := uuid.New().String()
 
-	newUUID, err := uuid.NewUUID()
+	c.blockSync(ctx, syncKey, done)
+
+	serverMeta, err := c.downloadServerMeta(ctx, syncKey)
 	if err != nil {
-		c.log.Error().Err(err).Msg("failed get uuid")
+		c.log.Err(err).Msg("failed download server meta data")
+
+		return
 	}
-
-	syncKey := newUUID.String()
-
-	go c.blockSync(syncKey, done, errSync)
-	serverMeta, err := c.downloadServerMeta()
 	toDownload, toUpload := findDifferences(c.userData.Meta.Data, serverMeta)
 	_, _ = toUpload, toDownload
-	//	for id, meta := range download {
-	//		data, err = g.DownloadSecret(id, user.Meta.HashData)
-	//		if err != nil {
-	//
-	//		}
-	//		//err:=filemanager.AddEncrypedData(meta.Name, data, meta)
-	//		_, _ = data, meta // чтобы не краснел
-	//	}
-	//	for id, _ := range upload {
-	//		//data,err:= filemanager.GetDataByID(id)
-	//		g.UploadSecret(id, []byte("data"), [32]byte{}, user.Meta.HashData)
-	//	}
 
-	time.Sleep(time.Second * 4)
-	errSync <- struct{}{}
+	//downloadSecrets
+
+	if err = c.uploadSecrets(ctx, syncKey, toUpload); err != nil {
+		c.log.Err(err).Msg("error upload secrets")
+		return
+	}
+
+	c.uploadMeta(ctx, syncKey)
+
+	if err := c.grpc.ApplyChanges(ctx, syncKey); err != nil {
+		c.log.Err(err).Msg("failed apply changes")
+
+		return
+	}
+	//time.Sleep(time.Second * 4)
+	//errSync <- struct{}{}
 	//c.finishSync(done)
 }
 
-func (c *ClientUsecase) downloadServerMeta() (models.MetaData, error) {
-	//c.grpc.Download(c.userData.User.GetMetaFileName(),)
+func (c *ClientUsecase) uploadMeta(ctx context.Context, syncKey string) {
+	data := make(chan []byte)
+	done := make(chan struct{})
+
+	go func() {
+		//	defer wg.Done()
+		err := c.fileManager.ReadEncryptedByName(c.userData.User.GetMetaFileName(), data, done)
+		if err != nil {
+			c.log.Err(err).Msg("")
+
+			//errors <- err
+			return
+		}
+	}()
+	err := c.grpc.UploadFile(ctx, c.userData.User.GetMetaFileName(), c.userData.Meta.HashData, syncKey, data, done)
+	if err != nil {
+		//errors <- err
+		c.log.Err(err).Msg("")
+		return
+	}
+
+}
+
+func (c *ClientUsecase) uploadSecrets(ctx context.Context, syncKey string, toUpload models.MetaData) error {
+	var wg sync.WaitGroup
+	data := make(chan []byte)
+	done := make(chan struct{})
+	errors := make(chan error, 1)
+
+	for dataID, info := range toUpload {
+		wg.Add(1)
+
+		go func() {
+			err := c.fileManager.ReadEncryptedByName(dataID, data, done)
+			if err != nil {
+				errors <- err
+				return
+			}
+		}()
+
+		err := c.grpc.UploadFile(ctx, dataID, info.Hash, syncKey, data, done)
+		if err != nil {
+			errors <- err
+			return err
+		}
+		wg.Done()
+	}
+
+	if len(errors) != 0 {
+		return <-errors
+	}
+
+	wg.Wait()
+	//for err := range errors {
+	//	return err
+	//}
+
+	return nil
+}
+
+func (c *ClientUsecase) downloadServerMeta(ctx context.Context, syncKey string) (models.MetaData, error) {
+	//err := c.grpc.DownloadFile(ctx, c.userData.User.GetMetaFileName(), "", syncKey, nil)
+	//if err != nil {
+	//	return nil, err
+	//}
+
+	//sd := make(models.MetaData)
+	//	return sd, nil
+	data := make(chan []byte, 1) // буферизированный канал, чтобы избежать блокирования
+	done := make(chan struct{}, 1)
+	//close(data)
+
+	go func() {
+		defer func(done chan struct{}) {
+			done <- struct{}{}
+		}(done)
+		err := c.grpc.DownloadFile(ctx, c.userData.User.GetMetaFileName(), c.userData.Meta.HashData, syncKey, data, done)
+		if err != nil {
+			close(data)
+			return
+		}
+	}()
+
+	err := c.fileManager.AddEncryptedToStorage("test", data, models.DataInfo{DataID: "hz"})
+	if err != nil {
+		c.log.Err(err).Msg("AddEncryptedToStorage")
+	}
+
+	var concatenatedData []byte
+	//loop:
+	//	for {
+	//		select {
+	//		case chunk := <-data:
+	//			concatenatedData = append(concatenatedData, chunk...)
+	//		case <-done:
+	//
+	//			break loop
+	//		}
+	//	}
+
+	//close(data) //
+
 	key, err := c.userData.User.GetUserKey()
 	if err != nil {
 
 		return nil, err
 	}
-	data, err := utils.Decrypt(nil, key)
+	metaData, err := utils.Decrypt(concatenatedData, key)
 	if err != nil {
-
 		return nil, err
 	}
 	var serverData models.UserData
-	if err := json.Unmarshal(data, &serverData); err != nil {
-
+	if err := json.Unmarshal(metaData, &serverData); err != nil {
 		return nil, err
 	}
 
 	return serverData.Meta.Data, nil
+	return nil, nil
 }
 
-func (c *ClientUsecase) blockSync(syncKey string, done chan struct{}, err <-chan struct{}) {
+func (c *ClientUsecase) blockSync(ctx context.Context, syncKey string, done chan struct{}) {
 	go c.ui.Sync(done)
-	_ = c.userData.User.Token
+	guidChan := make(chan string, 1)
+	errChan := make(chan error, 1)
 
-	for {
-		select {
-		case <-done:
-			//c.grpc.BlockSync(secretKey)
-			fmt.Println("Success sync")
+	go func() {
+		err := c.grpc.BlockStore(ctx, syncKey, guidChan)
+		if err != nil {
+			c.log.Err(err).Msg("error block sync")
+
+			errChan <- err
 			return
-		case <-err:
-			done <- struct{}{}
-			fmt.Println("Failed sync")
-			return
-		case <-time.Tick(time.Second):
-			//c.grpc.BlockSync(secretKey)
 		}
+
+	}()
+	select {
+	case newGuid := <-guidChan:
+		_ = newGuid
+		//if syncKey != newGuid {
+		//	errChan <- errors.New("uuid not equal")
+		//}
+		break
+	case err := <-errChan:
+		c.log.Err(err).Msg("error block sync")
 	}
 }
 
