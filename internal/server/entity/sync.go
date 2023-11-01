@@ -1,10 +1,10 @@
 package entity
 
 import (
-	"errors"
 	"sync"
 
 	"github.com/google/uuid"
+	"github.com/kripsy/GophKeeper/internal/models"
 )
 
 type SyncStatus struct {
@@ -31,10 +31,10 @@ func (ss *SyncStatus) AddSync(userID int, syncID uuid.UUID) (bool, error) {
 	if ok {
 		if val == syncID {
 			//fmt.Println("sync already exist for user")
-			return false, errors.New("This sync for this user already exists")
+			return false, models.NewSyncError(models.ErrSyncExists)
 		} else {
 			//fmt.Println("this sync already exists")
-			return false, errors.New("Sync for this user already exists")
+			return false, models.NewSyncError(models.ErrUserSyncExists)
 		}
 	}
 
@@ -59,7 +59,7 @@ func (ss *SyncStatus) RemoveClientSync(userID int, syncID uuid.UUID) error {
 	//fmt.Println("try unlock r RemoveClientSync")
 	ss.rwMutex.RUnlock()
 	if !ok || val != syncID {
-		return errors.New("Sync not found")
+		return models.NewSyncError(models.ErrSyncNotFound)
 	}
 
 	//fmt.Println("try lock for w RemoveClientSync")

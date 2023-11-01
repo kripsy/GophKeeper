@@ -44,41 +44,64 @@ type Config struct {
 	IsUseSSLMinio bool
 }
 
-func InitConfig() (*Config, error) {
+var (
+	URLServer   *string
+	logLevel    *string
+	databaseDsn *string
 
+	secret *string
+
+	isSecure *bool
+
+	// args for minio
+	endpointMinio *string
+
+	accessKeyIDMinio *string
+
+	secretAccessKeyMinio *string
+
+	bucketNameMinio *string
+
+	isUseSSLMinio *bool
+)
+
+func init() {
 	// declare flag set for subcommand
-	URLServer := flag.String("a", "localhost:8080", "Enter address exec http server as ip_address:port. Or use SERVER_ADDRESS env")
-	logLevel := flag.String("l", "Info", "log level: Debug, Info, Warn, Error and etc... Or use LOG_LEVEL env")
-	databaseDsn := flag.String("d",
+	URLServer = flag.String("a", "localhost:8080", "Enter address exec http server as ip_address:port. Or use SERVER_ADDRESS env")
+	logLevel = flag.String("l", "Info", "log level: Debug, Info, Warn, Error and etc... Or use LOG_LEVEL env")
+	databaseDsn = flag.String("d",
 		"postgres://gophkeeperdb:gophkeeperdbpwd@localhost:5432/gophkeeperdb?sslmode=disable",
 		`set path for database... Or use DATABASE_DSN env. 
-		Example postgres://username:password@hostname:port/databasename?sslmode=disable`)
+	Example postgres://username:password@hostname:port/databasename?sslmode=disable`)
 
-	secret := flag.String(
+	secret = flag.String(
 		"s", "supersecret",
 		"Enter secret. Or use SECRET env")
 
-	isSecure := flag.Bool("secure", true, "enable secure grpc? Set true/false... Or use ISSECURE env")
+	isSecure = flag.Bool("secure", true, "enable secure grpc? Set true/false... Or use ISSECURE env")
 
 	// args for minio
-	endpointMinio := flag.String(
+	endpointMinio = flag.String(
 		"endpointMinio", "localhost:9000",
 		"Enter endpoint for Minio. Or use ENDPOINTMINIO env")
 
-	accessKeyIDMinio := flag.String(
+	accessKeyIDMinio = flag.String(
 		"accessKeyIDMinio", "masoud",
 		"Enter accessKeyID for Minio. Or use ACCESSKEYIDMINIO env")
 
-	secretAccessKeyMinio := flag.String(
+	secretAccessKeyMinio = flag.String(
 		"secretAccessKeyMinio", "Strong#Pass#2022",
 		"Enter secretAccessKey for Minio. Or use SECRETACCESSKEYMINIO env")
 
-	bucketNameMinio := flag.String(
+	bucketNameMinio = flag.String(
 		"bucketNameMinio", "secrets",
 		"Enter bucketNameMinio for Minio. Or use BUCKETNAMEMINIO env")
 
-	isUseSSLMinio := flag.Bool("isUseSSLMinio", false,
+	isUseSSLMinio = flag.Bool("isUseSSLMinio", false,
 		"enable ssl for Minio? Set true/false... Or use ISUSESSLMINIO env")
+}
+
+func InitConfig() (*Config, error) {
 
 	flag.Parse()
 
