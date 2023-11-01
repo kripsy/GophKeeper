@@ -11,8 +11,8 @@ const (
 )
 
 type UserData struct {
-	User User
-	Meta UserMeta
+	User User     `json:"user"`
+	Meta UserMeta `json:"meta"`
 }
 
 type User struct {

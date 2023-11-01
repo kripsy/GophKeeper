@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-const chunkSize = 3 * 1024 * 1024 // 5 МБ
+const chunkSize = 4 * 1024 * 1024 // 5 МБ
 
 type FileManager struct {
 	storageDir string
@@ -27,7 +27,7 @@ type FileStorage interface {
 	AddToStorage(name string, data Data, info models.DataInfo) error
 	AddEncryptedToStorage(name string, data chan []byte, info models.DataInfo) error
 	GetByName(name string) ([]byte, models.DataInfo, error)
-	ReadEncryptedByName(name string, data chan []byte, done chan struct{}) error
+	ReadEncryptedByName(name string) (chan []byte, error)
 	UpdateDataByName(name string, data Data) error
 	UpdateInfoByName(name string, info models.DataInfo) error
 	DeleteByName(name string) error
@@ -97,18 +97,10 @@ func (fm *FileManager) AddEncryptedToStorage(name string, data chan []byte, info
 
 	defer outFile.Close()
 
-loop:
-	for {
-		data, ok := <-data
-		if ok {
-			if _, writeErr := outFile.Write(data); writeErr != nil {
-
-			}
-
-		} else {
-			break loop
+	for chunk := range data {
+		if _, writeErr := outFile.Write(chunk); writeErr != nil {
+			fmt.Println(writeErr)
 		}
-
 	}
 
 	//if err := os.WriteFile(filepath.Join(fm.storageDir, info.DataID), data, fileMode); err != nil {
@@ -140,22 +132,22 @@ func (fm *FileManager) GetByName(name string) ([]byte, models.DataInfo, error) {
 	return decryptedData, info, nil
 }
 
-func (fm *FileManager) ReadEncryptedByName(dataID string, data chan []byte, done chan struct{}) error {
+func (fm *FileManager) ReadEncryptedByName(dataID string) (chan []byte, error) {
 	file, err := os.Open(filepath.Join(fm.storageDir, dataID))
 	if err != nil {
 		//fm.log.Err(err).Msg("Failed to open file")
 
-		return err
+		return nil, err
 	}
 	defer file.Close()
 
 	buffer := make([]byte, chunkSize)
-
+	data := make(chan []byte, 1)
 	for {
 		n, err := file.Read(buffer)
 		if err != nil {
 			if err == io.EOF { // конец файла
-				done <- struct{}{}
+				close(data)
 				break
 			}
 			//c.log.Err(err).Msg("Failed to read from file")
@@ -163,7 +155,7 @@ func (fm *FileManager) ReadEncryptedByName(dataID string, data chan []byte, done
 		data <- buffer[:n]
 	}
 
-	return nil
+	return data, nil
 }
 
 func (fm *FileManager) UpdateDataByName(name string, data Data) error {
@@ -216,7 +208,7 @@ func (fm *FileManager) DeleteByName(name string) error {
 
 	err := os.Remove(filepath.Join(fm.storageDir, info.DataID))
 	if err != nil {
-		return err
+		//return err //todo return
 	}
 
 	delete(fm.meta.Data, name)

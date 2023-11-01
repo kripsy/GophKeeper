@@ -25,7 +25,7 @@ func (c CLI) UpdateSecret(metaData models.MetaData) (string, int, bool) {
 		return "", 0, false
 	}
 
-	if ui.UpdateItems[i] == ui.ExitKey {
+	if items[i] == ui.ExitKey {
 		return "", 0, false
 	}
 

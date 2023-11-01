@@ -61,6 +61,9 @@ func (c *ClientUsecase) SetUser() error {
 
 		// todo повторный ввод пароля при регистрации
 		if userAuth.IsUserNotExisting(c.userData.User.GetDir(c.dataPath)) {
+			if c.ui.TryAgain() {
+				continue
+			}
 			if err := c.handleUserRegistration(userAuth); err != nil {
 				return err
 			}
@@ -76,10 +79,6 @@ func (c *ClientUsecase) SetUser() error {
 }
 
 func (c *ClientUsecase) handleUserRegistration(userAuth *filemanager.UserAuth) error {
-	if c.ui.TryAgain() {
-		return nil
-	}
-
 	if c.grpc.TryToConnect() {
 		fmt.Println("Could not connect to the server, only local registration is available")
 	}
