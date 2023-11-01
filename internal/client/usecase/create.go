@@ -2,8 +2,9 @@ package usecase
 
 import (
 	"fmt"
-	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/filemanager"
 	"os"
+
+	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/filemanager"
 )
 
 func (c *ClientUsecase) createSecret(secretType int, success bool) {

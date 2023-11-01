@@ -3,9 +3,10 @@ package filemanager
 import (
 	"encoding/json"
 	"errors"
+	"os"
+
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/kripsy/GophKeeper/internal/utils"
-	"os"
 )
 
 const (

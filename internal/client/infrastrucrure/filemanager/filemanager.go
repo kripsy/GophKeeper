@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/kripsy/GophKeeper/internal/models"
-	"github.com/kripsy/GophKeeper/internal/utils"
 	"io"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/kripsy/GophKeeper/internal/models"
+	"github.com/kripsy/GophKeeper/internal/utils"
 )
 
 const chunkSize = 4 * 1024 * 1024 // 5 МБ

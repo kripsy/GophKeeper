@@ -1,9 +1,10 @@
 package log
 
 import (
-	"github.com/rs/zerolog"
 	"os"
 	"path/filepath"
+
+	"github.com/rs/zerolog"
 )
 
 const fileName = "client.log"

@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
+
 	"github.com/google/uuid"
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/kripsy/GophKeeper/internal/utils"
-	"sync"
 )
 
 func (c *ClientUsecase) sync() {
@@ -24,8 +25,8 @@ func (c *ClientUsecase) sync() {
 	defer close(errSync)
 	defer close(done)
 	ctx, cancel := context.WithCancel(context.Background())
-	//defer cancel() //todo
-	_ = cancel
+	defer cancel() //todo
+	// _ = cancel
 	syncKey := uuid.New().String()
 
 	if err := c.blockSync(ctx, syncKey, done); err != nil {
