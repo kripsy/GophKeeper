@@ -24,7 +24,7 @@ func (c *ClientUsecase) sync() {
 	defer close(errSync)
 	defer close(done)
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	//defer cancel() //todo
 	_ = cancel
 	syncKey := uuid.New().String()
 
@@ -55,7 +55,11 @@ func (c *ClientUsecase) sync() {
 		return
 	}
 
-	c.uploadMeta(ctx, syncKey)
+	if err = c.uploadMeta(ctx, syncKey); err != nil {
+		c.log.Err(err).Msg("error upload meta")
+
+		return
+	}
 
 	if err := c.grpc.ApplyChanges(ctx, syncKey); err != nil {
 		c.log.Err(err).Msg("failed apply changes")
@@ -65,27 +69,19 @@ func (c *ClientUsecase) sync() {
 
 }
 
-func (c *ClientUsecase) uploadMeta(ctx context.Context, syncKey string) {
-	var data chan []byte
-	var err error
-
-	go func() {
-		//	defer wg.Done()
-		data, err = c.fileManager.ReadEncryptedByName(c.userData.User.GetMetaFileName())
-		if err != nil {
-			c.log.Err(err).Msg("")
-
-			//errors <- err
-			return
-		}
-	}()
-	err = c.grpc.UploadFile(ctx, c.userData.User.GetMetaFileName(), c.userData.Meta.HashData, syncKey, data)
+func (c *ClientUsecase) uploadMeta(ctx context.Context, syncKey string) error {
+	data, err := c.fileManager.ReadEncryptedByName(c.userData.User.GetMetaFileName())
 	if err != nil {
-		//errors <- err
-		c.log.Err(err).Msg("")
-		return
+
+		return err
 	}
 
+	err = c.grpc.UploadFile(ctx, c.userData.User.GetMetaFileName(), c.userData.Meta.HashData, syncKey, data)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *ClientUsecase) uploadSecrets(ctx context.Context, syncKey string, toUpload models.MetaData) error {
@@ -98,13 +94,11 @@ func (c *ClientUsecase) uploadSecrets(ctx context.Context, syncKey string, toUpl
 	for dataID, info := range toUpload {
 		wg.Add(1)
 
-		go func() {
-			data, err = c.fileManager.ReadEncryptedByName(dataID)
-			if err != nil {
-				errors <- err
-				return
-			}
-		}()
+		data, err = c.fileManager.ReadEncryptedByName(dataID)
+		if err != nil {
+			errors <- err
+			break
+		}
 
 		err = c.grpc.UploadFile(ctx, dataID, info.Hash, syncKey, data)
 		if err != nil {
@@ -159,8 +153,9 @@ func (c *ClientUsecase) downloadServerMeta(ctx context.Context, syncKey string) 
 		return nil, err
 	}
 	var concatenatedData []byte
+	var serverData models.UserMeta
 	var wg sync.WaitGroup
-	wg.Add(1) // Добавляем одну горутину в ожидание
+	wg.Add(1)
 
 	go func() {
 		defer wg.Done()
@@ -171,6 +166,10 @@ func (c *ClientUsecase) downloadServerMeta(ctx context.Context, syncKey string) 
 
 	wg.Wait()
 
+	if len(concatenatedData) == 0 {
+		return serverData.Data, nil
+	}
+
 	key, err := c.userData.User.GetUserKey()
 	if err != nil {
 
@@ -180,7 +179,7 @@ func (c *ClientUsecase) downloadServerMeta(ctx context.Context, syncKey string) 
 	if err != nil {
 		return nil, err
 	}
-	var serverData models.UserMeta
+
 	if err := json.Unmarshal(metaData, &serverData); err != nil {
 		return nil, err
 	}
@@ -197,22 +196,17 @@ func (c *ClientUsecase) blockSync(ctx context.Context, syncKey string, done chan
 		err := c.grpc.BlockStore(ctx, syncKey, guidChan)
 		if err != nil {
 			c.log.Err(err).Msg("error block sync")
-
 			errChan <- err
 			return
 		}
-
 	}()
+
 	select {
 	case newGuid := <-guidChan:
 		_ = newGuid
-		//if syncKey != newGuid {
-		//	errChan <- errors.New("uuid not equal")
-		//}
 		break
 	case err := <-errChan:
 		c.log.Err(err).Msg("error block sync")
-
 		return err
 	}
 

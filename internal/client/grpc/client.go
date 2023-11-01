@@ -73,6 +73,8 @@ func (c *Grpc) BlockStore(ctx context.Context, syncKey string, guidChan chan str
 	err = stream.Send(&pb.BlockStoreRequest{Guid: syncKey})
 	if err != nil {
 		c.log.Err(err).Msg("err send block store req")
+
+		return err
 	}
 
 	resp, err := stream.Recv()
@@ -82,16 +84,12 @@ func (c *Grpc) BlockStore(ctx context.Context, syncKey string, guidChan chan str
 	}
 
 	guidChan <- resp.Guid
-loop:
-	for {
-		select {
-		case <-ctx.Done():
-			err := stream.CloseSend()
-			c.log.Err(err).Msg("failed BlockStore CloseSend")
+	//err = stream.CloseSend()
+	//if err != nil {
+	//	c.log.Err(err).Msg("failed BlockStore CloseSend")
+	//	return err
+	//}
 
-			break loop
-		}
-	}
 	return nil
 }
 
@@ -134,7 +132,6 @@ func (c *Grpc) UploadFile(ctx context.Context, fileName string, hash string, syn
 		return err
 	}
 	go func() {
-
 		for chunk := range data {
 			if err := stream.Send(&pb.MultipartUploadFileRequest{
 				FileName: fileName,
@@ -146,24 +143,6 @@ func (c *Grpc) UploadFile(ctx context.Context, fileName string, hash string, syn
 			}
 		}
 	}()
-	//loop:
-	//	for {
-	//		select {
-	//		case d := <-data:
-	//
-	//				break loop
-	//				//return err
-	//			}
-	//		case <-stream.Context().Done():
-	//			c.log.Debug().Msg("dododod")
-	//			break loop
-	//		}
-	//	}
-	//}()
-	//<-done
-	//if err := stream.CloseSend(); err != nil {
-	//	return err
-	//}
 
 	return nil
 }
