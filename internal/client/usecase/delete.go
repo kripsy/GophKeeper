@@ -7,7 +7,7 @@ func (c *ClientUsecase) deleteSecret(secretName string, success bool) {
 	}
 
 	if err := c.fileManager.DeleteByName(secretName); err != nil {
-
+		c.log.Err(err).Msg("err del file")
 	}
 
 }
