@@ -20,8 +20,7 @@ type MinioRepository interface {
 	CreateBucketSecret(ctx context.Context, username string, userID int) (bool, error)
 	GetObject(ctx context.Context, bucketName, filename string) (*[]byte, string, error)
 	ListObjects(ctx context.Context, bucketName, prefix string) (*[]string, error)
-	CopyRCFiles(ctx context.Context, bucketName string) error
-	DeleteFilesWithoutRC(ctx context.Context, bucketName string) error
+	ApplyChanges(ctx context.Context, bucketName string) error
 	DiscardChanges(ctx context.Context, bucketName string) error
 }
 
@@ -160,20 +159,11 @@ func (uc *secretUseCase) MultipartDownloadFile(ctx context.Context, req *models.
 }
 
 func (uc *secretUseCase) ApplyChanges(ctx context.Context, bucketName string) (bool, error) {
-	uc.logger.Debug("Start ApplyChanges")
-	err := uc.secretRepo.CopyRCFiles(ctx, bucketName)
-	uc.logger.Debug("End CopyRCFiles")
+	uc.logger.Debug("Start ApplyChanges in usecase")
+	err := uc.secretRepo.ApplyChanges(ctx, bucketName)
+	uc.logger.Debug("End ApplyChanges in usecase")
 	if err != nil {
 		uc.logger.Error("Error in ApplyChanges", zap.Error(err))
-
-		return false, err
-	}
-
-	uc.logger.Debug("Start DeleteFilesWithoutRC")
-	err = uc.secretRepo.DeleteFilesWithoutRC(ctx, bucketName)
-	uc.logger.Debug("End DeleteFilesWithoutRC")
-	if err != nil {
-		uc.logger.Error("Error in DeleteFilesWithoutRC", zap.Error(err))
 
 		return false, err
 	}

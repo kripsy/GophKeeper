@@ -15,14 +15,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// type MinioRepository interface {
-// 	MultipartUploadFile(context.Context, *models.MultipartUploadFileData, int, string) (*models.ObjectPart, error)
-// 	CreateBucketSecret(ctx context.Context, username string, userID int) (bool, error)
-// 	GetObject(ctx context.Context, bucketName, filename string) (*[]byte, string, error)
-// 	ListObjects(ctx context.Context, bucketName, prefix string) (*[]string, error)
-// 	CopyRCFiles(ctx context.Context, bucketName string) error
-// }
-
 type minioRepository struct {
 	client *minio.Client
 	logger *zap.Logger
@@ -202,57 +194,80 @@ func (m *minioRepository) ListFilesWithPostfix(bucketName, postfix string) ([]st
 	return fileList, nil
 }
 
-func (m *minioRepository) CopyRCFiles(ctx context.Context, bucketName string) error {
+func (m *minioRepository) ApplyChanges(ctx context.Context, bucketName string) error {
 	postfix := ".rc"
-	files, err := m.ListFilesWithPostfix(bucketName, postfix)
-	if err != nil {
-		return err
-	}
 
-	for _, file := range files {
-		srcOpts := minio.CopySrcOptions{
-			Bucket: bucketName,
-			Object: file,
-		}
-		dst := strings.TrimSuffix(file, postfix)
-		dstOpts := minio.CopyDestOptions{
-			Bucket: bucketName,
-			Object: dst,
-		}
-
-		_, err := m.client.CopyObject(ctx, dstOpts, srcOpts)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (m *minioRepository) DeleteFilesWithoutRC(ctx context.Context, bucketName string) error {
-	postfix := ".rc"
+	// Получить список файлов с расширением .rc
 	rcFiles, err := m.ListFilesWithPostfix(bucketName, postfix)
 	if err != nil {
+		m.logger.Error("Error to get list files with rc prefix", zap.Error(err))
+
 		return err
 	}
+	m.logger.Debug("List files with rc prefix", zap.Any("rcFiles", rcFiles))
 
+	// Создать карту для файлов .rc
 	rcMap := make(map[string]bool)
 	for _, file := range rcFiles {
-		rcMap[strings.TrimSuffix(file, postfix)] = true
+		// baseName := strings.TrimSuffix(file, postfix)      // Удалить .rc
+		secretName := strings.Split(file, "-part-")[0] // Получить имя секрета без -part-<номер>
+		rcMap[secretName] = true
 	}
+	m.logger.Debug("Current rcMap - files, that without rc, union by -path-", zap.Any("map", rcMap))
 
+	// Получить список всех файлов
 	allFiles, err := m.ListFilesWithPostfix(bucketName, "")
 	if err != nil {
+		m.logger.Error("Error to get list all files", zap.Error(err))
+
 		return err
 	}
 
+	m.logger.Debug("List all files", zap.Any("allFiles", allFiles))
+
 	for _, file := range allFiles {
-		if !rcMap[file] {
+		secretName := strings.Split(file, "-part-")[0]
+		if rcMap[secretName] && !isInRCFiles(file, rcFiles) {
+			// Если файл есть в карте, то удалить его
+			m.logger.Debug("remove file for update", zap.String("fileName", file))
 			err := m.client.RemoveObject(ctx, bucketName, file, minio.RemoveObjectOptions{})
 			if err != nil {
+				m.logger.Error("Error remove file, that should be updated", zap.Error(err))
+
 				return err
 			}
 		}
 	}
+
+	// Копировать файлы .rc без расширения .rc
+	for _, rcFile := range rcFiles {
+		newName := strings.TrimSuffix(rcFile, postfix)
+		srcOpts := minio.CopySrcOptions{
+			Bucket: bucketName,
+			Object: rcFile,
+		}
+
+		dstOpts := minio.CopyDestOptions{
+			Bucket: bucketName,
+			Object: newName,
+		}
+
+		_, err := m.client.CopyObject(ctx, dstOpts, srcOpts)
+		if err != nil {
+			m.logger.Error("Error copy rc file", zap.Error(err))
+
+			return err
+		}
+
+		// Удалить исходный файл .rc после копирования
+		err = m.client.RemoveObject(ctx, bucketName, rcFile, minio.RemoveObjectOptions{})
+		if err != nil {
+			m.logger.Error("Error remove rc file", zap.Error(err))
+
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -270,4 +285,14 @@ func (m *minioRepository) DiscardChanges(ctx context.Context, bucketName string)
 		}
 	}
 	return nil
+}
+
+// Функция для проверки, находится ли файл в списке rcFiles
+func isInRCFiles(file string, rcFiles []string) bool {
+	for _, rcFile := range rcFiles {
+		if file == rcFile {
+			return true
+		}
+	}
+	return false
 }
