@@ -23,17 +23,29 @@ func (c *ClientUsecase) getSecrets(secretName string, success bool) {
 	switch info.DataType {
 	case filemanager.NoteType:
 		var dataStruct filemanager.Note
-		_ = json.Unmarshal(data, &dataStruct)
+		if err != nil {
+			c.log.Err(err).Msg("failed unmurshal data")
+
+			return
+		}
 		fmt.Println(fmt.Sprintf("%s, %s: %v", info.Name, info.Description, dataStruct)) //todo odod
 
 	case filemanager.BasicAuthType:
 		var dataStruct filemanager.BasicAuth
-		_ = json.Unmarshal(data, &dataStruct)
+		if err != nil {
+			c.log.Err(err).Msg("failed unmurshal data")
+
+			return
+		}
 		fmt.Println(fmt.Sprintf("%s, %s: %v", info.Name, info.Description, dataStruct)) //todo odod
 
 	case filemanager.CardDataType:
 		var dataStruct filemanager.CardData
-		_ = json.Unmarshal(data, &dataStruct)
+		if err != nil {
+			c.log.Err(err).Msg("failed unmurshal data")
+
+			return
+		}
 		fmt.Println(fmt.Sprintf("%s, %s: %v", info.Name, info.Description, dataStruct)) //todo odod
 
 	case filemanager.FileType:
@@ -42,7 +54,12 @@ func (c *ClientUsecase) getSecrets(secretName string, success bool) {
 		if !ok {
 			return
 		}
-		_ = json.Unmarshal(data, &dataStruct)
+		err = json.Unmarshal(data, &dataStruct)
+		if err != nil {
+			c.log.Err(err).Msg("failed unmurshal data")
+
+			return
+		}
 		if _, err := os.Stat(newFilePath); os.IsNotExist(err) {
 			if err = os.MkdirAll(newFilePath, 0777); err != nil {
 				fmt.Println(err)

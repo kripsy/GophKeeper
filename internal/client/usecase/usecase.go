@@ -61,7 +61,7 @@ func (c *ClientUsecase) SetUser() error {
 		}
 
 		if userAuth.IsUserNotExisting(c.userData.User.GetDir(c.dataPath)) {
-			if c.grpc.TryToConnect() && c.checkUserOnServer() {
+			if c.grpc.TryToConnect() && c.checkUserOnServer(userAuth) {
 				return nil
 			}
 			if c.ui.TryAgain() {
@@ -81,7 +81,7 @@ func (c *ClientUsecase) SetUser() error {
 	}
 }
 
-func (c *ClientUsecase) checkUserOnServer() bool {
+func (c *ClientUsecase) checkUserOnServer(userAuth *filemanager.UserAuth) bool {
 	hash, err := c.userData.User.GetHashedPass()
 	if err != nil {
 		c.log.Info().Err(err).Msg("failed get hashed password")
@@ -110,8 +110,12 @@ func (c *ClientUsecase) checkUserOnServer() bool {
 
 		return false
 	}
-	c.userData.Meta.Data = make(models.MetaData)
 
+	meta, err := userAuth.CreateUser(&c.userData.User, false)
+	if err != nil {
+		return false
+	}
+	c.userData.Meta = meta
 	if err = c.grpc.ApplyChanges(ctx, syncKey); err != nil {
 		c.log.Info().Err(err).Msg("failed apply changes")
 
