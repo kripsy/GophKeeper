@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-const chunkSize = 4 * 1024 * 1024 // 5 МБ
+const chunkSize = 3 * 1024 * 1024 // 3 МБ
 
 type FileManager struct {
 	storageDir string
@@ -92,21 +92,16 @@ func (fm *FileManager) AddEncryptedToStorage(name string, data chan []byte, info
 
 	outFile, err := os.Create(filepath.Join(fm.storageDir, info.DataID))
 	if err != nil {
-		return fmt.Errorf("%w", err)
+		return err
 	}
 
 	defer outFile.Close()
 
 	for chunk := range data {
 		if _, writeErr := outFile.Write(chunk); writeErr != nil {
-			fmt.Println(writeErr)
+			return err
 		}
 	}
-
-	//if err := os.WriteFile(filepath.Join(fm.storageDir, info.DataID), data, fileMode); err != nil {
-	//if err := os.WriteFile(filepath.Join(fm.storageDir, info.DataID), data, fileMode); err != nil {
-	//	return err
-	//}
 
 	fm.meta.Data[name] = info
 
@@ -135,25 +130,26 @@ func (fm *FileManager) GetByName(name string) ([]byte, models.DataInfo, error) {
 func (fm *FileManager) ReadEncryptedByName(dataID string) (chan []byte, error) {
 	file, err := os.Open(filepath.Join(fm.storageDir, dataID))
 	if err != nil {
-		//fm.log.Err(err).Msg("Failed to open file")
-
 		return nil, err
 	}
-	defer file.Close()
 
-	buffer := make([]byte, chunkSize)
 	data := make(chan []byte, 1)
-	for {
-		n, err := file.Read(buffer)
-		if err != nil {
-			if err == io.EOF { // конец файла
-				close(data)
-				break
+	buffer := make([]byte, chunkSize)
+
+	go func(data chan []byte) {
+		defer file.Close()
+		defer close(data)
+		for {
+			n, err := file.Read(buffer)
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
 			}
-			//c.log.Err(err).Msg("Failed to read from file")
+
+			data <- buffer[:n]
 		}
-		data <- buffer[:n]
-	}
+	}(data)
 
 	return data, nil
 }
@@ -208,7 +204,7 @@ func (fm *FileManager) DeleteByName(name string) error {
 
 	err := os.Remove(filepath.Join(fm.storageDir, info.DataID))
 	if err != nil {
-		//return err //todo return
+		return err
 	}
 
 	delete(fm.meta.Data, name)
@@ -220,7 +216,7 @@ func (fm *FileManager) saveMetaData(updatedAt time.Time) error {
 	//fm.meta.UpdatedAt = updatedAt
 	data, err := json.Marshal(fm.meta)
 	if err != nil {
-		return err // удалить данные в случае ошибки, загрузите повторно
+		return err // todo удалить данные в случае ошибки, загрузите повторно
 	}
 
 	encrypt, err := utils.Encrypt(data, fm.key)

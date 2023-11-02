@@ -14,8 +14,8 @@ import (
 )
 
 type Client interface {
-	Register(ctx context.Context, in *pb.AuthRequest) error
-	Login(ctx context.Context, in *pb.AuthRequest) error
+	Register(login, password string) error
+	Login(login, password string) error
 
 	DownloadFile(ctx context.Context, fileName string, fileHash string, syncKey string) (chan []byte, error)
 	UploadFile(ctx context.Context, fileName string, hash string, syncKey string, data chan []byte) error
@@ -44,8 +44,11 @@ func NewClient(serverAddress string, log zerolog.Logger) *Grpc {
 	}
 }
 
-func (c *Grpc) Register(ctx context.Context, in *pb.AuthRequest) error {
-	resp, err := c.client.Register(ctx, in)
+func (c *Grpc) Register(login, password string) error {
+	resp, err := c.client.Register(context.Background(), &pb.AuthRequest{
+		Username: login,
+		Password: password,
+	})
 	if err != nil {
 		return err
 	}
@@ -54,8 +57,11 @@ func (c *Grpc) Register(ctx context.Context, in *pb.AuthRequest) error {
 	return nil
 }
 
-func (c *Grpc) Login(ctx context.Context, in *pb.AuthRequest) error {
-	resp, err := c.client.Login(ctx, in)
+func (c *Grpc) Login(login, password string) error {
+	resp, err := c.client.Login(context.Background(), &pb.AuthRequest{
+		Username: login,
+		Password: password,
+	})
 	if err != nil {
 		return err
 	}
@@ -84,12 +90,6 @@ func (c *Grpc) BlockStore(ctx context.Context, syncKey string, guidChan chan str
 	}
 
 	guidChan <- resp.Guid
-	//err = stream.CloseSend()
-	//if err != nil {
-	//	c.log.Err(err).Msg("failed BlockStore CloseSend")
-	//	return err
-	//}
-
 	return nil
 }
 
@@ -131,18 +131,19 @@ func (c *Grpc) UploadFile(ctx context.Context, fileName string, hash string, syn
 	if err != nil {
 		return err
 	}
-	go func() {
-		for chunk := range data {
-			if err := stream.Send(&pb.MultipartUploadFileRequest{
-				FileName: fileName,
-				Hash:     hash,
-				Guid:     syncKey,
-				Content:  chunk,
-			}); err != nil && err != io.EOF {
-				c.log.Err(err).Msg("upload")
-			}
+
+	for chunk := range data {
+		if err = stream.Send(&pb.MultipartUploadFileRequest{
+			FileName: fileName,
+			Hash:     hash,
+			Guid:     syncKey,
+			Content:  chunk,
+		}); err != nil && err != io.EOF {
+			c.log.Err(err).Msg("failed upload")
+
+			return err
 		}
-	}()
+	}
 
 	return nil
 }

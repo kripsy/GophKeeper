@@ -15,6 +15,9 @@ func (c *ClientUsecase) getSecrets(secretName string, success bool) {
 	}
 
 	data, info, err := c.fileManager.GetByName(secretName)
+	if err != nil {
+		c.log.Err(err).Msg("err get secret from meta")
+	}
 
 	switch info.DataType {
 	case filemanager.NoteType:

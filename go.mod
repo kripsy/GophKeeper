@@ -19,7 +19,6 @@ require (
 	github.com/labstack/echo/v4 v4.11.2
 	github.com/manifoldco/promptui v0.9.0
 	github.com/minio/minio-go/v7 v7.0.63
-	github.com/nsf/termbox-go v1.1.1
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.31.0
 	go.uber.org/zap v1.26.0

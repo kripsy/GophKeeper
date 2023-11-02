@@ -38,7 +38,7 @@ func (di *DataInfo) SetFileName(path string) {
 	di.FileName = &fileName
 }
 
-func (md UserMeta) GetHash() error {
+func (md *UserMeta) GetHash() error { //todo delete
 	meta, err := json.Marshal(md.Data)
 	if err != nil {
 		return err

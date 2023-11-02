@@ -8,6 +8,7 @@ import (
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/kripsy/GophKeeper/internal/utils"
 	"sync"
+	"time"
 )
 
 func (c *ClientUsecase) sync() {
@@ -17,18 +18,16 @@ func (c *ClientUsecase) sync() {
 		return
 	}
 
-	//	oldHashMeta := user.Meta.HashData
-
 	done := make(chan struct{})
 	errSync := make(chan struct{})
 	defer close(errSync)
 	defer close(done)
 	ctx, cancel := context.WithCancel(context.Background())
-	//defer cancel() //todo
-	_ = cancel
+	defer cancel()
+	go c.ui.Sync(done)
 	syncKey := uuid.New().String()
 
-	if err := c.blockSync(ctx, syncKey, done); err != nil {
+	if err := c.blockSync(ctx, syncKey); err != nil {
 		return
 	}
 
@@ -38,10 +37,11 @@ func (c *ClientUsecase) sync() {
 
 		return
 	}
-	toDownload, toUpload := findDifferences(c.userData.Meta.Data, serverMeta)
-	//if len(toUpload) == 0 && len(toDownload) == 0 {
-	//	return
-	//}
+
+	toDownload, toUpload := findDifferences(c.userData.Meta.Data, serverMeta.Data)
+	if len(toUpload) == 0 && len(toDownload) == 0 {
+		return
+	}
 
 	_, _ = toUpload, toDownload
 
@@ -61,6 +61,7 @@ func (c *ClientUsecase) sync() {
 		return
 	}
 
+	time.Sleep(time.Second * 5) //todo похоже ApplyChanges срабатывает раньше времени
 	if err := c.grpc.ApplyChanges(ctx, syncKey); err != nil {
 		c.log.Err(err).Msg("failed apply changes")
 
@@ -86,42 +87,31 @@ func (c *ClientUsecase) uploadMeta(ctx context.Context, syncKey string) error {
 
 func (c *ClientUsecase) uploadSecrets(ctx context.Context, syncKey string, toUpload models.MetaData) error {
 	var wg sync.WaitGroup
-	var data chan []byte
-	var err error
-
-	errors := make(chan error, 1)
 
 	for dataID, info := range toUpload {
 		wg.Add(1)
 
-		data, err = c.fileManager.ReadEncryptedByName(dataID)
+		data, err := c.fileManager.ReadEncryptedByName(dataID)
 		if err != nil {
-			errors <- err
-			break
+			return err
 		}
 
 		err = c.grpc.UploadFile(ctx, dataID, info.Hash, syncKey, data)
 		if err != nil {
-			errors <- err
 			return err
 		}
+
 		wg.Done()
 	}
 
-	if len(errors) != 0 {
-		return <-errors
-	}
-
 	wg.Wait()
-	//for err := range errors {
-	//	return err
-	//}
 
 	return nil
 }
 
 func (c *ClientUsecase) downloadSecrets(ctx context.Context, syncKey string, toDownload models.MetaData) error {
 	var wg sync.WaitGroup
+	errors := make(chan error, 1)
 
 	for dataID, info := range toDownload {
 		wg.Add(1)
@@ -131,23 +121,29 @@ func (c *ClientUsecase) downloadSecrets(ctx context.Context, syncKey string, toD
 
 			data, err := c.grpc.DownloadFile(ctx, info.DataID, c.userData.Meta.HashData, syncKey)
 			if err != nil {
+				errors <- err
 				c.log.Err(err).Msg("failed download secret")
 				return
 			}
 
 			err = c.fileManager.AddEncryptedToStorage(info.Name, data, info)
 			if err != nil {
+				errors <- err
 				c.log.Err(err).Msg("AddEncryptedToStorage")
+				return
 			}
 		}(dataID, info)
 	}
 
 	wg.Wait()
+	if len(errors) != 0 {
+		return <-errors
+	}
 
 	return nil
 }
 
-func (c *ClientUsecase) downloadServerMeta(ctx context.Context, syncKey string) (models.MetaData, error) {
+func (c *ClientUsecase) downloadServerMeta(ctx context.Context, syncKey string) (*models.UserMeta, error) {
 	data, err := c.grpc.DownloadFile(ctx, c.userData.User.GetMetaFileName(), c.userData.Meta.HashData, syncKey)
 	if err != nil {
 		return nil, err
@@ -155,19 +151,18 @@ func (c *ClientUsecase) downloadServerMeta(ctx context.Context, syncKey string) 
 	var concatenatedData []byte
 	var serverData models.UserMeta
 	var wg sync.WaitGroup
-	wg.Add(1)
 
+	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		for chunk := range data {
 			concatenatedData = append(concatenatedData, chunk...)
 		}
 	}()
-
 	wg.Wait()
 
 	if len(concatenatedData) == 0 {
-		return serverData.Data, nil
+		return &serverData, nil
 	}
 
 	key, err := c.userData.User.GetUserKey()
@@ -175,20 +170,20 @@ func (c *ClientUsecase) downloadServerMeta(ctx context.Context, syncKey string) 
 
 		return nil, err
 	}
+
 	metaData, err := utils.Decrypt(concatenatedData, key)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := json.Unmarshal(metaData, &serverData); err != nil {
+	if err = json.Unmarshal(metaData, &serverData); err != nil {
 		return nil, err
 	}
 
-	return serverData.Data, nil
+	return &serverData, nil
 }
 
-func (c *ClientUsecase) blockSync(ctx context.Context, syncKey string, done chan struct{}) error {
-	go c.ui.Sync(done)
+func (c *ClientUsecase) blockSync(ctx context.Context, syncKey string) error {
 	guidChan := make(chan string, 1)
 	errChan := make(chan error, 1)
 

@@ -59,7 +59,7 @@ loop:
 				uc.logger.Debug("loop getting data ended")
 				break loop
 			}
-			uc.logger.Debug("we got simple data", zap.Any("context", data))
+			//	uc.logger.Debug("we got simple data", zap.Any("context", data)) //todo перегружает лог при получении большого пакета данных
 
 			partNum++
 			part, err := uc.secretRepo.MultipartUploadFile(ctx, data, partNum, bucketName)
