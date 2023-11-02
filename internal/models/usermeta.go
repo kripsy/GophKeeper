@@ -21,7 +21,7 @@ type DataInfo struct {
 	Name        string    `json:"name,omitempty"`
 	DataID      string    `json:"data_id"`
 	DataType    int       `json:"data_type"`
-	Description string    `json:"description""`
+	Description string    `json:"description"`
 	FileName    *string   `json:"file_name,omitempty"`
 	Hash        string    `json:"hash"`
 	IsDeleted   bool      `json:"is_deleted"` // todo вынести в отдельное поле

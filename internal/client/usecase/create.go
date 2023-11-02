@@ -40,7 +40,7 @@ func (c *ClientUsecase) createSecret(secretType int, success bool) {
 		if err != nil {
 			fmt.Println(err)
 		}
-		data := filemanager.File{body}
+		data := filemanager.File{Data: body}
 		c.fileManager.AddToStorage(info.Name, data, info)
 	}
 }
