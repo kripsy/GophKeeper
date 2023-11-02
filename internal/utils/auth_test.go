@@ -2,7 +2,6 @@ package utils_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -42,7 +41,6 @@ func TestGetHash(t *testing.T) {
 			}
 			if !tt.wantErr {
 				err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(tt.password))
-				fmt.Println(err)
 				if err != nil {
 					t.Errorf("Failed to compare hashed password with original password: %v", err)
 				}
