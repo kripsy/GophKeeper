@@ -2,11 +2,12 @@ package cli
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/c-bata/go-prompt"
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui"
 	"github.com/manifoldco/promptui"
-	"os"
-	"path/filepath"
 )
 
 const (

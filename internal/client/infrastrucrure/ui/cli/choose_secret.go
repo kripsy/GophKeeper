@@ -1,12 +1,13 @@
 package cli
 
 import (
+	"sort"
+	"strings"
+
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/filemanager"
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui"
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/manifoldco/promptui"
-	"sort"
-	"strings"
 )
 
 func (c CLI) GetSecret(metaData models.MetaData) (string, bool) {

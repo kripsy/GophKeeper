@@ -3,13 +3,14 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"github.com/google/uuid"
 	"github.com/kripsy/GophKeeper/internal/client/grpc"
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/filemanager"
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui"
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/rs/zerolog"
-	"os"
 )
 
 type ClientUsecase struct {

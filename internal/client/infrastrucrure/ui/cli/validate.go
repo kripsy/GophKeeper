@@ -2,8 +2,9 @@ package cli
 
 import (
 	"errors"
-	"github.com/manifoldco/promptui"
 	"strconv"
+
+	"github.com/manifoldco/promptui"
 )
 
 var errStyle = promptui.Styler(promptui.BGRed, promptui.FGBold, promptui.FGBlack)

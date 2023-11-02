@@ -2,8 +2,9 @@ package models
 
 import (
 	"encoding/hex"
-	"github.com/kripsy/GophKeeper/internal/utils"
 	"path/filepath"
+
+	"github.com/kripsy/GophKeeper/internal/utils"
 )
 
 const (

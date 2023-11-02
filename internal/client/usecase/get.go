@@ -3,9 +3,10 @@ package usecase
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/filemanager"
 	"os"
 	"path/filepath"
+
+	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/filemanager"
 )
 
 func (c *ClientUsecase) getSecrets(secretName string, success bool) {

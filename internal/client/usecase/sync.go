@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/kripsy/GophKeeper/internal/utils"
-	"sync"
-	"time"
 )
 
 func (c *ClientUsecase) sync() {
