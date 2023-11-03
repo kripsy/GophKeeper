@@ -142,11 +142,11 @@ func (c *ClientUsecase) handleUserRegistration(userAuth *filemanager.UserAuth) e
 		return nil
 	}
 
-	var isLocalStorage bool
+	var isSyncStorage bool
 	if c.grpc.IsAvailable() {
-		isLocalStorage = c.ui.IsLocalStorage()
+		isSyncStorage = c.ui.IsLocalStorage()
 	}
-	if !isLocalStorage {
+	if isSyncStorage {
 		hash, err := c.userData.User.GetHashedPass()
 		if err != nil {
 			c.log.Err(err).Msg("failed get hashed password")
@@ -160,7 +160,7 @@ func (c *ClientUsecase) handleUserRegistration(userAuth *filemanager.UserAuth) e
 		}
 	}
 
-	meta, err := userAuth.CreateUser(&c.userData.User, isLocalStorage)
+	meta, err := userAuth.CreateUser(&c.userData.User, isSyncStorage)
 	if err != nil {
 		return err
 	}

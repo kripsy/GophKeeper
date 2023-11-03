@@ -1,23 +1,35 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 )
 
-var configPath = "./config.yaml"
-
-const defaultPath = "./"
+const (
+	defaultConfigPath    = "./config.yaml"
+	defaultStoragePath   = "./1keeper/Data"
+	defaultUploadPath    = "./1keeper/Upload"
+	defaultServerAddress = "127.0.0.1:50051"
+)
 
 func GetConfig() Config {
 	var cfg Config
+
 	f := parseFlags()
-	if f.ConfigPath != "" {
-		configPath = f.ConfigPath
+	configPath := f.ConfigPath
+	if configPath == "" {
+		configPath = defaultConfigPath
 	}
-	parseConfig(configPath, &cfg)
+
+	if _, err := os.Stat(configPath); !os.IsNotExist(err) {
+		if err = parseConfig(configPath, &cfg); err != nil {
+			fmt.Print("failed read yaml config file: ", err.Error())
+			os.Exit(1)
+		}
+	}
 
 	if f.StoragePath != "" {
 		cfg.StoragePath = f.StoragePath
@@ -30,11 +42,13 @@ func GetConfig() Config {
 	}
 
 	if cfg.StoragePath == "" {
-		cfg.StoragePath = defaultPath
+		cfg.StoragePath = defaultStoragePath
 	}
-
 	if cfg.UploadPath == "" {
-		cfg.UploadPath = defaultPath
+		cfg.UploadPath = defaultUploadPath
+	}
+	if cfg.ServerAddress == "" {
+		cfg.ServerAddress = defaultServerAddress
 	}
 
 	return cfg
@@ -47,15 +61,19 @@ type Config struct {
 }
 
 func parseConfig(filePath string, cfg any) error {
-	filename, _ := filepath.Abs(filePath)
+	filename, err := filepath.Abs(filePath)
+	if err != nil {
+		return err
+	}
+
 	yamlFile, err := os.ReadFile(filename)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	err = yaml.Unmarshal(yamlFile, cfg)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	return nil

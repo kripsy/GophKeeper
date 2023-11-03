@@ -34,6 +34,10 @@ var activeSecretFunc = func(icon string) string {
 	return fmt.Sprintf(activeSecret, icon)
 }
 
+var styleRed = func(s string) string {
+	return promptui.Styler(promptui.BGRed, promptui.FGBold)(s)
+}
+
 var menuTemplate = &promptui.SelectTemplates{
 	Label:    labelFunc(yellow),
 	Active:   activeMenu,
@@ -48,21 +52,21 @@ var tryAgainTemplate = &promptui.SelectTemplates{
 
 var chooseSecretTemplate = &promptui.SelectTemplates{
 	Label:    labelFunc(yellow),
-	Active:   activeSecretFunc("🔑"),
+	Active:   activeSecretFunc("->"),
 	Inactive: inactiveSecret,
 	Details:  detailsSecret,
 }
 
 var deleteSecretTemplate = &promptui.SelectTemplates{
 	Label:    labelFunc(red),
-	Active:   activeSecretFunc("‼️"),
+	Active:   activeSecretFunc(styleRed("X")),
 	Inactive: inactiveSecret,
 	Details:  detailsSecret,
 }
 
 var updateSecretTemplate = &promptui.SelectTemplates{
 	Label:    labelFunc(red),
-	Active:   activeSecretFunc("♻️"),
+	Active:   activeSecretFunc("<->"),
 	Inactive: inactiveSecret,
 	Details:  detailsSecret,
 }

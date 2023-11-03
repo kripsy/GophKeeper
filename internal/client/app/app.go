@@ -28,16 +28,16 @@ func NewApplication(cfg config.Config, bi BuildInfo, log zerolog.Logger) (*Appli
 	}, nil
 }
 
-func (a *Application) PrepareApp() {
-
+func (a *Application) PrepareApp() error {
 	if err := a.usecase.SetUser(); err != nil {
-		panic(err) //todo errs
+		return err
 	}
 
 	if err := a.usecase.SetFileManager(); err != nil {
-		panic(err)
+		return err
 	}
 
+	return nil
 }
 
 func (a *Application) Run() {

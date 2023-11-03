@@ -15,7 +15,7 @@ func (c CLI) Menu(isLocalStorage bool) int {
 	action := promptui.Select{
 		Label:        "Menu",
 		Items:        items,
-		CursorPos:    2,
+		CursorPos:    1,
 		Size:         len(items),
 		Templates:    menuTemplate,
 		HideHelp:     true,

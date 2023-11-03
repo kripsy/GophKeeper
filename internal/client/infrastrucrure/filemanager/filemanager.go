@@ -14,7 +14,7 @@ import (
 	"github.com/kripsy/GophKeeper/internal/utils"
 )
 
-const chunkSize = 3 * 1024 * 1024 // 3 МБ
+const chunkSize = 4 * 1000 * 1000 // 4 МБ
 
 type FileManager struct {
 	storageDir string
@@ -82,7 +82,7 @@ func (fm *FileManager) AddToStorage(name string, data Data, info models.DataInfo
 
 	fm.meta.Data[name] = info
 
-	return fm.saveMetaData(info.UpdatedAt)
+	return fm.saveMetaData()
 }
 
 func (fm *FileManager) AddEncryptedToStorage(name string, data chan []byte, info models.DataInfo) error {
@@ -106,7 +106,7 @@ func (fm *FileManager) AddEncryptedToStorage(name string, data chan []byte, info
 
 	fm.meta.Data[name] = info
 
-	return fm.saveMetaData(info.UpdatedAt)
+	return fm.saveMetaData()
 }
 
 func (fm *FileManager) GetByName(name string) ([]byte, models.DataInfo, error) {
@@ -148,7 +148,9 @@ func (fm *FileManager) ReadEncryptedByName(dataID string) (chan []byte, error) {
 				}
 			}
 
-			data <- buffer[:n]
+			chunk := make([]byte, n)
+			copy(chunk, buffer[:n])
+			data <- chunk
 		}
 	}(data)
 
@@ -170,7 +172,7 @@ func (fm *FileManager) UpdateDataByName(name string, data Data) error {
 		return err
 	}
 
-	return fm.saveMetaData(time.Now())
+	return fm.saveMetaData()
 }
 
 func (fm *FileManager) UpdateInfoByName(name string, info models.DataInfo) error {
@@ -194,7 +196,7 @@ func (fm *FileManager) UpdateInfoByName(name string, info models.DataInfo) error
 
 	fm.meta.Data[info.Name] = info
 
-	return fm.saveMetaData(time.Now())
+	return fm.saveMetaData()
 }
 
 func (fm *FileManager) DeleteByName(name string) error {
@@ -210,11 +212,10 @@ func (fm *FileManager) DeleteByName(name string) error {
 
 	delete(fm.meta.Data, name)
 
-	return fm.saveMetaData(time.Now())
+	return fm.saveMetaData()
 }
 
-func (fm *FileManager) saveMetaData(updatedAt time.Time) error {
-	//fm.meta.UpdatedAt = updatedAt
+func (fm *FileManager) saveMetaData() error {
 	data, err := json.Marshal(fm.meta)
 	if err != nil {
 		return err // todo удалить данные в случае ошибки, загрузите повторно

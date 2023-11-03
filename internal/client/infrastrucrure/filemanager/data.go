@@ -8,8 +8,6 @@ import (
 	"github.com/kripsy/GophKeeper/internal/utils"
 )
 
-//type DataType int
-
 const (
 	NoteType = iota
 	BasicAuthType
@@ -56,6 +54,22 @@ type Note struct {
 
 type File struct {
 	Data []byte `json:"Data"`
+}
+
+func (f File) String() string {
+	return "Successfully upload file"
+}
+
+func (c CardData) String() string {
+	return fmt.Sprintf("Number: %q, Date: %q, CVV: %q", c.Number, c.Date, c.CVV)
+}
+
+func (n Note) String() string {
+	return fmt.Sprintf("Note : %q", n.Text)
+}
+
+func (a BasicAuth) String() string {
+	return fmt.Sprintf("Login: %q, Password: %q", a.Login, a.Password)
 }
 
 func (f File) EncryptedData(key []byte) ([]byte, error) {

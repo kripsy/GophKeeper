@@ -10,6 +10,6 @@ func (c *ClientUsecase) about() {
 	defer c.InMenu()
 	fmt.Println(promptui.Styler(
 		promptui.FGItalic,
-		promptui.BGBlue,
+		promptui.FGCyan,
 	)(c.aboutMsg))
 }
