@@ -21,7 +21,7 @@ const (
 	CustomDir = "I will specify the directory myself"
 )
 
-func (c CLI) UploadFileTo(cfgDir string) (string, bool) {
+func (c *CLI) UploadFileTo(cfgDir string) (string, bool) {
 	chooseUpload := promptui.Select{
 		Label:     "Where do you want to move the file to?",
 		Items:     []string{CfgDir, CustomDir, ui.ExitKey},
@@ -47,7 +47,7 @@ func (c CLI) UploadFileTo(cfgDir string) (string, bool) {
 	return "", false
 }
 
-func (c CLI) GetFilePath() string {
+func (c *CLI) GetFilePath() string {
 	defer c.Clear()
 
 	var filePath string
@@ -70,7 +70,7 @@ func (c CLI) GetFilePath() string {
 	return filePath
 }
 
-func (c CLI) GetNewFilePath(filePath *string) {
+func (c *CLI) GetNewFilePath(filePath *string) {
 	defer c.Clear()
 	fmt.Println("Use Tab:")
 	prompt.New(

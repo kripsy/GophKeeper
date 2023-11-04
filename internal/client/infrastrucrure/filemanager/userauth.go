@@ -14,23 +14,29 @@ const (
 	dirMode  os.FileMode = 0700 //755
 )
 
-type UserAuth struct {
+type Auth interface {
+	IsUserNotExisting(userDit string) bool
+	CreateUser(user *models.User, isLocalStorage bool) (models.UserMeta, error)
+	GetUser(user *models.User) (models.UserMeta, error)
+}
+
+type userAuth struct {
 	userFilePath string
 }
 
-func NewUserAuth(userPath string) (*UserAuth, error) {
+func NewUserAuth(userPath string) (*userAuth, error) {
 	if _, err := os.Stat(userPath); os.IsNotExist(err) {
 		if err = os.MkdirAll(userPath, dirMode); err != nil {
 			return nil, err
 		}
 	}
 
-	return &UserAuth{
+	return &userAuth{
 		userFilePath: userPath,
 	}, nil
 }
 
-func (a *UserAuth) IsUserNotExisting(userDit string) bool {
+func (a *userAuth) IsUserNotExisting(userDit string) bool {
 	if _, err := os.Stat(userDit); os.IsNotExist(err) {
 		return true
 	}
@@ -38,7 +44,7 @@ func (a *UserAuth) IsUserNotExisting(userDit string) bool {
 	return false
 }
 
-func (a *UserAuth) CreateUser(user *models.User, isLocalStorage bool) (models.UserMeta, error) {
+func (a *userAuth) CreateUser(user *models.User, isLocalStorage bool) (models.UserMeta, error) {
 	meta := models.UserMeta{
 		Username:       user.Username,
 		IsLocalStorage: isLocalStorage,
@@ -69,7 +75,7 @@ func (a *UserAuth) CreateUser(user *models.User, isLocalStorage bool) (models.Us
 	return meta, nil
 }
 
-func (a *UserAuth) GetUser(user *models.User) (models.UserMeta, error) {
+func (a *userAuth) GetUser(user *models.User) (models.UserMeta, error) {
 	fileData, err := os.ReadFile(user.GetDir(a.userFilePath))
 	if err != nil {
 		return models.UserMeta{}, err

@@ -7,7 +7,7 @@ import (
 	"github.com/manifoldco/promptui"
 )
 
-func (c CLI) ChooseSecretType() (int, bool) {
+func (c *CLI) ChooseSecretType() (int, bool) {
 	defer c.Clear()
 	items := filemanager.DataTypeTable
 	items = append(items, ui.ExitKey)
@@ -32,7 +32,7 @@ func (c CLI) ChooseSecretType() (int, bool) {
 	return id, true
 }
 
-func (c CLI) AddNote() (filemanager.Note, error) {
+func (c *CLI) AddNote() (filemanager.Note, error) {
 	note := promptui.Prompt{
 		Label:       "Note",
 		HideEntered: true,
@@ -50,7 +50,7 @@ func (c CLI) AddNote() (filemanager.Note, error) {
 	}, nil
 }
 
-func (c CLI) AddBasicAuth() (filemanager.BasicAuth, error) {
+func (c *CLI) AddBasicAuth() (filemanager.BasicAuth, error) {
 	log := promptui.Prompt{
 		Label:       "Login",
 		HideEntered: true,
@@ -78,7 +78,7 @@ func (c CLI) AddBasicAuth() (filemanager.BasicAuth, error) {
 	}, nil
 }
 
-func (c CLI) AddCard() (filemanager.CardData, error) {
+func (c *CLI) AddCard() (filemanager.CardData, error) {
 	cardNum := promptui.Prompt{
 		Label:       "Card Number",
 		Validate:    validateCardNumber,
@@ -119,7 +119,7 @@ func (c CLI) AddCard() (filemanager.CardData, error) {
 	}, nil
 }
 
-func (c CLI) AddMetaInfo() (models.DataInfo, error) {
+func (c *CLI) AddMetaInfo() (models.DataInfo, error) {
 	dataName := promptui.Prompt{
 		Label:       "Secret name",
 		HideEntered: true,

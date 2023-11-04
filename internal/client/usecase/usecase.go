@@ -81,7 +81,7 @@ func (c *ClientUsecase) SetUser() error {
 	}
 }
 
-func (c *ClientUsecase) checkUserOnServer(userAuth *filemanager.UserAuth) bool {
+func (c *ClientUsecase) checkUserOnServer(userAuth filemanager.Auth) bool {
 	hash, err := c.userData.User.GetHashedPass()
 	if err != nil {
 		c.log.Info().Err(err).Msg("failed get hashed password")
@@ -125,7 +125,7 @@ func (c *ClientUsecase) checkUserOnServer(userAuth *filemanager.UserAuth) bool {
 	return true
 }
 
-func (c *ClientUsecase) handleUserRegistration(userAuth *filemanager.UserAuth) error {
+func (c *ClientUsecase) handleUserRegistration(userAuth filemanager.Auth) error {
 	if c.grpc.IsNotAvailable() {
 		fmt.Println("Could not connect to the server, only local registration is available")
 	}
@@ -169,7 +169,7 @@ func (c *ClientUsecase) handleUserRegistration(userAuth *filemanager.UserAuth) e
 	return nil
 }
 
-func (c *ClientUsecase) handleUserLogin(userAuth *filemanager.UserAuth) error {
+func (c *ClientUsecase) handleUserLogin(userAuth filemanager.Auth) error {
 	var err error
 	switch c.grpc.TryToConnect() {
 	case true:

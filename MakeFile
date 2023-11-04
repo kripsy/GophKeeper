@@ -19,7 +19,13 @@ build/client/linux:
 
 
 build/client/windows:
-	GOOS=windows GOARCH=amd64 go build -o ./cmd/client/client.exe  \
+	GOOS=windows GOARCH=amd64 go build -o ./cmd/client/client$(shell go env GOEXE)  \
+	-ldflags "-X main.buildVersion=$(CLIENT_VERSION) \
+		  -X main.buildDate=$(shell date '+%Y/%m/%d[%H:%M:%S]')" \
+	./cmd/client/*.go
+
+build/client/mac:
+	GOOS=darwin go build -o ./cmd/client/client \
 	-ldflags "-X main.buildVersion=$(CLIENT_VERSION) \
 		  -X main.buildDate=$(shell date '+%Y/%m/%d[%H:%M:%S]')" \
 	./cmd/client/*.go

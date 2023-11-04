@@ -6,7 +6,7 @@ import (
 	"github.com/manifoldco/promptui"
 )
 
-func (c CLI) UpdateSecret(metaData models.MetaData) (string, int, bool) {
+func (c *CLI) UpdateSecret(metaData models.MetaData) (string, int, bool) {
 	items := append(ui.UpdateItems, ui.ExitKey)
 	name, ok := c.chooseSecret(metaData, ui.UpdateSecretKey, updateSecretTemplate)
 	if !ok {

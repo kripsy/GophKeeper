@@ -5,7 +5,7 @@ import (
 	"github.com/manifoldco/promptui"
 )
 
-func (c CLI) Menu(isLocalStorage bool) int {
+func (c *CLI) Menu(isLocalStorage bool) int {
 	defer c.Clear()
 
 	items := ui.MenuTable

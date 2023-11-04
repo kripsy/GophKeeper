@@ -6,7 +6,7 @@ import (
 	"github.com/manifoldco/promptui"
 )
 
-func (c CLI) DeleteSecret(metaData models.MetaData) (string, bool) {
+func (c *CLI) DeleteSecret(metaData models.MetaData) (string, bool) {
 	name, ok := c.chooseSecret(metaData, ui.DeleteSecretKey, deleteSecretTemplate)
 	if !ok {
 		return "", ok

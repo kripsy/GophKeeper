@@ -6,7 +6,7 @@ import (
 	"github.com/manifoldco/promptui"
 )
 
-func (c CLI) GetUser() (models.User, error) {
+func (c *CLI) GetUser() (models.User, error) {
 	username := promptui.Prompt{
 		Label:       "Username",
 		Validate:    validateUsername,
@@ -38,7 +38,7 @@ func (c CLI) GetUser() (models.User, error) {
 	}, nil
 }
 
-func (c CLI) GetRepeatedPassword() (string, error) {
+func (c *CLI) GetRepeatedPassword() (string, error) {
 	pass := promptui.Prompt{
 		Label:       "Repeat Password",
 		Validate:    validatePassword,
@@ -56,7 +56,7 @@ func (c CLI) GetRepeatedPassword() (string, error) {
 	return password, nil
 }
 
-func (c CLI) TryAgain() bool {
+func (c *CLI) TryAgain() bool {
 	defer c.Clear()
 	action := promptui.Select{
 		Label:        "This user does not exist",
@@ -80,7 +80,7 @@ func (c CLI) TryAgain() bool {
 	return false
 }
 
-func (c CLI) IsLocalStorage() bool {
+func (c *CLI) IsLocalStorage() bool {
 	isLocal := promptui.Prompt{
 		Label:       "Do you want to synchronize your secrets across devices?",
 		HideEntered: true,

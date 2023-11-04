@@ -7,7 +7,7 @@ import (
 
 var syncProgress = []string{"", ".", "..", "...", "..."}
 
-func (c CLI) Sync(stop <-chan struct{}) {
+func (c *CLI) Sync(stop <-chan struct{}) {
 	var counter int
 	for {
 		select {

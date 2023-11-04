@@ -10,11 +10,11 @@ import (
 	"github.com/manifoldco/promptui"
 )
 
-func (c CLI) GetSecret(metaData models.MetaData) (string, bool) {
+func (c *CLI) GetSecret(metaData models.MetaData) (string, bool) {
 	return c.chooseSecret(metaData, ui.SecretsKey, chooseSecretTemplate)
 }
 
-func (c CLI) chooseSecret(metaData models.MetaData, label string, template *promptui.SelectTemplates) (string, bool) {
+func (c *CLI) chooseSecret(metaData models.MetaData, label string, template *promptui.SelectTemplates) (string, bool) {
 	dataInfos := getForTemplate(metaData)
 
 	searcher := func(input string, index int) bool {
