@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"fmt"
 
 	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -21,11 +20,6 @@ type GrpcServer struct {
 	secretUseCase SecretUseCase
 	secret        string
 	syncStatus    *entity.SyncStatus
-}
-
-type UserUseCase interface {
-	RegisterUser(ctx context.Context, user entity.User) (string, int, error)
-	LoginUser(ctx context.Context, user entity.User) (string, int, error)
 }
 
 func InitGrpcServer(userUseCase UserUseCase,

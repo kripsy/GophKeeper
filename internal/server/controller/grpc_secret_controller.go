@@ -17,16 +17,6 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type SecretUseCase interface {
-	MultipartUploadFile(context.Context, <-chan *models.MultipartUploadFileData, string) (bool, error)
-	CreateBucketSecret(ctx context.Context, username string, userID int) (bool, error)
-	MultipartDownloadFile(context.Context,
-		*models.MultipartDownloadFileRequest,
-		string) (chan *models.MultipartDownloadFileResponse, chan error)
-	ApplyChanges(ctx context.Context, bucketName string) (bool, error)
-	DiscardChanges(ctx context.Context, bucketName string) (bool, error)
-}
-
 func (s *GrpcServer) MultipartUploadFile(stream pb.GophKeeperService_MultipartUploadFileServer) error {
 	s.logger.Debug("Start MultipartUploadFile")
 
