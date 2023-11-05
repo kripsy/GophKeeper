@@ -9,10 +9,10 @@ type CLI struct {
 	log zerolog.Logger
 }
 
-func NewCLI(log zerolog.Logger) CLI {
+func NewCLI(log zerolog.Logger) *CLI {
 	promptui.IconBad = "🌚"
 	promptui.IconGood = "🌝"
-	return CLI{
+	return &CLI{
 		log: log,
 	}
 }
