@@ -181,15 +181,14 @@ func (fm *FileManager) UpdateInfoByName(name string, info models.DataInfo) error
 		return errors.New("not found secret")
 	}
 
-	info.DataID = savedInfo.DataID
-	info.UpdatedAt = time.Now()
+	savedInfo.UpdatedAt = time.Now()
 
 	if info.Name == "" {
-		info.Name = savedInfo.Name
+		savedInfo.Name = info.Name
 	}
 
 	if info.Description == "" {
-		info.Description = savedInfo.Description
+		savedInfo.Description = info.Description
 	}
 
 	delete(fm.meta.Data, name)

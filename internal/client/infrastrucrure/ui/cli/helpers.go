@@ -49,7 +49,7 @@ func (c *CLI) Clear() {
 
 func clearFunc(name string, args ...string) func() error {
 	return func() error {
-		cmd := *exec.Command(name, args...)
+		cmd := exec.Command(name, args...)
 		cmd.Stdout = os.Stdout
 		err := cmd.Run()
 		if err != nil {
