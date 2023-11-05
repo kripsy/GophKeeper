@@ -7,7 +7,6 @@ import (
 	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	pb "github.com/kripsy/GophKeeper/gen/pkg/api/GophKeeper/v1"
 	"github.com/kripsy/GophKeeper/internal/server/entity"
-	"github.com/kripsy/GophKeeper/internal/utils"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -29,7 +28,13 @@ type UserUseCase interface {
 	LoginUser(ctx context.Context, user entity.User) (string, int, error)
 }
 
-func InitGrpcServer(userUseCase UserUseCase, secretUseCase SecretUseCase, secret string, isSecure bool, logger *zap.Logger) (*grpc.Server, error) {
+func InitGrpcServer(userUseCase UserUseCase,
+	secretUseCase SecretUseCase,
+	secret string,
+	isSecure bool,
+	serverCertPath string,
+	privateKeyPath string,
+	logger *zap.Logger) (*grpc.Server, error) {
 	syncStatus := entity.NewSyncStatus()
 	s := &GrpcServer{
 		userUseCase:   userUseCase,
@@ -46,7 +51,7 @@ func InitGrpcServer(userUseCase UserUseCase, secretUseCase SecretUseCase, secret
 	var srv *grpc.Server
 	if isSecure {
 		logger.Debug("secure grpc")
-		creds, err := credentials.NewServerTLSFromFile(utils.ServerCertPath, utils.PrivateKeyPath)
+		creds, err := credentials.NewServerTLSFromFile(serverCertPath, privateKeyPath)
 		if err != nil {
 			logger.Error("Failed to generate credentials.", zap.Error(err))
 
