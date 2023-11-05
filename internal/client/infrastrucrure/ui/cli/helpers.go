@@ -24,9 +24,8 @@ var clearMapByOS map[string]func() error
 
 func init() {
 	clearMapByOS = make(map[string]func() error)
-	clearMapByOS["linux"] = clearFunc(exec.Command("clear"))
-	clearMapByOS["windows"] = clearFunc(exec.Command("cmd", "/c", "cls"))
-	clearMapByOS["default"] = clearFunc(exec.Command("clear"))
+	clearMapByOS["windows"] = clearFunc("cmd", "/c", "cls")
+	clearMapByOS["default"] = clearFunc("clear")
 }
 
 func (c *CLI) Clear() {
@@ -48,8 +47,9 @@ func (c *CLI) Clear() {
 	}
 }
 
-func clearFunc(cmd *exec.Cmd) func() error {
+func clearFunc(name string, args ...string) func() error {
 	return func() error {
+		cmd := *exec.Command(name, args...)
 		cmd.Stdout = os.Stdout
 		err := cmd.Run()
 		if err != nil {
