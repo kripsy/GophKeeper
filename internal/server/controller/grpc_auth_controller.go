@@ -23,7 +23,7 @@ func (s *GrpcServer) Register(ctx context.Context, req *pb.AuthRequest) (*pb.Aut
 	}
 
 	if err = v.Validate(req); err != nil {
-		return nil, fmt.Errorf("%w", status.Error(codes.InvalidArgument, err.Error()))
+		return nil, fmt.Errorf("%w", status.Error(codes.InvalidArgument, "Validation error"))
 	}
 
 	user, err := entity.InitNewUser(req.Username, req.Password)
@@ -87,7 +87,7 @@ func (s *GrpcServer) Login(ctx context.Context, req *pb.AuthRequest) (*pb.AuthRe
 	if err != nil {
 		s.logger.Debug("Failed to CreateBucketSecret", zap.Error(err))
 
-		return nil, fmt.Errorf("%w", status.Error(codes.Internal, err.Error()))
+		return nil, fmt.Errorf("%w", status.Error(codes.Internal, "failed to create bucket secret"))
 	}
 
 	return &pb.AuthResponse{

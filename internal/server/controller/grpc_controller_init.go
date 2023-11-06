@@ -1,13 +1,11 @@
 package controller
 
 import (
-	"context"
 	"fmt"
 
 	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	pb "github.com/kripsy/GophKeeper/gen/pkg/api/GophKeeper/v1"
 	"github.com/kripsy/GophKeeper/internal/server/entity"
-	"github.com/kripsy/GophKeeper/internal/utils"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -21,23 +19,38 @@ type GrpcServer struct {
 	userUseCase   UserUseCase
 	secretUseCase SecretUseCase
 	secret        string
-	syncStatus    *entity.SyncStatus
+	syncStatus    SyncStatus
 }
 
-type UserUseCase interface {
-	RegisterUser(ctx context.Context, user entity.User) (string, int, error)
-	LoginUser(ctx context.Context, user entity.User) (string, int, error)
-}
+func InitGrpcServiceServer(userUseCase UserUseCase,
+	secretUseCase SecretUseCase,
+	secret string,
+	logger *zap.Logger, syncStatus SyncStatus) *GrpcServer {
 
-func InitGrpcServer(userUseCase UserUseCase, secretUseCase SecretUseCase, secret string, isSecure bool, logger *zap.Logger) (*grpc.Server, error) {
-	syncStatus := entity.NewSyncStatus()
-	s := &GrpcServer{
+	return &GrpcServer{
 		userUseCase:   userUseCase,
 		secretUseCase: secretUseCase,
 		secret:        secret,
 		logger:        logger,
 		syncStatus:    syncStatus,
 	}
+}
+
+func InitGrpcServer(userUseCase UserUseCase,
+	secretUseCase SecretUseCase,
+	secret string,
+	isSecure bool,
+	serverCertPath string,
+	privateKeyPath string,
+	logger *zap.Logger) (*grpc.Server, error) {
+	syncStatus := entity.NewSyncStatus()
+	s := InitGrpcServiceServer(
+		userUseCase,
+		secretUseCase,
+		secret,
+		logger,
+		syncStatus,
+	)
 
 	m := InitMyMiddleware(logger, secret)
 
@@ -46,7 +59,7 @@ func InitGrpcServer(userUseCase UserUseCase, secretUseCase SecretUseCase, secret
 	var srv *grpc.Server
 	if isSecure {
 		logger.Debug("secure grpc")
-		creds, err := credentials.NewServerTLSFromFile(utils.ServerCertPath, utils.PrivateKeyPath)
+		creds, err := credentials.NewServerTLSFromFile(serverCertPath, privateKeyPath)
 		if err != nil {
 			logger.Error("Failed to generate credentials.", zap.Error(err))
 

@@ -3,7 +3,6 @@ package utils
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -14,18 +13,10 @@ import (
 	"math/big"
 	"net"
 	"os"
-	"strings"
 	"time"
-
-	"google.golang.org/grpc/metadata"
 )
 
-const (
-	ServerCertPath = "./cert/server.crt"
-	PrivateKeyPath = "./cert/server.key"
-)
-
-func CreateCertificate() error {
+func CreateCertificate(serverCertPath, privateKeyPath string) error {
 	maxInt := 1658
 	cert := &x509.Certificate{
 		SerialNumber: big.NewInt(int64(maxInt)),
@@ -68,11 +59,11 @@ func CreateCertificate() error {
 		return fmt.Errorf("error encode private key %w", err)
 	}
 
-	err = saveCert(ServerCertPath, &certPEM)
+	err = saveCert(serverCertPath, &certPEM)
 	if err != nil {
 		return err
 	}
-	err = saveCert(PrivateKeyPath, &privateKeyPEM)
+	err = saveCert(privateKeyPath, &privateKeyPEM)
 	if err != nil {
 		return err
 	}
@@ -97,22 +88,4 @@ func saveCert(path string, payload *bytes.Buffer) error {
 	}
 
 	return nil
-}
-
-func GetTokenFromMetadata(ctx context.Context) (string, error) {
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		//nolint:goerr113
-		return "", fmt.Errorf("not metadata in context")
-	}
-
-	values := md["authorization"]
-	if len(values) == 0 {
-		//nolint:goerr113
-		return "", fmt.Errorf("token not found")
-	}
-
-	token := strings.TrimPrefix(values[0], "Bearer ")
-
-	return token, nil
 }

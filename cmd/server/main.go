@@ -22,6 +22,8 @@ import (
 )
 
 func main() {
+	serverCertPath := "./cert/server.crt"
+	privateKeyPath := "./cert/server.key"
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	var wg sync.WaitGroup
@@ -40,7 +42,7 @@ func main() {
 
 	if cfg.IsSecure {
 		l.Debug("creating cert")
-		err = utils.CreateCertificate()
+		err = utils.CreateCertificate(serverCertPath, privateKeyPath)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 
@@ -100,7 +102,12 @@ func main() {
 	}
 	l.Debug("secretUseCase initialized")
 
-	s, err := controller.InitGrpcServer(userUseCase, secretUseCase, cfg.Secret, cfg.IsSecure, l)
+	s, err := controller.InitGrpcServer(userUseCase,
+		secretUseCase,
+		cfg.Secret,
+		cfg.IsSecure,
+		serverCertPath,
+		privateKeyPath, l)
 
 	if err != nil {
 		l.Error("Error", zap.Error(err))

@@ -142,12 +142,12 @@ func ExtractTokenFromContext(ctx context.Context) (string, bool) {
 
 func ExtractUsernameFromContext(ctx context.Context) (string, bool) {
 	username, ok := ctx.Value(USERNAMECONTEXTKEY).(string)
-	fmt.Println(ctx.Value("username"))
+
 	return username, ok
 }
 
 func ExtractUserIDFromContext(ctx context.Context) (int, bool) {
 	userID, ok := ctx.Value(USERIDCONTEXTKEY).(int)
-	fmt.Println(ctx.Value("userID"))
+
 	return userID, ok
 }
