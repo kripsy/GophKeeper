@@ -113,14 +113,17 @@ func (s *GrpcServer) MultipartUploadFile(stream pb.GophKeeperService_MultipartUp
 		s.logger.Debug("end upload")
 
 	case err := <-errChanStream:
+
 		if err != nil {
 			s.logger.Debug("was some error in receive data", zap.Any("msg", err))
 			return status.Error(codes.Internal, err.Error())
 		}
 
 	case err := <-errChanUsecase:
+
 		if err != nil {
 			s.logger.Debug("was some error in usecase", zap.Any("msg", err))
+
 			return status.Error(codes.Internal, err.Error())
 		}
 	}
@@ -290,7 +293,6 @@ func (s *GrpcServer) MultipartDownloadFile(req *pb.MultipartDownloadFileRequest,
 		return status.Errorf(codes.Internal, "Failed to extract bucketName")
 	}
 	s.logger.Debug("bucket name", zap.String("msg", bucketName))
-
 	val, err := uuid.Parse(req.Guid)
 	if err != nil {
 		s.logger.Error("Couldn't parse GUID", zap.Error(err))
@@ -298,7 +300,9 @@ func (s *GrpcServer) MultipartDownloadFile(req *pb.MultipartDownloadFileRequest,
 		return status.Errorf(codes.Internal, "Couldn't parse GUID")
 
 	}
+
 	if isEnabled, _ := s.syncStatus.IsSyncExists(userID, val); !isEnabled {
+
 		s.logger.Error("You should block resource before use it", zap.Error(err))
 
 		return status.Errorf(codes.Internal, "You should block resource before use it")
@@ -309,9 +313,11 @@ func (s *GrpcServer) MultipartDownloadFile(req *pb.MultipartDownloadFileRequest,
 		Guid:     req.Guid,
 		Hash:     req.Hash,
 	}
+
 	newCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	dataChan, errChan := s.secretUseCase.MultipartDownloadFile(newCtx, multipartDownloadFileRequest, bucketName)
+
 loop:
 	for {
 		select {

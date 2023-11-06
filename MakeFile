@@ -1,3 +1,4 @@
+
 	CLIENT_VERSION=v1.0.0
 
 ci:
@@ -29,3 +30,18 @@ build/client/mac:
 	-ldflags "-X main.buildVersion=$(CLIENT_VERSION) \
 		  -X main.buildDate=$(shell date '+%Y/%m/%d[%H:%M:%S]')" \
 	./cmd/client/*.go
+
+
+genmocks:
+# generate SecretUseCase for controller
+	mockgen -destination=internal/server/controller/mocks/mock_secretusecase.go -package=mocks github.com/kripsy/GophKeeper/internal/server/controller SecretUseCase;
+# generate UserUseCase for controller	
+	mockgen -destination=internal/server/controller/mocks/mock_userusecase.go -package=mocks github.com/kripsy/GophKeeper/internal/server/controller UserUseCase;
+# generate GophKeeperService_MultipartUploadFileServer for controller	
+	mockgen -destination=internal/server/controller/mocks/mock_gophkeeperservice_multipartuploadfileserver.go -package=mocks github.com/kripsy/GophKeeper/gen/pkg/api/GophKeeper/v1 GophKeeperService_MultipartUploadFileServer;
+# generate GophKeeperService_BlockStoreServer for controller	
+	mockgen -destination=internal/server/controller/mocks/mock_gophkeeperservice_blockstoreserver.go -package=mocks github.com/kripsy/GophKeeper/gen/pkg/api/GophKeeper/v1 GophKeeperService_BlockStoreServer;
+# generate GophKeeperService_MultipartDownloadFileServer for controller	
+	mockgen -destination=internal/server/controller/mocks/mock_gophkeeperservice_multipartdownloadfileserver.go -package=mocks github.com/kripsy/GophKeeper/gen/pkg/api/GophKeeper/v1 GophKeeperService_MultipartDownloadFileServer;
+# generate SyncStatus for controller	
+	mockgen -destination=internal/server/controller/mocks/mock_SyncStatus.go -package=mocks github.com/kripsy/GophKeeper/internal/server/controller SyncStatus;

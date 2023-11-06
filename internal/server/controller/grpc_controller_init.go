@@ -19,7 +19,21 @@ type GrpcServer struct {
 	userUseCase   UserUseCase
 	secretUseCase SecretUseCase
 	secret        string
-	syncStatus    *entity.SyncStatus
+	syncStatus    SyncStatus
+}
+
+func InitGrpcServiceServer(userUseCase UserUseCase,
+	secretUseCase SecretUseCase,
+	secret string,
+	logger *zap.Logger, syncStatus SyncStatus) *GrpcServer {
+
+	return &GrpcServer{
+		userUseCase:   userUseCase,
+		secretUseCase: secretUseCase,
+		secret:        secret,
+		logger:        logger,
+		syncStatus:    syncStatus,
+	}
 }
 
 func InitGrpcServer(userUseCase UserUseCase,
@@ -30,13 +44,13 @@ func InitGrpcServer(userUseCase UserUseCase,
 	privateKeyPath string,
 	logger *zap.Logger) (*grpc.Server, error) {
 	syncStatus := entity.NewSyncStatus()
-	s := &GrpcServer{
-		userUseCase:   userUseCase,
-		secretUseCase: secretUseCase,
-		secret:        secret,
-		logger:        logger,
-		syncStatus:    syncStatus,
-	}
+	s := InitGrpcServiceServer(
+		userUseCase,
+		secretUseCase,
+		secret,
+		logger,
+		syncStatus,
+	)
 
 	m := InitMyMiddleware(logger, secret)
 
