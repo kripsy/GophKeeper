@@ -3,13 +3,12 @@ package filemanager
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/kripsy/GophKeeper/internal/models"
 	"os"
 	"path/filepath"
 	"sync"
 	"testing"
-	//"time"
-	//	"github.com/google/uuid"
+
+	"github.com/kripsy/GophKeeper/internal/models"
 )
 
 var (
@@ -141,25 +140,26 @@ func TestFileManager_AddToStorage(t *testing.T) {
 }
 
 func TestFileManager_UpdateInfoByName(t *testing.T) {
-	info := models.DataInfo{
-		Name:        "NewTestData",
-		Description: "NewTest data description",
-	}
 	defer os.RemoveAll(storageDir)
 
 	tests := []struct {
-		name       string
-		storage    FileStorage
-		data       Data
-		secretName string
-		newInfo    models.DataInfo
-		wantErr    bool
+		name          string
+		storage       *FileManager
+		data          Data
+		secretName    string
+		newSecretName string
+		newInfo       models.DataInfo
+		wantInfo      models.DataInfo
+		wantErr       bool
 	}{
 		{
 			name: "ok update name",
-			storage: func() FileStorage {
+			storage: func() *FileManager {
 				meta := models.UserMeta{Data: make(models.MetaData)}
-				meta.Data["testData"] = info
+				meta.Data["testData"] = models.DataInfo{
+					Name:        "testData",
+					Description: "test data description",
+				}
 				fs, err := NewFileManager(storageDir, userDir, userDir, meta, testKey)
 				if err != nil {
 					t.Fatalf("Failed to create FileManager: %v", err)
@@ -167,18 +167,26 @@ func TestFileManager_UpdateInfoByName(t *testing.T) {
 
 				return fs
 			}(),
-			data:       Note{Text: "test"},
-			secretName: "testData",
+			data:          Note{Text: "test"},
+			secretName:    "testData",
+			newSecretName: "NewTestData",
 			newInfo: models.DataInfo{
 				Name: "NewTestData",
+			},
+			wantInfo: models.DataInfo{
+				Name:        "NewTestData",
+				Description: "test data description",
 			},
 			wantErr: false,
 		},
 		{
 			name: "ok update description",
-			storage: func() FileStorage {
+			storage: func() *FileManager {
 				meta := models.UserMeta{Data: make(models.MetaData)}
-				meta.Data["testData"] = info
+				meta.Data["testData"] = models.DataInfo{
+					Name:        "testData",
+					Description: "test data description",
+				}
 				fs, err := NewFileManager(storageDir, userDir, userDir, meta, testKey)
 				if err != nil {
 					t.Fatalf("Failed to create FileManager: %v", err)
@@ -186,16 +194,49 @@ func TestFileManager_UpdateInfoByName(t *testing.T) {
 
 				return fs
 			}(),
-			data:       Note{Text: "test"},
-			secretName: "testData",
+			data:          Note{Text: "test"},
+			secretName:    "testData",
+			newSecretName: "testData",
 			newInfo: models.DataInfo{
+				Description: "NewTest data description",
+			},
+			wantInfo: models.DataInfo{
+				Name:        "testData",
 				Description: "NewTest data description",
 			},
 			wantErr: false,
 		},
 		{
+			name: "ok update filename",
+			storage: func() *FileManager {
+				meta := models.UserMeta{Data: make(models.MetaData)}
+				meta.Data["testData"] = models.DataInfo{
+					Name:        "testData",
+					Description: "test data description",
+				}
+				fs, err := NewFileManager(storageDir, userDir, userDir, meta, testKey)
+				if err != nil {
+					t.Fatalf("Failed to create FileManager: %v", err)
+				}
+
+				return fs
+			}(),
+			data:          Note{Text: "test"},
+			secretName:    "testData",
+			newSecretName: "testData",
+			newInfo: models.DataInfo{
+				FileName: &filename,
+			},
+			wantInfo: models.DataInfo{
+				Name:        "testData",
+				Description: "test data description",
+				FileName:    &filename,
+			},
+			wantErr: false,
+		},
+		{
 			name: "failed if secret not exist",
-			storage: func() FileStorage {
+			storage: func() *FileManager {
 				meta := models.UserMeta{Data: make(models.MetaData)}
 				fs, err := NewFileManager(storageDir, userDir, userDir, meta, testKey)
 				if err != nil {
@@ -213,6 +254,93 @@ func TestFileManager_UpdateInfoByName(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := tt.storage.UpdateInfoByName(tt.secretName, tt.newInfo); (err != nil) != tt.wantErr {
 				t.Errorf("UpdateInfoByName() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			got := tt.storage.meta.Data[tt.newSecretName]
+			if !tt.wantErr {
+				if got.Name != tt.wantInfo.Name ||
+					got.Description != tt.wantInfo.Description ||
+					got.FileName != tt.wantInfo.FileName {
+					t.Errorf("UpdateInfoByName() error meta not equal")
+				}
+			}
+		})
+	}
+}
+
+func TestFileManager_UpdateDataByName(t *testing.T) {
+	defer os.RemoveAll(storageDir)
+	info := models.DataInfo{
+		Name:        "testData",
+		Description: "Test data description",
+	}
+
+	tests := []struct {
+		name    string
+		storage FileStorage
+		info    models.DataInfo
+		data    Data
+		wantErr bool
+	}{
+		{
+			name: "ok",
+			storage: func() FileStorage {
+				meta := models.UserMeta{Data: make(models.MetaData)}
+				testInfo := info
+				testInfo.DataID = filename
+				meta.Data["testData"] = testInfo
+				fs, err := NewFileManager(storageDir, userDir, userDir, meta, testKey)
+				if err != nil {
+					t.Fatalf("Failed to create FileManager: %v", err)
+				}
+
+				if err = os.WriteFile(filepath.Join(storageDir, filename), nil, fileMode); err != nil {
+					t.Fatalf("Failed to create testFile: %v", err)
+				}
+
+				return fs
+			}(),
+			info:    info,
+			data:    Note{Text: "test"},
+			wantErr: false,
+		},
+		{
+			name: "failed if secret not exist",
+			storage: func() FileStorage {
+				meta := models.UserMeta{Data: make(models.MetaData)}
+				fs, err := NewFileManager(storageDir, userDir, userDir, meta, testKey)
+				if err != nil {
+					t.Fatalf("Failed to create FileManager: %v", err)
+				}
+
+				return fs
+			}(),
+			info:    info,
+			wantErr: true,
+		},
+		{
+			name: "failed with shortness key",
+			storage: func() FileStorage {
+				meta := models.UserMeta{Data: make(models.MetaData)}
+				testInfo := info
+				testInfo.DataID = filename
+				meta.Data["testData"] = testInfo
+				fs, err := NewFileManager(storageDir, userDir, userDir, meta, []byte("testKey"))
+				if err != nil {
+					t.Fatalf("Failed to create FileManager: %v", err)
+				}
+
+				return fs
+			}(),
+			info:    info,
+			data:    Note{Text: "test"},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.storage.UpdateDataByName(tt.info.Name, tt.data)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetByName() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -532,86 +660,6 @@ func TestFileManager_ReadEncryptedByName1(t *testing.T) {
 					t.Errorf("ReadEncryptedByName() recived data not equal with expected data")
 				}
 			}
-		})
-	}
-}
-
-func TestFileManager_UpdateDataByName(t *testing.T) {
-	defer os.RemoveAll(storageDir)
-	info := models.DataInfo{
-		Name:        "testData",
-		Description: "Test data description",
-	}
-
-	tests := []struct {
-		name    string
-		storage FileStorage
-		info    models.DataInfo
-		data    Data
-		wantErr bool
-	}{
-		{
-			name: "ok",
-			storage: func() FileStorage {
-				meta := models.UserMeta{Data: make(models.MetaData)}
-				testInfo := info
-				testInfo.DataID = filename
-				meta.Data["testData"] = testInfo
-				fs, err := NewFileManager(storageDir, userDir, userDir, meta, testKey)
-				if err != nil {
-					t.Fatalf("Failed to create FileManager: %v", err)
-				}
-
-				if err = os.WriteFile(filepath.Join(storageDir, filename), nil, fileMode); err != nil {
-					t.Fatalf("Failed to create testFile: %v", err)
-				}
-
-				return fs
-			}(),
-			info:    info,
-			data:    Note{Text: "test"},
-			wantErr: false,
-		},
-		{
-			name: "failed if secret not exist",
-			storage: func() FileStorage {
-				meta := models.UserMeta{Data: make(models.MetaData)}
-				fs, err := NewFileManager(storageDir, userDir, userDir, meta, testKey)
-				if err != nil {
-					t.Fatalf("Failed to create FileManager: %v", err)
-				}
-
-				return fs
-			}(),
-			info:    info,
-			wantErr: true,
-		},
-		{
-			name: "failed with shortness key",
-			storage: func() FileStorage {
-				meta := models.UserMeta{Data: make(models.MetaData)}
-				testInfo := info
-				testInfo.DataID = filename
-				meta.Data["testData"] = testInfo
-				fs, err := NewFileManager(storageDir, userDir, userDir, meta, []byte("testKey"))
-				if err != nil {
-					t.Fatalf("Failed to create FileManager: %v", err)
-				}
-
-				return fs
-			}(),
-			info:    info,
-			data:    Note{Text: "test"},
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := tt.storage.UpdateDataByName(tt.info.Name, tt.data)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetByName() error = %v, wantErr %v", err, tt.wantErr)
-			}
-
 		})
 	}
 }

@@ -1,10 +1,11 @@
 package filemanager
 
 import (
-	"github.com/kripsy/GophKeeper/internal/models"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/kripsy/GophKeeper/internal/models"
 )
 
 const (

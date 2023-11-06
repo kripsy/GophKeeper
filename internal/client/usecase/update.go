@@ -2,9 +2,11 @@ package usecase
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/filemanager"
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui"
+	"github.com/kripsy/GophKeeper/internal/models"
 )
 
 func (c *ClientUsecase) updateSecret(secretName string, updateType int, success bool) {
@@ -12,32 +14,55 @@ func (c *ClientUsecase) updateSecret(secretName string, updateType int, success 
 	if !success {
 		return
 	}
+
 	metaInfo := c.userData.Meta.Data[secretName]
+	var err error
 
 	if ui.UpdateItems[updateType] == ui.Info {
-		fmt.Println(fmt.Sprintf("Before  「 Name: %s, Description: %s 」", metaInfo.Name, metaInfo.Description))
-		info, _ := c.ui.AddMetaInfo()
-		c.fileManager.UpdateInfoByName(secretName, info)
-		return
+		err = c.updateMetaInfo(secretName, metaInfo)
+	} else {
+		data, err := c.getUpdatedData(secretName, metaInfo.DataType)
+		if err == nil {
+			err = c.fileManager.UpdateDataByName(secretName, data)
+		}
 	}
 
-	var data filemanager.Data
-	switch metaInfo.DataType {
-	case filemanager.NoteType:
-		data, _ = c.ui.AddNote()
-	case filemanager.BasicAuthType:
-		data, _ = c.ui.AddBasicAuth()
-	case filemanager.CardDataType:
-		data, _ = c.ui.AddCard()
-		//case filemanager.FileType:
-		//	var path string        // todo нужно обновлять вместе с FileName что содержится в мета
-		//	cli.GetFilePath(&path)
-		//	info.SetFileName(path)
-		//	body, err := os.ReadFile(path)
-		//	if err != nil {
-		//		fmt.Println(err)
-		//	}
-		//	data := filemanager.File{body}
+	if err != nil {
+		c.ui.PrintErr(ui.UpdateErr)
+		c.log.Err(err).Msg(ui.UpdateErr)
 	}
-	c.fileManager.UpdateDataByName(secretName, data)
+}
+
+func (c *ClientUsecase) updateMetaInfo(secretName string, metaInfo models.DataInfo) error {
+	fmt.Println(fmt.Sprintf("Before  「 Name: %s, Description: %s 」", metaInfo.Name, metaInfo.Description))
+	info, err := c.ui.AddMetaInfo()
+	if err != nil {
+		return err
+	}
+	return c.fileManager.UpdateInfoByName(secretName, info)
+}
+
+func (c *ClientUsecase) getUpdatedData(secretName string, dataType int) (filemanager.Data, error) {
+	var data filemanager.Data
+	var err error
+
+	switch dataType {
+	case filemanager.NoteType:
+		data, err = c.ui.AddNote()
+	case filemanager.BasicAuthType:
+		data, err = c.ui.AddBasicAuth()
+	case filemanager.CardDataType:
+		data, err = c.ui.AddCard()
+	case filemanager.FileType:
+		path := c.ui.GetFilePath()
+		newInfo := models.DataInfo{}
+		newInfo.SetFileName(path)
+		body, err := os.ReadFile(path)
+		if err == nil {
+			err = c.fileManager.UpdateInfoByName(secretName, newInfo)
+			data = filemanager.File{Data: body}
+		}
+	}
+
+	return data, err
 }

@@ -7,10 +7,10 @@ import (
 func (c *ClientUsecase) InMenu() {
 	switch ui.MenuTable[c.ui.Menu(c.userData.Meta.IsLocalStorage)] {
 	case ui.SecretsKey:
-		c.getSecrets(c.ui.GetSecret(c.userData.Meta.Data)) // todo сторит обдумать метадату на name
+		c.getSecrets(c.ui.GetSecret(c.userData.Meta.Data))
 	case ui.AddSecretKey:
 		c.createSecret(c.ui.ChooseSecretType())
-	case ui.UpdateSecretKey: //todo идут строительные работы
+	case ui.UpdateSecretKey:
 		c.updateSecret(c.ui.UpdateSecret(c.userData.Meta.Data))
 	case ui.SyncSecrets:
 		c.sync()

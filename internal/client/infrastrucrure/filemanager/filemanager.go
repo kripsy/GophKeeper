@@ -46,16 +46,13 @@ func NewFileManager(storageDir, uploadDir, userDir string, meta models.UserMeta,
 		return nil, err
 	}
 
-	fm := &FileManager{
+	return &FileManager{
 		storageDir: storageDir,
 		uploadDir:  uploadDir,
 		userDir:    userDir,
 		meta:       meta,
 		key:        key,
-	}
-
-	return fm, nil
-
+	}, nil
 }
 
 func (fm *FileManager) AddToStorage(name string, data Data, info models.DataInfo) error {
@@ -181,19 +178,21 @@ func (fm *FileManager) UpdateInfoByName(name string, info models.DataInfo) error
 		return errors.New("not found secret")
 	}
 
-	savedInfo.UpdatedAt = time.Now()
-
-	if info.Name == "" {
+	if info.Name != "" && savedInfo.Name != info.Name {
 		savedInfo.Name = info.Name
+		delete(fm.meta.Data, name)
 	}
 
-	if info.Description == "" {
+	if info.Description != "" {
 		savedInfo.Description = info.Description
 	}
 
-	delete(fm.meta.Data, name)
+	if info.FileName != nil {
+		savedInfo.FileName = info.FileName
+	}
 
-	fm.meta.Data[info.Name] = info
+	savedInfo.UpdatedAt = time.Now()
+	fm.meta.Data[savedInfo.Name] = savedInfo
 
 	return fm.saveMetaData()
 }

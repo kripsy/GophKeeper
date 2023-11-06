@@ -64,3 +64,10 @@ func (c *CLI) Exit() {
 	c.Clear()
 	os.Exit(1)
 }
+
+func (c *CLI) PrintErr(error string) {
+	fmt.Println(promptui.Styler(
+		promptui.FGRed,
+		promptui.FGBold,
+	)(error))
+}

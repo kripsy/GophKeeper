@@ -1,10 +1,11 @@
 package usecase
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/filemanager"
+	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui"
+	"github.com/kripsy/GophKeeper/internal/models"
 )
 
 func (c *ClientUsecase) createSecret(secretType int, success bool) {
@@ -13,34 +14,50 @@ func (c *ClientUsecase) createSecret(secretType int, success bool) {
 		return
 	}
 
-	//todo handle error
+	var data filemanager.Data
+	var info models.DataInfo
+	var err error
+
+	data, info, err = c.getUserData(secretType)
+	if err != nil {
+		c.ui.PrintErr(ui.CreateErr)
+		c.log.Err(err).Msg("failed to get user data")
+		return
+	}
+
+	info.DataType = secretType
+	err = c.fileManager.AddToStorage(info.Name, data, info)
+	if err != nil {
+		c.ui.PrintErr(ui.CreateErr)
+		c.log.Err(err).Msg(ui.CreateErr)
+		return
+	}
+}
+
+func (c *ClientUsecase) getUserData(secretType int) (filemanager.Data, models.DataInfo, error) {
+	var data filemanager.Data
+	var info models.DataInfo
+	var err error
+
 	switch secretType {
 	case filemanager.NoteType:
-		data, _ := c.ui.AddNote()
-		info, _ := c.ui.AddMetaInfo()
-		info.DataType = secretType
-		c.fileManager.AddToStorage(info.Name, data, info)
+		data, err = c.ui.AddNote()
 	case filemanager.BasicAuthType:
-		data, _ := c.ui.AddBasicAuth()
-		info, _ := c.ui.AddMetaInfo()
-		info.DataType = secretType
-		c.fileManager.AddToStorage(info.Name, data, info)
+		data, err = c.ui.AddBasicAuth()
 	case filemanager.CardDataType:
-		data, _ := c.ui.AddCard()
-		info, _ := c.ui.AddMetaInfo()
-		info.DataType = secretType
-		c.fileManager.AddToStorage(info.Name, data, info)
+		data, err = c.ui.AddCard()
 	case filemanager.FileType:
 		path := c.ui.GetFilePath()
-		info, _ := c.ui.AddMetaInfo()
-		info.DataType = secretType
 		info.SetFileName(path)
-		fmt.Println(info)
 		body, err := os.ReadFile(path)
-		if err != nil {
-			fmt.Println(err)
+		if err == nil {
+			data = filemanager.File{Data: body}
 		}
-		data := filemanager.File{Data: body}
-		c.fileManager.AddToStorage(info.Name, data, info)
 	}
+
+	if err == nil {
+		info, err = c.ui.AddMetaInfo()
+	}
+
+	return data, info, err
 }

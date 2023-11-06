@@ -44,8 +44,6 @@ func (c *ClientUsecase) sync() {
 		return
 	}
 
-	_, _ = toUpload, toDownload
-
 	if err = c.downloadSecrets(ctx, syncKey, toDownload); err != nil {
 		c.log.Err(err).Msg("error upload secrets")
 		return
@@ -199,7 +197,9 @@ func (c *ClientUsecase) blockSync(ctx context.Context, syncKey string) error {
 
 	select {
 	case newGuid := <-guidChan:
-		_ = newGuid
+		if syncKey != newGuid {
+			c.log.Warn().Msg("sync key not equal server request key")
+		}
 		break
 	case err := <-errChan:
 		c.log.Err(err).Msg("error block sync")

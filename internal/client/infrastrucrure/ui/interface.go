@@ -28,5 +28,6 @@ type UserInterface interface {
 
 	Sync(stop <-chan struct{})
 	Clear()
+	PrintErr(error string)
 	Exit()
 }

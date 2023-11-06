@@ -1,10 +1,11 @@
 package usecase
 
 import (
-	"github.com/kripsy/GophKeeper/internal/models"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/kripsy/GophKeeper/internal/models"
 )
 
 func Test_findDifferences(t *testing.T) {
