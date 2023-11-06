@@ -12,6 +12,8 @@ import (
 func (c *ClientUsecase) updateSecret(secretName string, updateType int, success bool) {
 	defer c.InMenu()
 	if !success {
+		c.ui.PrintErr(ui.UpdateErr)
+
 		return
 	}
 
@@ -42,6 +44,7 @@ func (c *ClientUsecase) updateMetaInfo(secretName string, metaInfo models.DataIn
 	return c.fileManager.UpdateInfoByName(secretName, info)
 }
 
+//nolint:nolintlint
 func (c *ClientUsecase) getUpdatedData(secretName string, dataType int) (filemanager.Data, error) {
 	var data filemanager.Data
 	var err error

@@ -3,11 +3,11 @@ package usecase
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui"
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/kripsy/GophKeeper/internal/utils"
 )
@@ -15,7 +15,8 @@ import (
 func (c *ClientUsecase) sync() {
 	defer c.InMenu()
 	if c.grpc.IsNotAvailable() || !c.grpc.TryToConnect() {
-		fmt.Println("Failed connect to server")
+		c.ui.PrintErr("Failed connect to server")
+
 		return
 	}
 
@@ -34,6 +35,7 @@ func (c *ClientUsecase) sync() {
 
 	serverMeta, err := c.downloadServerMeta(ctx, syncKey)
 	if err != nil {
+		c.ui.PrintErr(ui.SyncErr)
 		c.log.Err(err).Msg("failed download server meta data")
 
 		return
@@ -45,34 +47,36 @@ func (c *ClientUsecase) sync() {
 	}
 
 	if err = c.downloadSecrets(ctx, syncKey, toDownload); err != nil {
+		c.ui.PrintErr(ui.SyncErr)
 		c.log.Err(err).Msg("error upload secrets")
 		return
 	}
 
 	if err = c.uploadSecrets(ctx, syncKey, toUpload); err != nil {
+		c.ui.PrintErr(ui.SyncErr)
 		c.log.Err(err).Msg("error upload secrets")
 		return
 	}
 
 	if err = c.uploadMeta(ctx, syncKey); err != nil {
+		c.ui.PrintErr(ui.SyncErr)
 		c.log.Err(err).Msg("error upload meta")
 
 		return
 	}
 
 	time.Sleep(time.Second * 5) //todo похоже ApplyChanges срабатывает раньше времени
-	if err := c.grpc.ApplyChanges(ctx, syncKey); err != nil {
+	if err = c.grpc.ApplyChanges(ctx, syncKey); err != nil {
+		c.ui.PrintErr(ui.SyncErr)
 		c.log.Err(err).Msg("failed apply changes")
 
 		return
 	}
-
 }
 
 func (c *ClientUsecase) uploadMeta(ctx context.Context, syncKey string) error {
 	data, err := c.fileManager.ReadEncryptedByName(c.userData.User.GetMetaFileName())
 	if err != nil {
-
 		return err
 	}
 
@@ -112,10 +116,10 @@ func (c *ClientUsecase) downloadSecrets(ctx context.Context, syncKey string, toD
 	var wg sync.WaitGroup
 	errors := make(chan error, 1)
 
-	for dataID, info := range toDownload {
+	for _, info := range toDownload {
 		wg.Add(1)
 
-		go func(dataID string, info models.DataInfo) {
+		go func(info models.DataInfo) {
 			defer wg.Done()
 
 			data, err := c.grpc.DownloadFile(ctx, info.DataID, c.userData.Meta.HashData, syncKey)
@@ -131,7 +135,7 @@ func (c *ClientUsecase) downloadSecrets(ctx context.Context, syncKey string, toD
 				c.log.Err(err).Msg("AddEncryptedToStorage")
 				return
 			}
-		}(dataID, info)
+		}(info)
 	}
 
 	wg.Wait()

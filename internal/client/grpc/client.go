@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 
@@ -53,7 +54,7 @@ func (c *Grpc) Register(login, password string) error {
 	if err != nil {
 		return err
 	}
-	c.token = resp.Token
+	c.token = resp.GetToken()
 
 	return nil
 }
@@ -64,9 +65,9 @@ func (c *Grpc) Login(login, password string) error {
 		Password: password,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("login: %w", err)
 	}
-	c.token = resp.Token
+	c.token = resp.GetToken()
 
 	return nil
 }
@@ -74,27 +75,31 @@ func (c *Grpc) Login(login, password string) error {
 func (c *Grpc) BlockStore(ctx context.Context, syncKey string, guidChan chan string) error {
 	stream, err := c.client.BlockStore(c.getCtx(ctx, c.token))
 	if err != nil {
-		return err
+		return fmt.Errorf("BlockStore: %w", err)
 	}
 
 	err = stream.Send(&pb.BlockStoreRequest{Guid: syncKey})
 	if err != nil {
 		c.log.Err(err).Msg("err send block store req")
 
-		return err
+		return fmt.Errorf("BlockStore.Send: %w", err)
 	}
 
 	resp, err := stream.Recv()
 	if err != nil {
-		fmt.Println("Error receiving response from server:", err.Error())
-		return err
+		return fmt.Errorf("BlockStore.Recv: %w", err)
 	}
 
-	guidChan <- resp.Guid
+	guidChan <- resp.GetGuid()
+
 	return nil
 }
 
-func (c *Grpc) DownloadFile(ctx context.Context, fileName string, fileHash string, syncKey string) (chan []byte, error) {
+func (c *Grpc) DownloadFile(ctx context.Context,
+	fileName string,
+	fileHash string,
+	syncKey string,
+) (chan []byte, error) {
 	req := &pb.MultipartDownloadFileRequest{
 		FileName: fileName,
 		Guid:     syncKey,
@@ -110,27 +115,26 @@ func (c *Grpc) DownloadFile(ctx context.Context, fileName string, fileHash strin
 	loop:
 		for {
 			resp, err := stream.Recv()
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				close(data)
 
 				break loop
 			}
 			if err != nil {
-				return //nil, fmt.Errorf("%w", err)
+				return nil, fmt.Errorf("%w", err)
 			}
 
-			data <- resp.Content
-
+			data <- resp.GetContent()
 		}
 	}()
 
-	return data, err
+	return data, fmt.Errorf("MultipartDownloadFile: %w", err)
 }
 
 func (c *Grpc) UploadFile(ctx context.Context, fileName string, hash string, syncKey string, data chan []byte) error {
 	stream, err := c.client.MultipartUploadFile(c.getCtx(ctx, c.token))
 	if err != nil {
-		return err
+		return fmt.Errorf("MultipartUploadFile: %w", err)
 	}
 
 	for chunk := range data {
@@ -139,10 +143,10 @@ func (c *Grpc) UploadFile(ctx context.Context, fileName string, hash string, syn
 			Hash:     hash,
 			Guid:     syncKey,
 			Content:  chunk,
-		}); err != nil && err != io.EOF {
+		}); err != nil && !errors.Is(err, io.EOF) {
 			c.log.Err(err).Msg("failed upload")
 
-			return err
+			return fmt.Errorf("UploadFile: %w", err)
 		}
 	}
 
@@ -152,7 +156,7 @@ func (c *Grpc) UploadFile(ctx context.Context, fileName string, hash string, syn
 func (c *Grpc) ApplyChanges(ctx context.Context, id string) error {
 	_, err := c.client.ApplyChanges(c.getCtx(ctx, c.token), &pb.ApplyChangesRequest{Guid: id})
 	if err != nil {
-		return err
+		return fmt.Errorf("ApplyChanges: %w", err)
 	}
 
 	return nil

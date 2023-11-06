@@ -88,9 +88,6 @@ func (c *CLI) IsLocalStorage() bool {
 	}
 
 	_, err := isLocal.Run()
-	if err != nil {
-		return true
-	}
 
-	return false
+	return err != nil
 }

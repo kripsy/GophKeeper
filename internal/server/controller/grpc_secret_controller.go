@@ -57,7 +57,7 @@ func (s *GrpcServer) MultipartUploadFile(stream pb.GophKeeperService_MultipartUp
 		defer close(errChanStream)
 		for {
 			req, err := stream.Recv()
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				return
 			}
 			if err != nil {
@@ -249,7 +249,7 @@ loop:
 
 			return status.Error(codes.Aborted, "stream context canceled")
 		case err := <-errChan:
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				s.logger.Debug("Got EOF of BlockStore")
 				break loop
 			}

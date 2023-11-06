@@ -10,14 +10,11 @@ run/server:
 run/client:
 	go run ./cmd/client/
 
-#-secure=false
-
 build/client/linux:
 	go build -o ./cmd/client/client \
 	-ldflags "-X main.buildVersion=$(CLIENT_VERSION) \
 		  -X main.buildDate=$(shell date '+%Y/%m/%d[%H:%M:%S]')" \
 	./cmd/client/*.go
-
 
 build/client/windows:
 	GOOS=windows GOARCH=amd64 go build -o ./cmd/client/client$(shell go env GOEXE)  \
@@ -45,3 +42,9 @@ genmocks:
 	mockgen -destination=internal/server/controller/mocks/mock_gophkeeperservice_multipartdownloadfileserver.go -package=mocks github.com/kripsy/GophKeeper/gen/pkg/api/GophKeeper/v1 GophKeeperService_MultipartDownloadFileServer;
 # generate SyncStatus for controller	
 	mockgen -destination=internal/server/controller/mocks/mock_SyncStatus.go -package=mocks github.com/kripsy/GophKeeper/internal/server/controller SyncStatus;
+
+docker run --rm -v /path/to/your/project:/go/project -w /go/project golangci/golangci-lint golangci-lint run
+docker run --rm -v $(pwd):/app -w /app golangci/golangci-lint golangci-lint run --config ./.golangci.yaml
+
+docker run --rm -v /home/gg/GolandProjects/GophKeeper:/app -w /app golangci/golangci-lint:v1.55.2 golangci-lint run -c ./.golangci.yml
+docker run --rm -v $(pwd):/app -w /app golangci/golangci-lint:v1.55.2 golangci-lint run -v -c ./.golangci.yml

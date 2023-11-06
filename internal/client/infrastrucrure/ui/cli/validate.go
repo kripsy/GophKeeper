@@ -1,3 +1,4 @@
+//nolint:gochecknoglobals
 package cli
 
 import (
@@ -7,10 +8,17 @@ import (
 	"github.com/manifoldco/promptui"
 )
 
+const (
+	userSize     = 6
+	passwordSize = 6
+	cvvSize      = 3
+	CardNumSize  = 16
+)
+
 var errStyle = promptui.Styler(promptui.BGRed, promptui.FGBold, promptui.FGBlack)
 
 func validatePassword(input string) error {
-	if len(input) < 6 {
+	if len(input) < userSize {
 		return errors.New(errStyle("Password must have more than 6 characters"))
 	}
 
@@ -18,7 +26,7 @@ func validatePassword(input string) error {
 }
 
 func validateUsername(input string) error {
-	if len(input) < 6 {
+	if len(input) < passwordSize {
 		return errors.New(errStyle("Username must have more than 6 characters"))
 	}
 
@@ -30,7 +38,7 @@ func validateCVV(input string) error {
 		return errors.New("CVV must  be a number")
 	}
 
-	if len(input) != 3 {
+	if len(input) != cvvSize {
 		return errors.New("CVV must contain 3 digits")
 	}
 
@@ -42,7 +50,7 @@ func validateCardNumber(input string) error {
 		return errors.New("Card number must  be a number ツ")
 	}
 
-	if len(input) > 16 {
+	if len(input) > CardNumSize {
 		return errors.New("Card number cannot contain more than 16 digits")
 	}
 

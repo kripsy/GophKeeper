@@ -16,42 +16,46 @@ const (
 )
 
 func GetConfig() Config {
-	var cfg Config
+	var fileCfg Config
 
-	f := parseFlags()
-	configPath := f.ConfigPath
+	flags := parseFlags()
+	configPath := flags.ConfigPath
 	if configPath == "" {
 		configPath = defaultConfigPath
 	}
 
 	if _, err := os.Stat(configPath); !os.IsNotExist(err) {
-		if err = parseConfig(configPath, &cfg); err != nil {
+		if err = parseConfig(configPath, &fileCfg); err != nil {
 			fmt.Print("failed read yaml config file: ", err.Error())
 			os.Exit(1)
 		}
 	}
 
-	if f.StoragePath != "" {
-		cfg.StoragePath = f.StoragePath
+	return setConfig(fileCfg, flags)
+}
+
+func setConfig(fileCfg Config, flagCfg Flags) Config {
+	if flagCfg.StoragePath != "" {
+		fileCfg.StoragePath = flagCfg.StoragePath
 	}
-	if f.UploadPath != "" {
-		cfg.UploadPath = f.UploadPath
+	if flagCfg.UploadPath != "" {
+		fileCfg.UploadPath = flagCfg.UploadPath
 	}
-	if f.ServerAddress != "" {
-		cfg.ServerAddress = f.ServerAddress
+	if flagCfg.ServerAddress != "" {
+		fileCfg.ServerAddress = flagCfg.ServerAddress
 	}
 
-	if cfg.StoragePath == "" {
-		cfg.StoragePath = defaultStoragePath
+	if fileCfg.StoragePath == "" {
+		fileCfg.StoragePath = defaultStoragePath
 	}
-	if cfg.UploadPath == "" {
-		cfg.UploadPath = defaultUploadPath
+	if fileCfg.UploadPath == "" {
+		fileCfg.UploadPath = defaultUploadPath
 	}
-	if cfg.ServerAddress == "" {
-		cfg.ServerAddress = defaultServerAddress
+	if fileCfg.ServerAddress == "" {
+		fileCfg.ServerAddress = defaultServerAddress
 	}
 
-	return cfg
+	return fileCfg
 }
 
 type Config struct {

@@ -1,3 +1,4 @@
+//nolint:gochecknoinits, gochecknoglobals
 package cli
 
 import (
@@ -35,6 +36,7 @@ func (c *CLI) Clear() {
 		if err = value(); err != nil {
 			c.log.Err(err).Msg("failed get clear func")
 		}
+
 		return
 	}
 	value, ok = clearMapByOS["default"]
@@ -53,9 +55,9 @@ func clearFunc(name string, args ...string) func() error {
 		cmd.Stdout = os.Stdout
 		err := cmd.Run()
 		if err != nil {
-			fmt.Println("Error in clear map ", err.Error())
 			return err
 		}
+
 		return nil
 	}
 }
@@ -65,9 +67,9 @@ func (c *CLI) Exit() {
 	os.Exit(1)
 }
 
-func (c *CLI) PrintErr(error string) {
+func (c *CLI) PrintErr(err string) {
 	fmt.Println(promptui.Styler(
 		promptui.FGRed,
 		promptui.FGBold,
-	)(error))
+	)(err))
 }

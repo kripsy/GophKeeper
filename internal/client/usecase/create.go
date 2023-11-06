@@ -11,6 +11,8 @@ import (
 func (c *ClientUsecase) createSecret(secretType int, success bool) {
 	defer c.InMenu()
 	if !success {
+		c.ui.PrintErr(ui.CreateErr)
+
 		return
 	}
 
@@ -34,6 +36,7 @@ func (c *ClientUsecase) createSecret(secretType int, success bool) {
 	}
 }
 
+//nolint:nolintlint
 func (c *ClientUsecase) getUserData(secretType int) (filemanager.Data, models.DataInfo, error) {
 	var data filemanager.Data
 	var info models.DataInfo

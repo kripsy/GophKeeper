@@ -24,7 +24,6 @@ type DataInfo struct {
 	Description string    `json:"description"`
 	FileName    *string   `json:"file_name,omitempty"`
 	Hash        string    `json:"hash"`
-	IsDeleted   bool      `json:"is_deleted"` // todo вынести в отдельное поле
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 

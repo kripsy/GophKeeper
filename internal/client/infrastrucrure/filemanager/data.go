@@ -1,3 +1,4 @@
+//nolint:gochecknoglobals
 package filemanager
 
 import (
@@ -25,6 +26,7 @@ const (
 type Data interface {
 	EncryptedData(key []byte) ([]byte, error)
 	GetHash() (string, error)
+	String() string
 }
 
 var DataTypeTable = []string{NameNoteType, NameBasicAuthType, NameCardDataType, NameFileType}

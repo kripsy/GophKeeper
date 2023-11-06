@@ -39,6 +39,7 @@ func (c *CLI) UploadFileTo(cfgDir string) (string, bool) {
 	case CustomDir:
 		var newFilePath string
 		c.GetNewFilePath(&newFilePath)
+
 		return newFilePath, true
 	case ui.ExitKey:
 		return "", false

@@ -10,6 +10,8 @@ import (
 	"github.com/manifoldco/promptui"
 )
 
+const secretMenuSize = 6
+
 func (c *CLI) GetSecret(metaData models.MetaData) (string, bool) {
 	return c.chooseSecret(metaData, ui.SecretsKey, chooseSecretTemplate)
 }
@@ -19,8 +21,8 @@ func (c *CLI) chooseSecret(metaData models.MetaData, label string, template *pro
 
 	searcher := func(input string, index int) bool {
 		di := dataInfos[index]
-		name := strings.Replace(strings.ToLower(di.Name), " ", "", -1)
-		input = strings.Replace(strings.ToLower(input), " ", "", -1)
+		name := strings.ReplaceAll(strings.ToLower(di.Name), " ", "")
+		input = strings.ReplaceAll(strings.ToLower(input), " ", "")
 
 		return strings.Contains(name, input)
 	}
@@ -32,7 +34,7 @@ func (c *CLI) chooseSecret(metaData models.MetaData, label string, template *pro
 		StartInSearchMode: true,
 		HideHelp:          true,
 		HideSelected:      true,
-		Size:              6,
+		Size:              secretMenuSize,
 		Searcher:          searcher,
 	}
 

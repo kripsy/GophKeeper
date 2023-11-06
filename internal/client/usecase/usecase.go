@@ -2,8 +2,8 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"os"
 
 	"github.com/google/uuid"
 	"github.com/kripsy/GophKeeper/internal/client/grpc"
@@ -57,6 +57,7 @@ func (c *ClientUsecase) SetUser() error {
 		if err != nil {
 			// todo проверка на конкретную ошкибку
 			c.log.Err(err).Msg("failed get user")
+
 			continue
 		}
 
@@ -65,17 +66,21 @@ func (c *ClientUsecase) SetUser() error {
 				return nil
 			}
 			if c.ui.TryAgain() {
+
 				continue
 			}
 			if err = c.handleUserRegistration(userAuth); err != nil {
 				return err
 			}
+
 			return nil
 		} else {
 			if err = c.handleUserLogin(userAuth); err != nil {
-				c.log.Err(err).Msg("")
+				c.log.Err(err).Msg("failed handle user login")
+
 				continue
 			}
+
 			return nil
 		}
 	}
@@ -85,13 +90,17 @@ func (c *ClientUsecase) checkUserOnServer(userAuth filemanager.Auth) bool {
 	hash, err := c.userData.User.GetHashedPass()
 	if err != nil {
 		c.log.Info().Err(err).Msg("failed get hashed password")
+
 		return false
 	}
 
 	err = c.grpc.Login(c.userData.User.Username, hash)
 	if err != nil {
 		c.log.Info().Str("user", c.userData.User.Username).Msg("failed login user")
+
+		return false
 	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	syncKey := uuid.New().String()
@@ -103,6 +112,7 @@ func (c *ClientUsecase) checkUserOnServer(userAuth filemanager.Auth) bool {
 	serverMeta, err := c.downloadServerMeta(ctx, syncKey)
 	if err != nil {
 		c.log.Info().Err(err).Msg("failed download server meta data")
+
 		return false
 	}
 	if serverMeta.Username != c.userData.User.Username {
@@ -127,19 +137,20 @@ func (c *ClientUsecase) checkUserOnServer(userAuth filemanager.Auth) bool {
 
 func (c *ClientUsecase) handleUserRegistration(userAuth filemanager.Auth) error {
 	if c.grpc.IsNotAvailable() {
-		fmt.Println("Could not connect to the server, only local registration is available")
+		c.ui.PrintErr("Could not connect to the server, only local registration is available")
 	}
 
 	repeatedPass, err := c.ui.GetRepeatedPassword()
 	if err != nil {
 		c.log.Err(err).Msg("failed repeated pass")
+
 		return err
 	}
 
 	if c.userData.User.Password != repeatedPass {
-		fmt.Println("Password mismatch")
-		os.Exit(9)
-		return nil
+		c.ui.PrintErr("Password mismatch")
+
+		return errors.New("password mismatch")
 	}
 
 	var isSyncStorage bool
@@ -150,12 +161,14 @@ func (c *ClientUsecase) handleUserRegistration(userAuth filemanager.Auth) error 
 		hash, err := c.userData.User.GetHashedPass()
 		if err != nil {
 			c.log.Err(err).Msg("failed get hashed password")
+
 			return err
 		}
 
 		err = c.grpc.Register(c.userData.User.Username, hash)
 		if err != nil {
 			c.log.Err(err).Str("user", c.userData.User.Username).Msg("failed register user")
+
 			return err
 		}
 	}
@@ -176,6 +189,7 @@ func (c *ClientUsecase) handleUserLogin(userAuth filemanager.Auth) error {
 		hash, err := c.userData.User.GetHashedPass()
 		if err != nil {
 			c.log.Err(err).Msg("failed get hashed password")
+
 			return err
 		}
 

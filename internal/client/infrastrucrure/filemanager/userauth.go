@@ -5,13 +5,9 @@ import (
 	"errors"
 	"os"
 
+	"github.com/kripsy/GophKeeper/internal/client/permissions"
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/kripsy/GophKeeper/internal/utils"
-)
-
-const (
-	fileMode os.FileMode = 0700 //660
-	dirMode  os.FileMode = 0700 //755
 )
 
 type Auth interface {
@@ -24,9 +20,10 @@ type userAuth struct {
 	userFilePath string
 }
 
+//nolint:revive
 func NewUserAuth(userPath string) (*userAuth, error) {
 	if _, err := os.Stat(userPath); os.IsNotExist(err) {
-		if err = os.MkdirAll(userPath, dirMode); err != nil {
+		if err = os.MkdirAll(userPath, permissions.DirMode); err != nil {
 			return nil, err
 		}
 	}
@@ -65,7 +62,7 @@ func (a *userAuth) CreateUser(user *models.User, isLocalStorage bool) (models.Us
 		return models.UserMeta{}, err
 	}
 
-	err = os.WriteFile(user.GetDir(a.userFilePath), encryptData, fileMode)
+	err = os.WriteFile(user.GetDir(a.userFilePath), encryptData, permissions.FileMode)
 	if err != nil {
 		return models.UserMeta{}, err
 	}

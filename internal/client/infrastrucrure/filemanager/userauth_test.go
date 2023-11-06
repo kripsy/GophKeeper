@@ -1,10 +1,11 @@
-package filemanager
+package filemanager_test
 
 import (
 	"os"
 	"reflect"
 	"testing"
 
+	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/filemanager"
 	"github.com/kripsy/GophKeeper/internal/models"
 )
 
@@ -15,13 +16,13 @@ const (
 
 func Test_userAuth_GetUser(t *testing.T) {
 	defer os.RemoveAll(storageDir)
-	auth, err := NewUserAuth(storageDir)
+	auth, err := filemanager.NewUserAuth(storageDir)
 	if err != nil {
 		t.Fatalf("Failed to create NewUserAuth: %v", err)
 	}
 	tests := []struct {
 		name        string
-		auth        Auth
+		auth        filemanager.Auth
 		user        *models.User
 		prepareFunc func()
 		want        models.UserMeta
@@ -76,13 +77,13 @@ func Test_userAuth_GetUser(t *testing.T) {
 
 func Test_userAuth_CreateUser(t *testing.T) {
 	defer os.RemoveAll(storageDir)
-	auth, err := NewUserAuth(storageDir)
+	auth, err := filemanager.NewUserAuth(storageDir)
 	if err != nil {
 		t.Fatalf("Failed to create NewUserAuth: %v", err)
 	}
 	tests := []struct {
 		name           string
-		auth           Auth
+		auth           filemanager.Auth
 		user           *models.User
 		want           models.UserMeta
 		isLocalStorage bool
