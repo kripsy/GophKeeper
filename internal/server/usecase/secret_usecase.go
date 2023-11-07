@@ -16,7 +16,11 @@ import (
 )
 
 type MinioRepository interface {
-	MultipartUploadFile(context.Context, *models.MultipartUploadFileData, int, string) (*models.ObjectPart, error)
+	MultipartUploadFile(ctx context.Context,
+		data *models.MultipartUploadFileData,
+		partNum int,
+		bucketName string,
+	) (*models.ObjectPart, error)
 	CreateBucketSecret(ctx context.Context, username string, userID int) (bool, error)
 	GetObject(ctx context.Context, bucketName, filename string) (*[]byte, string, error)
 	ListObjects(ctx context.Context, bucketName, prefix string) (*[]string, error)

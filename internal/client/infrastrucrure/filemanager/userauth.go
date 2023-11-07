@@ -2,21 +2,17 @@ package filemanager
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"os"
 
+	"github.com/kripsy/GophKeeper/internal/client/permissions"
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/kripsy/GophKeeper/internal/utils"
 )
 
-const (
-	fileMode os.FileMode = 0700 //660
-	dirMode  os.FileMode = 0700 //755
-)
-
 type Auth interface {
 	IsUserNotExisting(userDit string) bool
-	CreateUser(user *models.User, isLocalStorage bool) (models.UserMeta, error)
+	CreateUser(user *models.User, isSyncStorage bool) (models.UserMeta, error)
 	GetUser(user *models.User) (models.UserMeta, error)
 }
 
@@ -24,10 +20,11 @@ type userAuth struct {
 	userFilePath string
 }
 
+//nolint:revive
 func NewUserAuth(userPath string) (*userAuth, error) {
 	if _, err := os.Stat(userPath); os.IsNotExist(err) {
-		if err = os.MkdirAll(userPath, dirMode); err != nil {
-			return nil, err
+		if err = os.MkdirAll(userPath, permissions.DirMode); err != nil {
+			return nil, fmt.Errorf("%w", err)
 		}
 	}
 
@@ -44,30 +41,30 @@ func (a *userAuth) IsUserNotExisting(userDit string) bool {
 	return false
 }
 
-func (a *userAuth) CreateUser(user *models.User, isLocalStorage bool) (models.UserMeta, error) {
+func (a *userAuth) CreateUser(user *models.User, isSyncStorage bool) (models.UserMeta, error) {
 	meta := models.UserMeta{
-		Username:       user.Username,
-		IsLocalStorage: isLocalStorage,
-		Data:           make(map[string]models.DataInfo),
+		Username:      user.Username,
+		IsSyncStorage: isSyncStorage,
+		Data:          make(map[string]models.DataInfo),
 	}
 	body, err := json.Marshal(meta)
 	if err != nil {
-		return models.UserMeta{}, err
+		return models.UserMeta{}, fmt.Errorf("%w", err)
 	}
 
 	key, err := user.GetUserKey()
 	if err != nil {
-		return models.UserMeta{}, err
+		return models.UserMeta{}, fmt.Errorf("%w", err)
 	}
 
 	encryptData, err := utils.Encrypt(body, key)
 	if err != nil {
-		return models.UserMeta{}, err
+		return models.UserMeta{}, fmt.Errorf("%w", err)
 	}
 
-	err = os.WriteFile(user.GetDir(a.userFilePath), encryptData, fileMode)
+	err = os.WriteFile(user.GetDir(a.userFilePath), encryptData, permissions.FileMode)
 	if err != nil {
-		return models.UserMeta{}, err
+		return models.UserMeta{}, fmt.Errorf("%w", err)
 	}
 
 	user.Key = key
@@ -78,26 +75,26 @@ func (a *userAuth) CreateUser(user *models.User, isLocalStorage bool) (models.Us
 func (a *userAuth) GetUser(user *models.User) (models.UserMeta, error) {
 	fileData, err := os.ReadFile(user.GetDir(a.userFilePath))
 	if err != nil {
-		return models.UserMeta{}, err
+		return models.UserMeta{}, fmt.Errorf("%w", err)
 	}
 
 	key, err := user.GetUserKey()
 	if err != nil {
-		return models.UserMeta{}, err
+		return models.UserMeta{}, fmt.Errorf("%w", err)
 	}
 	userData, err := utils.Decrypt(fileData, key)
 	if err != nil {
-		return models.UserMeta{}, err
+		return models.UserMeta{}, fmt.Errorf("%w", err)
 	}
 
 	meta := models.UserMeta{}
 	err = json.Unmarshal(userData, &meta)
 	if err != nil {
-		return models.UserMeta{}, err
+		return models.UserMeta{}, fmt.Errorf("%w", err)
 	}
 
 	if user.Username != meta.Username {
-		return models.UserMeta{}, errors.New("error compared user Data")
+		return models.UserMeta{}, fmt.Errorf("%w", errNotEqualData)
 	}
 
 	user.Key = key

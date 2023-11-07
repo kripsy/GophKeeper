@@ -12,6 +12,7 @@ type CLI struct {
 func NewCLI(log zerolog.Logger) *CLI {
 	promptui.IconBad = "🌚"
 	promptui.IconGood = "🌝"
+
 	return &CLI{
 		log: log,
 	}

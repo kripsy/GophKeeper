@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/kripsy/GophKeeper/internal/utils"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -83,10 +83,10 @@ func TestBuildJWTString(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			token, err := utils.BuildJWTString(tt.userID, tt.username, tt.secretKey, tt.tokenExp)
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
-				assert.NotEmpty(t, token)
+				require.NoError(t, err)
+				require.NotEmpty(t, token)
 			}
 		})
 	}

@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/kripsy/GophKeeper/internal/utils"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -35,17 +34,17 @@ func TestCreateCertificate(t *testing.T) {
 
 			err = utils.CreateCertificate(tt.serverCertPath, tt.privateKeyPath)
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 
 			if !tt.wantErr {
 				_, err = os.Stat(tt.serverCertPath)
-				assert.NoError(t, err, "serverCertPath should exist after CreateCertificate")
+				require.NoError(t, err, "serverCertPath should exist after CreateCertificate")
 
 				_, err = os.Stat(tt.privateKeyPath)
-				assert.NoError(t, err, "privateKeyPath should exist after CreateCertificate")
+				require.NoError(t, err, "privateKeyPath should exist after CreateCertificate")
 			}
 		})
 	}

@@ -6,28 +6,39 @@ import (
 )
 
 type UserInterface interface {
+	Auth
+	Menu(isLocalStorage bool) int
+	SecretManager
+	FileDirector
+	Sync(stop <-chan struct{})
+	Clear()
+	PrintErr(err string)
+	Exit()
+}
+
+type Auth interface {
 	GetUser() (models.User, error)
 	GetRepeatedPassword() (string, error)
 	TryAgain() bool
 	IsLocalStorage() bool
+}
 
-	Menu(isLocalStorage bool) int
-
-	GetSecret(metaData models.MetaData) (string, bool)
-	DeleteSecret(metaData models.MetaData) (string, bool)
-	UpdateSecret(metaData models.MetaData) (string, int, bool)
-
+type SecretCreator interface {
 	ChooseSecretType() (int, bool)
 	AddNote() (filemanager.Note, error)
 	AddBasicAuth() (filemanager.BasicAuth, error)
 	AddCard() (filemanager.CardData, error)
 	AddMetaInfo() (models.DataInfo, error)
+}
 
+type FileDirector interface {
 	UploadFileTo(cfgDir string) (string, bool)
 	GetFilePath() string
+}
 
-	Sync(stop <-chan struct{})
-	Clear()
-	PrintErr(error string)
-	Exit()
+type SecretManager interface {
+	SecretCreator
+	GetSecret(metaData models.MetaData) (string, bool)
+	DeleteSecret(metaData models.MetaData) (string, bool)
+	UpdateSecret(metaData models.MetaData) (string, int, bool)
 }

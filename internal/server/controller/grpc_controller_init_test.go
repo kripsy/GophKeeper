@@ -8,7 +8,6 @@ import (
 	"github.com/kripsy/GophKeeper/internal/server/controller"
 	"github.com/kripsy/GophKeeper/internal/server/controller/mocks"
 	"github.com/kripsy/GophKeeper/internal/utils"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
@@ -64,9 +63,9 @@ func TestInitGrpcServer(t *testing.T) {
 				tt.serverCertPath,
 				tt.privateKeyPath, logger)
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}

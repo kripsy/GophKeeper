@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"fmt"
+
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui"
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/manifoldco/promptui"
@@ -23,13 +25,13 @@ func (c *CLI) GetUser() (models.User, error) {
 	if err != nil {
 		c.checkInterrupt(err)
 
-		return models.User{}, err
+		return models.User{}, fmt.Errorf("%w", err)
 	}
 	password, err := pass.Run()
 	if err != nil {
 		c.checkInterrupt(err)
 
-		return models.User{}, err
+		return models.User{}, fmt.Errorf("%w", err)
 	}
 
 	return models.User{
@@ -50,7 +52,7 @@ func (c *CLI) GetRepeatedPassword() (string, error) {
 	if err != nil {
 		c.checkInterrupt(err)
 
-		return "", err
+		return "", fmt.Errorf("%w", err)
 	}
 
 	return password, nil
@@ -88,9 +90,6 @@ func (c *CLI) IsLocalStorage() bool {
 	}
 
 	_, err := isLocal.Run()
-	if err != nil {
-		return true
-	}
 
-	return false
+	return err == nil
 }

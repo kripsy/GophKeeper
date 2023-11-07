@@ -9,11 +9,14 @@ import (
 )
 
 type SecretUseCase interface {
-	MultipartUploadFile(context.Context, <-chan *models.MultipartUploadFileData, string) (bool, error)
+	MultipartUploadFile(ctx context.Context,
+		dataChan <-chan *models.MultipartUploadFileData,
+		bucketName string,
+	) (bool, error)
 	CreateBucketSecret(ctx context.Context, username string, userID int) (bool, error)
-	MultipartDownloadFile(context.Context,
-		*models.MultipartDownloadFileRequest,
-		string) (chan *models.MultipartDownloadFileResponse, chan error)
+	MultipartDownloadFile(ctx context.Context,
+		req *models.MultipartDownloadFileRequest,
+		bucketName string) (chan *models.MultipartDownloadFileResponse, chan error)
 	ApplyChanges(ctx context.Context, bucketName string) (bool, error)
 	DiscardChanges(ctx context.Context, bucketName string) (bool, error)
 }

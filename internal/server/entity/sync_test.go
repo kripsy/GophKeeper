@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/kripsy/GophKeeper/internal/server/entity"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSyncStatus(t *testing.T) {
@@ -40,13 +40,13 @@ func TestSyncStatus(t *testing.T) {
 			exists, err := ss.AddSync(tt.userID, tt.syncID)
 
 			if tt.wantErr != nil {
-				assert.EqualError(t, tt.wantErr, err.Error())
+				require.EqualError(t, tt.wantErr, err.Error())
 			}
-			assert.Equal(t, tt.wantExists, exists)
+			require.Equal(t, tt.wantExists, exists)
 
 			if tt.wantExists {
 				isExists, _ := ss.IsSyncExists(tt.userID, tt.syncID)
-				assert.True(t, isExists)
+				require.True(t, isExists)
 			}
 		})
 	}

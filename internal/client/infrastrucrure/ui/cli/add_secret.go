@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"fmt"
+
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/filemanager"
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui"
 	"github.com/kripsy/GophKeeper/internal/models"
@@ -42,7 +44,7 @@ func (c *CLI) AddNote() (filemanager.Note, error) {
 	if err != nil {
 		c.checkInterrupt(err)
 
-		return filemanager.Note{}, err
+		return filemanager.Note{}, fmt.Errorf("%w", err)
 	}
 
 	return filemanager.Note{
@@ -65,11 +67,11 @@ func (c *CLI) AddBasicAuth() (filemanager.BasicAuth, error) {
 	if err != nil {
 		c.checkInterrupt(err)
 
-		return filemanager.BasicAuth{}, err
+		return filemanager.BasicAuth{}, fmt.Errorf("%w", err)
 	}
 	password, err := pass.Run()
 	if err != nil {
-		return filemanager.BasicAuth{}, err
+		return filemanager.BasicAuth{}, fmt.Errorf("%w", err)
 	}
 
 	return filemanager.BasicAuth{
@@ -99,17 +101,17 @@ func (c *CLI) AddCard() (filemanager.CardData, error) {
 
 	number, err := cardNum.Run()
 	if err != nil {
-		return filemanager.CardData{}, err
+		return filemanager.CardData{}, fmt.Errorf("%w", err)
 	}
 
 	date, err := cardDate.Run()
 	if err != nil {
-		return filemanager.CardData{}, err
+		return filemanager.CardData{}, fmt.Errorf("%w", err)
 	}
 
 	cvv, err := cardCvv.Run()
 	if err != nil {
-		return filemanager.CardData{}, err
+		return filemanager.CardData{}, fmt.Errorf("%w", err)
 	}
 
 	return filemanager.CardData{
@@ -132,12 +134,12 @@ func (c *CLI) AddMetaInfo() (models.DataInfo, error) {
 
 	name, err := dataName.Run()
 	if err != nil {
-		return models.DataInfo{}, err
+		return models.DataInfo{}, fmt.Errorf("%w", err)
 	}
 
 	description, err := dataDescription.Run()
 	if err != nil {
-		return models.DataInfo{}, err
+		return models.DataInfo{}, fmt.Errorf("%w", err)
 	}
 
 	return models.DataInfo{

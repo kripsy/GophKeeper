@@ -1,3 +1,4 @@
+//nolint:gochecknoglobals
 package cli
 
 import (
@@ -5,15 +6,19 @@ import (
 	"time"
 )
 
+const syncDisplayDelay = 700
+
 var syncProgress = []string{"", ".", "..", "...", "..."}
 
 func (c *CLI) Sync(stop <-chan struct{}) {
 	var counter int
+	syncDisplayTicker := time.NewTicker(time.Millisecond * syncDisplayDelay)
+	defer syncDisplayTicker.Stop()
 	for {
 		select {
 		case <-stop:
 			return
-		case <-time.Tick(time.Millisecond * 700):
+		case <-syncDisplayTicker.C:
 			if counter == len(syncProgress) {
 				counter = 0
 			}

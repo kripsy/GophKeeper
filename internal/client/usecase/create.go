@@ -1,6 +1,8 @@
+//nolint:ireturn
 package usecase
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/filemanager"
@@ -18,10 +20,11 @@ func (c *ClientUsecase) createSecret(secretType int, success bool) {
 	var info models.DataInfo
 	var err error
 
-	data, info, err = c.getUserData(secretType)
+	data, info, err = c.getSecretrData(secretType)
 	if err != nil {
 		c.ui.PrintErr(ui.CreateErr)
 		c.log.Err(err).Msg("failed to get user data")
+
 		return
 	}
 
@@ -30,13 +33,14 @@ func (c *ClientUsecase) createSecret(secretType int, success bool) {
 	if err != nil {
 		c.ui.PrintErr(ui.CreateErr)
 		c.log.Err(err).Msg(ui.CreateErr)
+
 		return
 	}
 }
 
-func (c *ClientUsecase) getUserData(secretType int) (filemanager.Data, models.DataInfo, error) {
+func (c *ClientUsecase) getSecretrData(secretType int) (filemanager.Data, models.DataInfo, error) {
 	var data filemanager.Data
-	var info models.DataInfo
+	var filePath string
 	var err error
 
 	switch secretType {
@@ -47,17 +51,25 @@ func (c *ClientUsecase) getUserData(secretType int) (filemanager.Data, models.Da
 	case filemanager.CardDataType:
 		data, err = c.ui.AddCard()
 	case filemanager.FileType:
-		path := c.ui.GetFilePath()
-		info.SetFileName(path)
-		body, err := os.ReadFile(path)
+		filePath = c.ui.GetFilePath()
+		body, err := os.ReadFile(filePath)
 		if err == nil {
 			data = filemanager.File{Data: body}
 		}
 	}
 
-	if err == nil {
-		info, err = c.ui.AddMetaInfo()
+	if err != nil {
+		return nil, models.DataInfo{}, fmt.Errorf("%w", err)
 	}
 
-	return data, info, err
+	info, err := c.ui.AddMetaInfo()
+	if err != nil {
+		return nil, models.DataInfo{}, fmt.Errorf("%w", err)
+	}
+
+	if secretType == filemanager.FileType {
+		info.SetFileName(filePath)
+	}
+
+	return data, info, nil
 }

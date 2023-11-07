@@ -1,3 +1,4 @@
+//nolint:gochecknoglobals,gosec
 package cli
 
 import (

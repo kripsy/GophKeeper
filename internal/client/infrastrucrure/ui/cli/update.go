@@ -7,7 +7,10 @@ import (
 )
 
 func (c *CLI) UpdateSecret(metaData models.MetaData) (string, int, bool) {
-	items := append(ui.UpdateItems, ui.ExitKey)
+	var items []string
+	copy(items, ui.UpdateItems)
+	items = append(items, ui.ExitKey)
+
 	name, ok := c.chooseSecret(metaData, ui.UpdateSecretKey, updateSecretTemplate)
 	if !ok {
 		return "", 0, false

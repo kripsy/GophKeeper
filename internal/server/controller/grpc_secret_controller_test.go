@@ -13,7 +13,7 @@ import (
 	"github.com/kripsy/GophKeeper/internal/server/controller"
 	"github.com/kripsy/GophKeeper/internal/server/controller/mocks"
 	"github.com/kripsy/GophKeeper/internal/utils"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -95,10 +95,10 @@ func TestGrpcServerMultipartUploadFile(t *testing.T) {
 			err := grpcServer.MultipartUploadFile(mockStream)
 
 			if tc.expectedError != nil {
-				assert.Error(t, err)
-				assert.Equal(t, status.Code(tc.expectedError), status.Code(err))
+				require.Error(t, err)
+				require.Equal(t, status.Code(tc.expectedError), status.Code(err))
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -174,9 +174,9 @@ func TestBlockStore(t *testing.T) {
 			fmt.Println(err)
 			fmt.Println(tt.wantErr)
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -246,13 +246,13 @@ func TestApplyChanges(t *testing.T) {
 
 			resp, err := grpcServer.ApplyChanges(tt.ctx, tt.req)
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 				st, _ := status.FromError(err)
-				assert.Equal(t, tt.errCode, st.Code())
+				require.Equal(t, tt.errCode, st.Code())
 			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, resp)
-				assert.Equal(t, tt.req.Guid, resp.Guid)
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+				require.Equal(t, tt.req.GetGuid(), resp.GetGuid())
 			}
 		})
 	}
@@ -358,9 +358,9 @@ func TestMultipartDownloadFile(t *testing.T) {
 
 			err := grpcServer.MultipartDownloadFile(tt.req, mockStream)
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}

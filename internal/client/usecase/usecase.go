@@ -2,8 +2,8 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"os"
 
 	"github.com/google/uuid"
 	"github.com/kripsy/GophKeeper/internal/client/grpc"
@@ -13,16 +13,17 @@ import (
 	"github.com/rs/zerolog"
 )
 
+var errPasswordMismatch = errors.New("password mismatch")
+
 type ClientUsecase struct {
-	dataPath      string
-	uploadPath    string
-	aboutMsg      string
-	serverAddress string
-	userData      *models.UserData
-	grpc          grpc.Client
-	fileManager   filemanager.FileStorage
-	ui            ui.UserInterface
-	log           zerolog.Logger
+	dataPath    string
+	uploadPath  string
+	aboutMsg    string
+	userData    *models.UserData
+	grpc        grpc.Client
+	fileManager filemanager.FileStorage
+	ui          ui.UserInterface
+	log         zerolog.Logger
 }
 
 func NewUsecase(
@@ -37,11 +38,10 @@ func NewUsecase(
 		dataPath:   dataPath,
 		uploadPath: uploadPath,
 		aboutMsg:   aboutMsg,
-
-		userData: &models.UserData{},
-		grpc:     grpc.NewClient(serverAddress, log),
-		ui:       ui,
-		log:      log,
+		userData:   &models.UserData{},
+		grpc:       grpc.NewClient(serverAddress, log),
+		ui:         ui,
+		log:        log,
 	}
 }
 
@@ -49,14 +49,14 @@ func (c *ClientUsecase) SetUser() error {
 	var err error
 	userAuth, err := filemanager.NewUserAuth(c.dataPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	for {
 		c.userData.User, err = c.ui.GetUser()
 		if err != nil {
-			// todo проверка на конкретную ошкибку
 			c.log.Err(err).Msg("failed get user")
+
 			continue
 		}
 
@@ -70,14 +70,16 @@ func (c *ClientUsecase) SetUser() error {
 			if err = c.handleUserRegistration(userAuth); err != nil {
 				return err
 			}
-			return nil
-		} else {
-			if err = c.handleUserLogin(userAuth); err != nil {
-				c.log.Err(err).Msg("")
-				continue
-			}
+
 			return nil
 		}
+		if err = c.handleUserLogin(userAuth); err != nil {
+			c.log.Err(err).Msg("failed handle user login")
+
+			continue
+		}
+
+		return nil
 	}
 }
 
@@ -85,13 +87,17 @@ func (c *ClientUsecase) checkUserOnServer(userAuth filemanager.Auth) bool {
 	hash, err := c.userData.User.GetHashedPass()
 	if err != nil {
 		c.log.Info().Err(err).Msg("failed get hashed password")
+
 		return false
 	}
 
 	err = c.grpc.Login(c.userData.User.Username, hash)
 	if err != nil {
 		c.log.Info().Str("user", c.userData.User.Username).Msg("failed login user")
+
+		return false
 	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	syncKey := uuid.New().String()
@@ -103,6 +109,7 @@ func (c *ClientUsecase) checkUserOnServer(userAuth filemanager.Auth) bool {
 	serverMeta, err := c.downloadServerMeta(ctx, syncKey)
 	if err != nil {
 		c.log.Info().Err(err).Msg("failed download server meta data")
+
 		return false
 	}
 	if serverMeta.Username != c.userData.User.Username {
@@ -127,19 +134,20 @@ func (c *ClientUsecase) checkUserOnServer(userAuth filemanager.Auth) bool {
 
 func (c *ClientUsecase) handleUserRegistration(userAuth filemanager.Auth) error {
 	if c.grpc.IsNotAvailable() {
-		fmt.Println("Could not connect to the server, only local registration is available")
+		c.ui.PrintErr("Could not connect to the server, only local registration is available")
 	}
 
 	repeatedPass, err := c.ui.GetRepeatedPassword()
 	if err != nil {
 		c.log.Err(err).Msg("failed repeated pass")
-		return err
+
+		return fmt.Errorf("%w", err)
 	}
 
 	if c.userData.User.Password != repeatedPass {
-		fmt.Println("Password mismatch")
-		os.Exit(9)
-		return nil
+		c.ui.PrintErr(errPasswordMismatch.Error())
+
+		return fmt.Errorf("%w", errPasswordMismatch)
 	}
 
 	var isSyncStorage bool
@@ -150,19 +158,21 @@ func (c *ClientUsecase) handleUserRegistration(userAuth filemanager.Auth) error 
 		hash, err := c.userData.User.GetHashedPass()
 		if err != nil {
 			c.log.Err(err).Msg("failed get hashed password")
-			return err
+
+			return fmt.Errorf("%w", err)
 		}
 
 		err = c.grpc.Register(c.userData.User.Username, hash)
 		if err != nil {
 			c.log.Err(err).Str("user", c.userData.User.Username).Msg("failed register user")
-			return err
+
+			return fmt.Errorf("%w", err)
 		}
 	}
 
 	meta, err := userAuth.CreateUser(&c.userData.User, isSyncStorage)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 	c.userData.Meta = meta
 
@@ -176,7 +186,8 @@ func (c *ClientUsecase) handleUserLogin(userAuth filemanager.Auth) error {
 		hash, err := c.userData.User.GetHashedPass()
 		if err != nil {
 			c.log.Err(err).Msg("failed get hashed password")
-			return err
+
+			return fmt.Errorf("%w", err)
 		}
 
 		err = c.grpc.Login(c.userData.User.Username, hash)
@@ -188,11 +199,15 @@ func (c *ClientUsecase) handleUserLogin(userAuth filemanager.Auth) error {
 		fmt.Println("Could not connect to the server, data synchronization will not be available")
 	}
 
-	if err == nil {
-		c.userData.Meta, err = userAuth.GetUser(&c.userData.User)
+	if err != nil {
+		return fmt.Errorf("%w", err)
 	}
 
-	return err
+	if c.userData.Meta, err = userAuth.GetUser(&c.userData.User); err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	return nil
 }
 
 func (c *ClientUsecase) SetFileManager() error {
@@ -204,7 +219,7 @@ func (c *ClientUsecase) SetFileManager() error {
 		c.userData.User.Key,
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 	c.fileManager = fileManager
 

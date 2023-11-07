@@ -67,7 +67,7 @@ func (s *GrpcServer) MultipartUploadFile(stream pb.GophKeeperService_MultipartUp
 
 				return
 			}
-			val, err := uuid.Parse(req.Guid)
+			val, err := uuid.Parse(req.GetGuid())
 			if err != nil {
 				s.logger.Error("Couldn't parse GUID", zap.Error(err))
 				errChanStream <- err
@@ -239,7 +239,7 @@ func (s *GrpcServer) BlockStore(stream pb.GophKeeperService_BlockStoreServer) er
 			}
 
 			once.Do(func() {
-				val, err := uuid.Parse(req.Guid)
+				val, err := uuid.Parse(req.GetGuid())
 				if err != nil {
 					syncEnable = false
 				}
@@ -282,8 +282,8 @@ loop:
 			if req != nil {
 				s.logger.Debug("update timer for sync",
 					zap.Int("userID", userID),
-					zap.String("GUID", req.Guid),
-					zap.Bool("sync is finish?", req.IsFinish))
+					zap.String("GUID", req.GetGuid()),
+					zap.Bool("sync is finish?", req.GetIsFinish()))
 			}
 			err := stream.Send(&pb.BlockStoreResponse{
 				Guid: guid.String(),
@@ -326,7 +326,7 @@ func (s *GrpcServer) MultipartDownloadFile(req *pb.MultipartDownloadFileRequest,
 		return status.Errorf(codes.Internal, "Failed to extract bucketName")
 	}
 	s.logger.Debug("bucket name", zap.String("msg", bucketName))
-	val, err := uuid.Parse(req.Guid)
+	val, err := uuid.Parse(req.GetGuid())
 	if err != nil {
 		s.logger.Error("Couldn't parse GUID", zap.Error(err))
 
@@ -338,9 +338,9 @@ func (s *GrpcServer) MultipartDownloadFile(req *pb.MultipartDownloadFileRequest,
 		return status.Errorf(codes.Internal, "You should block resource before use it")
 	}
 	multipartDownloadFileRequest := &models.MultipartDownloadFileRequest{
-		FileName: req.FileName,
-		Guid:     req.Guid,
-		Hash:     req.Hash,
+		FileName: req.GetFileName(),
+		Guid:     req.GetGuid(),
+		Hash:     req.GetHash(),
 	}
 
 	newCtx, cancel := context.WithCancel(ctx)
@@ -432,7 +432,7 @@ func (s *GrpcServer) ApplyChanges(ctx context.Context,
 	}
 	s.logger.Debug("bucket name", zap.String("msg", bucketName))
 
-	val, err := uuid.Parse(req.Guid)
+	val, err := uuid.Parse(req.GetGuid())
 	if err != nil {
 		s.logger.Error("Couldn't parse GUID", zap.Error(err))
 
@@ -477,6 +477,6 @@ func (s *GrpcServer) ApplyChanges(ctx context.Context,
 	}
 
 	return &pb.ApplyChangesResponse{
-		Guid: req.Guid,
+		Guid: req.GetGuid(),
 	}, nil
 }

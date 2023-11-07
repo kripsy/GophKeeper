@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/kripsy/GophKeeper/internal/server/entity"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestInitNewUser(t *testing.T) {
@@ -38,9 +38,9 @@ func TestInitNewUser(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := entity.InitNewUser(tt.username, tt.password)
 
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
-			assert.Equal(t, tt.want, got)
+			require.Equal(t, tt.want, got)
 		})
 	}
 }

@@ -1,10 +1,11 @@
 package app
 
 import (
-	"github.com/kripsy/GophKeeper/internal/client/usecase"
+	"fmt"
 
 	"github.com/kripsy/GophKeeper/internal/client/config"
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui/cli"
+	"github.com/kripsy/GophKeeper/internal/client/usecase"
 	"github.com/rs/zerolog"
 )
 
@@ -14,7 +15,6 @@ type Application struct {
 }
 
 func NewApplication(cfg config.Config, bi BuildInfo, log zerolog.Logger) (*Application, error) {
-
 	return &Application{
 		usecase: usecase.NewUsecase(
 			cfg.StoragePath,
@@ -30,11 +30,11 @@ func NewApplication(cfg config.Config, bi BuildInfo, log zerolog.Logger) (*Appli
 
 func (a *Application) PrepareApp() error {
 	if err := a.usecase.SetUser(); err != nil {
-		return err
+		return fmt.Errorf("SetUser: %w", err)
 	}
 
 	if err := a.usecase.SetFileManager(); err != nil {
-		return err
+		return fmt.Errorf("SetFileManager: %w", err)
 	}
 
 	return nil

@@ -24,7 +24,6 @@ func (c *CLI) Menu(isLocalStorage bool) int {
 
 	id, _, err := action.Run()
 	if err != nil {
-
 		return c.Menu(isLocalStorage)
 	}
 
