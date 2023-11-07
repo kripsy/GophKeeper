@@ -2,7 +2,6 @@ package controller_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -79,7 +78,7 @@ func TestGrpcServerRegister(t *testing.T) {
 			mockSetup: func() {
 				mockUserUseCase.EXPECT().
 					RegisterUser(gomock.Any(), gomock.Any()).
-					Return("", 0, errors.New("Invalid request payload"))
+					Return("", 0, models.NewUnionError("Invalid request payload"))
 			},
 			expectedToken: "",
 			expectedErr:   status.Error(codes.InvalidArgument, "Invalid request payload"),
@@ -106,7 +105,6 @@ func TestGrpcServerRegister(t *testing.T) {
 
 			if tc.expectedErr != nil {
 				assert.Equal(t, status.Code(tc.expectedErr), status.Code(err))
-
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, resp)
@@ -163,7 +161,7 @@ func TestGrpcServerLogin(t *testing.T) {
 			mockSetup: func() {
 				mockUserUseCase.EXPECT().
 					LoginUser(gomock.Any(), gomock.Any()).
-					Return("", 0, errors.New("authentication failed"))
+					Return("", 0, models.NewUnionError("authentication failed"))
 			},
 			expectedToken: "",
 			expectedErr:   status.Error(codes.Unauthenticated, "Failed to login"),
@@ -179,7 +177,7 @@ func TestGrpcServerLogin(t *testing.T) {
 			if tc.expectedErr != nil {
 				assert.Equal(t, status.Code(tc.expectedErr), status.Code(err))
 				if status.Code(err) == codes.InvalidArgument || status.Code(err) == codes.Unauthenticated {
-					assert.Equal(t, status.Convert(tc.expectedErr).Message(), status.Convert(err).Message())
+					assert.EqualError(t, tc.expectedErr, err.Error())
 				}
 			} else {
 				assert.NoError(t, err)

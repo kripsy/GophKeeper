@@ -18,6 +18,7 @@ type UserRepository interface {
 }
 
 type userUseCase struct {
+	//nolint:containedctx
 	ctx      context.Context
 	db       UserRepository
 	logger   *zap.Logger
@@ -25,7 +26,12 @@ type userUseCase struct {
 	tokenExp time.Duration
 }
 
-func InitUseCases(ctx context.Context, db UserRepository, secret string, tokenExp time.Duration, l *zap.Logger) (*userUseCase, error) {
+//nolint:revive,nolintlint
+func InitUseCases(ctx context.Context,
+	db UserRepository,
+	secret string,
+	tokenExp time.Duration,
+	l *zap.Logger) (*userUseCase, error) {
 	uc := &userUseCase{
 		ctx:      ctx,
 		db:       db,
@@ -33,6 +39,7 @@ func InitUseCases(ctx context.Context, db UserRepository, secret string, tokenEx
 		secret:   secret,
 		tokenExp: tokenExp,
 	}
+
 	return uc, nil
 }
 
@@ -72,7 +79,7 @@ func (uc *userUseCase) RegisterUser(ctx context.Context, user entity.User) (stri
 //	    log.Fatalf("Failed to login user: %v", err)
 //	}
 //
-// fmt.Println("Generated JWT token:", token)
+// fmt.Println("Generated JWT token:", token).
 func (uc *userUseCase) LoginUser(ctx context.Context, user entity.User) (string, int, error) {
 	userID, err := uc.db.LoginUser(ctx, user)
 	if err != nil {

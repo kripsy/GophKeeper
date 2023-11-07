@@ -31,6 +31,8 @@ const (
 )
 
 // SyncErrorMessages contains error messages corresponding to SyncErrorEnum.
+//
+//nolint:gochecknoglobals
 var SyncErrorMessages = map[SyncErrorEnum]string{
 	ErrUserSyncExists: "This sync for this user already exists",
 	ErrSyncExists:     "Sync for this user already exists",

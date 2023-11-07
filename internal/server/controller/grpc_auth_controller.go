@@ -30,7 +30,7 @@ func (s *GrpcServer) Register(ctx context.Context, req *pb.AuthRequest) (*pb.Aut
 	if err != nil {
 		s.logger.Error("Failed to init user", zap.Error(err))
 
-		return nil, status.Error(codes.InvalidArgument, "Invalid request payload")
+		return nil, fmt.Errorf("%w", status.Error(codes.InvalidArgument, "Invalid request payload"))
 	}
 
 	token, userID, err := s.userUseCase.RegisterUser(ctx, user)
@@ -39,11 +39,11 @@ func (s *GrpcServer) Register(ctx context.Context, req *pb.AuthRequest) (*pb.Aut
 		if errors.As(err, &userUniqueError) {
 			s.logger.Debug("Failed to RegisterUser user, duplicate", zap.Error(err))
 
-			return nil, status.Error(codes.AlreadyExists, "User already exists")
+			return nil, fmt.Errorf("%w", status.Error(codes.AlreadyExists, "User already exists"))
 		}
 		s.logger.Error("Failed to RegisterUser user", zap.Error(err))
 
-		return nil, status.Error(codes.InvalidArgument, "Invalid request payload")
+		return nil, fmt.Errorf("%w", status.Error(codes.InvalidArgument, "Invalid request payload"))
 	}
 
 	_, err = s.secretUseCase.CreateBucketSecret(ctx, user.Username, userID)
@@ -73,14 +73,14 @@ func (s *GrpcServer) Login(ctx context.Context, req *pb.AuthRequest) (*pb.AuthRe
 	if err != nil {
 		s.logger.Error("Failed to init user", zap.Error(err))
 
-		return nil, status.Error(codes.InvalidArgument, "Invalid request payload")
+		return nil, fmt.Errorf("%w", status.Error(codes.InvalidArgument, "Invalid request payload"))
 	}
 
 	token, userID, err := s.userUseCase.LoginUser(ctx, user)
 	if err != nil {
 		s.logger.Error("Failed to LoginUser user", zap.Error(err))
 
-		return nil, status.Error(codes.Unauthenticated, "Failed to login")
+		return nil, fmt.Errorf("%w", status.Error(codes.Unauthenticated, "Failed to login"))
 	}
 
 	_, err = s.secretUseCase.CreateBucketSecret(ctx, user.Username, userID)
@@ -95,7 +95,7 @@ func (s *GrpcServer) Login(ctx context.Context, req *pb.AuthRequest) (*pb.AuthRe
 	}, nil
 }
 
-func (s *GrpcServer) Ping(ctx context.Context, req *empty.Empty) (*empty.Empty, error) {
+func (s *GrpcServer) Ping(_ context.Context, _ *empty.Empty) (*empty.Empty, error) {
 	s.logger.Debug("start Ping")
 
 	return &empty.Empty{}, nil

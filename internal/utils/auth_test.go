@@ -175,6 +175,7 @@ func TestIsValidToken(t *testing.T) {
 	}
 }
 
+//nolint:dupl
 func TestGetUsernameFromToken(t *testing.T) {
 	secret := "testsecret"
 	tests := []struct {
@@ -221,6 +222,7 @@ func TestGetUsernameFromToken(t *testing.T) {
 	}
 }
 
+//nolint:dupl
 func TestGetUseIDFromToken(t *testing.T) {
 	secret := "testsecret"
 	tests := []struct {
@@ -317,6 +319,7 @@ func TestDeriveKey(t *testing.T) {
 	}
 }
 
+//nolint:dupl
 func TestExtractTokenFromContext(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -357,6 +360,7 @@ func TestExtractTokenFromContext(t *testing.T) {
 	}
 }
 
+//nolint:dupl
 func TestExtractUsernameFromContext(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -397,6 +401,7 @@ func TestExtractUsernameFromContext(t *testing.T) {
 	}
 }
 
+//nolint:dupl
 func TestExtractUserIDFromContext(t *testing.T) {
 	tests := []struct {
 		name     string

@@ -52,3 +52,18 @@ func NewSecretNotFoundError(ID int) error {
 func (ue *SecretNotFoundError) Error() string {
 	return ue.Err.Error()
 }
+
+type UnionError struct {
+	Text string
+	Err  error
+}
+
+func NewUnionError(text string) error {
+	return &SecretNotFoundError{
+		Err: errors.New(fmt.Sprintf("error %s", text)),
+	}
+}
+
+func (ue *UnionError) Error() string {
+	return ue.Err.Error()
+}

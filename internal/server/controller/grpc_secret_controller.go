@@ -17,6 +17,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+//nolint:cyclop
 func (s *GrpcServer) MultipartUploadFile(stream pb.GophKeeperService_MultipartUploadFileServer) error {
 	s.logger.Debug("Start MultipartUploadFile")
 
@@ -57,29 +58,31 @@ func (s *GrpcServer) MultipartUploadFile(stream pb.GophKeeperService_MultipartUp
 		defer close(errChanStream)
 		for {
 			req, err := stream.Recv()
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				return
 			}
 			if err != nil {
 				s.logger.Error("Error get data from stream", zap.Error(err))
 				errChanStream <- err
+
 				return
 			}
 			val, err := uuid.Parse(req.Guid)
 			if err != nil {
 				s.logger.Error("Couldn't parse GUID", zap.Error(err))
-
 				errChanStream <- err
+
 				return
 			}
 			if isEnabled, _ := s.syncStatus.IsSyncExists(userID, val); !isEnabled {
 				s.logger.Error("You should block resource before use it", zap.Error(err))
-				errChanStream <- errors.New("You should block resource before use it")
+
+				errChanStream <- models.NewUnionError("You should block resource before use it")
+
 				return
 			}
 			once.Do(func() {
 				fileID = req.GetFileName()
-
 			})
 
 			reqChan <- &models.MultipartUploadFileData{
@@ -98,11 +101,13 @@ func (s *GrpcServer) MultipartUploadFile(stream pb.GophKeeperService_MultipartUp
 		if err != nil {
 			s.logger.Error("Error in s.secretUseCase.MultipartUploadFile", zap.Error(err))
 			errChanUsecase <- err
+
 			return
 		}
 		if !success {
 			s.logger.Error("failed upload file")
-			errChanUsecase <- errors.New("Failed to upload file")
+			errChanUsecase <- models.NewUnionError("Failed to upload file")
+
 			return
 		}
 		doneChan <- true
@@ -116,7 +121,8 @@ func (s *GrpcServer) MultipartUploadFile(stream pb.GophKeeperService_MultipartUp
 
 		if err != nil {
 			s.logger.Debug("was some error in receive data", zap.Any("msg", err))
-			return status.Error(codes.Internal, err.Error())
+
+			return fmt.Errorf("%w", status.Error(codes.Internal, err.Error()))
 		}
 
 	case err := <-errChanUsecase:
@@ -124,17 +130,21 @@ func (s *GrpcServer) MultipartUploadFile(stream pb.GophKeeperService_MultipartUp
 		if err != nil {
 			s.logger.Debug("was some error in usecase", zap.Any("msg", err))
 
-			return status.Error(codes.Internal, err.Error())
+			return fmt.Errorf("%w", status.Error(codes.Internal, err.Error()))
 		}
 	}
-
-	return stream.SendAndClose(&pb.MultipartUploadFileResponse{
+	err = stream.SendAndClose(&pb.MultipartUploadFileResponse{
 		FileId: fileID,
 	})
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	return nil
 }
 
+//nolint:cyclop,gocognit
 func (s *GrpcServer) BlockStore(stream pb.GophKeeperService_BlockStoreServer) error {
-
 	s.logger.Debug("start Register")
 	streamCtx := stream.Context()
 	errChan := make(chan error, 1)
@@ -153,23 +163,27 @@ func (s *GrpcServer) BlockStore(stream pb.GophKeeperService_BlockStoreServer) er
 		userID, ok := utils.ExtractUserIDFromContext(ctx)
 		if !ok {
 			s.logger.Error("cannot get userID from context")
+
 			return
 		}
 
 		username, ok := utils.ExtractUsernameFromContext(ctx)
 		if !ok {
 			s.logger.Error("cannot get username from context")
+
 			return
 		}
 
 		bucketName, err := utils.FromUser2BucketName(ctx, username, userID)
 		if err != nil {
 			s.logger.Error("cannot get bucketName")
+
 			return
 		}
 		s.logger.Debug("bucket name", zap.String("msg", bucketName))
 		s.logger.Debug("Start discard changes")
 		newCtx := context.Background()
+		//nolint:contextcheck
 		success, err := s.secretUseCase.DiscardChanges(newCtx, bucketName)
 		if err != nil {
 			s.logger.Error("Error discard changes", zap.Error(err))
@@ -181,7 +195,6 @@ func (s *GrpcServer) BlockStore(stream pb.GophKeeperService_BlockStoreServer) er
 
 			return
 		}
-		return
 	}(ctx)
 
 	var once sync.Once
@@ -189,7 +202,10 @@ func (s *GrpcServer) BlockStore(stream pb.GophKeeperService_BlockStoreServer) er
 	defer func() {
 		s.logger.Debug("Close main goroutine BlockStore")
 		if syncEnable {
-			s.syncStatus.RemoveClientSync(userID, guid)
+			err := s.syncStatus.RemoveClientSync(userID, guid)
+			if err != nil {
+				s.logger.Error("Error RemoveClientSync", zap.Error(err))
+			}
 		}
 	}()
 
@@ -233,7 +249,7 @@ func (s *GrpcServer) BlockStore(stream pb.GophKeeperService_BlockStoreServer) er
 			})
 			if !syncEnable {
 				s.logger.Error("Sync not enabled")
-				errChan <- errors.New("Sync for this user already exists")
+				errChan <- models.NewUnionError("Sync for this user already exists")
 
 				return
 			}
@@ -247,49 +263,62 @@ loop:
 		case <-streamCtx.Done():
 			s.logger.Debug("stream context canceled")
 
-			return status.Error(codes.Aborted, "stream context canceled")
+			return fmt.Errorf("%w", status.Error(codes.Aborted, "stream context canceled"))
 		case err := <-errChan:
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				s.logger.Debug("Got EOF of BlockStore")
+
 				break loop
 			}
 			s.logger.Error("Error in receive data", zap.Error(err))
 
-			return status.Error(codes.Internal, err.Error())
+			return fmt.Errorf("%w", status.Error(codes.Internal, err.Error()))
 		case req := <-reqChan:
 			if !syncEnable {
 				s.logger.Error("Sync not enabled")
 
-				return status.Error(codes.ResourceExhausted, "Sync not enable")
+				return fmt.Errorf("%w", status.Error(codes.ResourceExhausted, "Sync not enable"))
 			}
-			s.logger.Debug("update timer for sync", zap.Int("userID", userID), zap.String("GUID", req.Guid), zap.Bool("sync is finish?", req.IsFinish))
-			stream.Send(&pb.BlockStoreResponse{
+			s.logger.Debug("update timer for sync",
+				zap.Int("userID", userID),
+				zap.String("GUID", req.Guid),
+				zap.Bool("sync is finish?", req.IsFinish))
+			err := stream.Send(&pb.BlockStoreResponse{
 				Guid: req.Guid,
 			})
+			if err != nil {
+				s.logger.Error("Error send response", zap.Error(err))
+			}
 		}
 	}
+
 	return nil
 }
 
-func (s *GrpcServer) MultipartDownloadFile(req *pb.MultipartDownloadFileRequest, stream pb.GophKeeperService_MultipartDownloadFileServer) error {
+//nolint:cyclop
+func (s *GrpcServer) MultipartDownloadFile(req *pb.MultipartDownloadFileRequest,
+	stream pb.GophKeeperService_MultipartDownloadFileServer) error {
 	s.logger.Debug("Start MultipartDownloadFile")
 
 	ctx := stream.Context()
 	userID, ok := utils.ExtractUserIDFromContext(ctx)
 	if !ok {
 		s.logger.Error("cannot get userID from context")
+
 		return status.Errorf(codes.Internal, "Failed to extract userID")
 	}
 
 	username, ok := utils.ExtractUsernameFromContext(ctx)
 	if !ok {
 		s.logger.Error("cannot get username from context")
+
 		return status.Errorf(codes.Internal, "Failed to extract username")
 	}
 
 	bucketName, err := utils.FromUser2BucketName(ctx, username, userID)
 	if err != nil {
 		s.logger.Error("cannot get bucketName")
+
 		return status.Errorf(codes.Internal, "Failed to extract bucketName")
 	}
 	s.logger.Debug("bucket name", zap.String("msg", bucketName))
@@ -298,16 +327,12 @@ func (s *GrpcServer) MultipartDownloadFile(req *pb.MultipartDownloadFileRequest,
 		s.logger.Error("Couldn't parse GUID", zap.Error(err))
 
 		return status.Errorf(codes.Internal, "Couldn't parse GUID")
-
 	}
-
 	if isEnabled, _ := s.syncStatus.IsSyncExists(userID, val); !isEnabled {
-
 		s.logger.Error("You should block resource before use it", zap.Error(err))
 
 		return status.Errorf(codes.Internal, "You should block resource before use it")
 	}
-
 	multipartDownloadFileRequest := &models.MultipartDownloadFileRequest{
 		FileName: req.FileName,
 		Guid:     req.Guid,
@@ -325,6 +350,7 @@ loop:
 			if !ok {
 				s.logger.Debug("dataChan reading false")
 				dataChan = nil
+
 				continue
 			}
 			response := &pb.MultipartDownloadFileResponse{
@@ -336,24 +362,27 @@ loop:
 			if err := stream.Send(response); err != nil {
 				s.logger.Error("Error send response", zap.Error(err))
 
-				return err
+				return fmt.Errorf("%w", err)
 			}
 		case err := <-errChan:
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				s.logger.Debug("We got EOF")
 				errChan = nil
+
 				continue
-			} else {
-				s.logger.Error("Error in secretUseCase.MultipartDownloadFile", zap.Error(err))
-				return err
 			}
+			s.logger.Error("Error in secretUseCase.MultipartDownloadFile", zap.Error(err))
+
+			return fmt.Errorf("%w", err)
+
 		case <-ctx.Done():
 			s.logger.Debug("stream context canceled")
 
-			return status.Error(codes.Aborted, "stream context canceled")
+			return fmt.Errorf("%w", status.Error(codes.Aborted, "stream context canceled"))
 		default:
 			if dataChan == nil && errChan == nil {
 				s.logger.Debug("All channel is nil")
+
 				break loop
 			}
 		}
@@ -364,6 +393,7 @@ loop:
 	return nil
 }
 
+//nolint:cyclop
 func (s *GrpcServer) ApplyChanges(ctx context.Context,
 	req *pb.ApplyChangesRequest) (*pb.ApplyChangesResponse, error) {
 	s.logger.Debug("start ApplyChanges")
@@ -379,18 +409,21 @@ func (s *GrpcServer) ApplyChanges(ctx context.Context,
 	userID, ok := utils.ExtractUserIDFromContext(ctx)
 	if !ok {
 		s.logger.Error("cannot get userID from context")
+
 		return nil, status.Errorf(codes.Internal, "Failed to extract userID")
 	}
 
 	username, ok := utils.ExtractUsernameFromContext(ctx)
 	if !ok {
 		s.logger.Error("cannot get username from context")
+
 		return nil, status.Errorf(codes.Internal, "Failed to extract username")
 	}
 
 	bucketName, err := utils.FromUser2BucketName(ctx, username, userID)
 	if err != nil {
 		s.logger.Error("cannot get bucketName")
+
 		return nil, status.Errorf(codes.Internal, "Failed to extract bucketName")
 	}
 	s.logger.Debug("bucket name", zap.String("msg", bucketName))
@@ -400,7 +433,6 @@ func (s *GrpcServer) ApplyChanges(ctx context.Context,
 		s.logger.Error("Couldn't parse GUID", zap.Error(err))
 
 		return nil, status.Errorf(codes.Internal, "Couldn't parse GUID")
-
 	}
 	if isEnabled, _ := s.syncStatus.IsSyncExists(userID, val); !isEnabled {
 		s.logger.Error("You should block resource before use it", zap.Error(err))
@@ -415,11 +447,13 @@ func (s *GrpcServer) ApplyChanges(ctx context.Context,
 			select {
 			case <-doneChan:
 				s.logger.Debug("main func done, closing goruitine")
+
 				return
 			default:
 				if isEnabled, _ := s.syncStatus.IsSyncExists(userID, val); !isEnabled {
 					s.logger.Error("You should block resource before use it", zap.Error(err))
 					cancel()
+
 					return
 				}
 			}

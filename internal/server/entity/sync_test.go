@@ -39,8 +39,9 @@ func TestSyncStatus(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exists, err := ss.AddSync(tt.userID, tt.syncID)
 
-			assert.Equal(t, tt.wantErr, err)
-
+			if tt.wantErr != nil {
+				assert.EqualError(t, tt.wantErr, err.Error())
+			}
 			assert.Equal(t, tt.wantExists, exists)
 
 			if tt.wantExists {

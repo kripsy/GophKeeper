@@ -9,7 +9,6 @@ import (
 )
 
 func TestInitMyMiddleware(t *testing.T) {
-
 	mockLogger := zap.NewNop() // Используем No-op Logger от zap для тестирования
 
 	tests := []struct {
