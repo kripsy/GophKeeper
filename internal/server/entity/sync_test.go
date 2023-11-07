@@ -28,7 +28,7 @@ func TestSyncStatus(t *testing.T) {
 			name:       "Test Case 2 - Add Existing Sync",
 			userID:     1,
 			syncID:     uuid.New(),
-			wantErr:    models.NewSyncError(models.ErrUserSyncExists),
+			wantErr:    models.NewSyncError(models.ErrUserSyncExistsEnum),
 			wantExists: false,
 		},
 	}

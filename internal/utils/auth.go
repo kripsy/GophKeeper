@@ -26,7 +26,7 @@ type Claims struct {
 	Username string
 }
 
-func GetHash(ctx context.Context, password string, logger *zap.Logger) (string, error) {
+func GetHash(_ context.Context, password string, logger *zap.Logger) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 
 	if err != nil {
@@ -36,7 +36,6 @@ func GetHash(ctx context.Context, password string, logger *zap.Logger) (string, 
 	}
 
 	return string(bytes), nil
-
 }
 
 func BuildJWTString(userID int, username, secretKey string, tokenExp time.Duration) (string, error) {
@@ -56,7 +55,7 @@ func BuildJWTString(userID int, username, secretKey string, tokenExp time.Durati
 	return tokenString, nil
 }
 
-func IsPasswordCorrect(ctx context.Context, password, hashPassowrd []byte, logger *zap.Logger) error {
+func IsPasswordCorrect(_ context.Context, password, hashPassowrd []byte, logger *zap.Logger) error {
 	err := bcrypt.CompareHashAndPassword(hashPassowrd, password)
 
 	if err != nil {
@@ -68,7 +67,7 @@ func IsPasswordCorrect(ctx context.Context, password, hashPassowrd []byte, logge
 	return nil
 }
 
-// Placeholder function to validate the token
+// Placeholder function to validate the token.
 func IsValidToken(tokenString string, secret string) (bool, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
@@ -118,7 +117,6 @@ func GetUseIDFromToken(tokenString, secretKey string) (int, error) {
 }
 
 func DeriveKey(password, salt string) ([]byte, error) {
-
 	const (
 		N       = 32768
 		r       = 8
@@ -129,7 +127,7 @@ func DeriveKey(password, salt string) ([]byte, error) {
 
 	key, err := scrypt.Key([]byte(password), []byte(salt), N, r, p, keyLen)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	return key, nil
@@ -137,6 +135,7 @@ func DeriveKey(password, salt string) ([]byte, error) {
 
 func ExtractTokenFromContext(ctx context.Context) (string, bool) {
 	token, ok := ctx.Value(TOKENCONTEXTKEY).(string)
+
 	return token, ok
 }
 

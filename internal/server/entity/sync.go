@@ -32,10 +32,10 @@ func (ss *SyncStatus) AddSync(userID int, syncID uuid.UUID) (bool, error) {
 	if ok {
 		if val == syncID {
 			// fmt.Println("sync already exist for user")
-			return false, fmt.Errorf("%w", models.NewSyncError(models.ErrSyncExists))
+			return false, fmt.Errorf("%w", models.NewSyncError(models.ErrSyncExistsEnum))
 		}
 
-		return false, fmt.Errorf("%w", models.NewSyncError(models.ErrUserSyncExists))
+		return false, fmt.Errorf("%w", models.NewSyncError(models.ErrUserSyncExistsEnum))
 	}
 
 	// fmt.Println("try lock for w AddSync")
@@ -59,7 +59,7 @@ func (ss *SyncStatus) RemoveClientSync(userID int, syncID uuid.UUID) error {
 	// fmt.Println("try unlock r RemoveClientSync")
 	ss.rwMutex.RUnlock()
 	if !ok || val != syncID {
-		return fmt.Errorf("%w", models.NewSyncError(models.ErrSyncNotFound))
+		return fmt.Errorf("%w", models.NewSyncError(models.ErrSyncNotFoundEnum))
 	}
 
 	// fmt.Println("try lock for w RemoveClientSync")

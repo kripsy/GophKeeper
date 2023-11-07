@@ -9,6 +9,8 @@ import (
 	"io"
 )
 
+var ErrCipherTextShort = errors.New("ciphertext too short")
+
 func Encrypt(data []byte, cipherKey []byte) ([]byte, error) {
 	block, err := aes.NewCipher(cipherKey)
 	if err != nil {
@@ -43,7 +45,7 @@ func Decrypt(data []byte, cipherKey []byte) ([]byte, error) {
 
 	nonceSize := gcm.NonceSize()
 	if len(data) < nonceSize {
-		return nil, errors.New("ciphertext too short")
+		return nil, fmt.Errorf("%w", ErrCipherTextShort)
 	}
 
 	nonce, ciphertext := data[:nonceSize], data[nonceSize:]

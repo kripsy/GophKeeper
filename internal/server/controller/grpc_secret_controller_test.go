@@ -2,6 +2,7 @@ package controller_test
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"testing"
 
@@ -139,7 +140,7 @@ func TestBlockStore(t *testing.T) {
 				bucketName, _ := utils.FromUser2BucketName(newCtx, "user", 1)
 				mockStream.EXPECT().Context().Return(newCtx).AnyTimes()
 				gomock.InOrder(
-					mockStream.EXPECT().Recv().Return(&pb.BlockStoreRequest{Guid: guid}, nil).Times(1),
+					mockStream.EXPECT().Recv().Return(&pb.BlockStoreRequest{Guid: guid, IsFinish: false}, nil).Times(1),
 					mockStream.EXPECT().Recv().Return(nil, io.EOF).Times(1), // Симулируем окончание стрима
 				)
 				mockStream.EXPECT().Send(gomock.Any()).Return(nil).AnyTimes()
@@ -170,6 +171,8 @@ func TestBlockStore(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setup()
 			err := grpcServer.BlockStore(mockStream)
+			fmt.Println(err)
+			fmt.Println(tt.wantErr)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

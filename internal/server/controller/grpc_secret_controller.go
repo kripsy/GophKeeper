@@ -279,15 +279,19 @@ loop:
 
 				return fmt.Errorf("%w", status.Error(codes.ResourceExhausted, "Sync not enable"))
 			}
-			s.logger.Debug("update timer for sync",
-				zap.Int("userID", userID),
-				zap.String("GUID", req.Guid),
-				zap.Bool("sync is finish?", req.IsFinish))
+			if req != nil {
+				s.logger.Debug("update timer for sync",
+					zap.Int("userID", userID),
+					zap.String("GUID", req.Guid),
+					zap.Bool("sync is finish?", req.IsFinish))
+			}
 			err := stream.Send(&pb.BlockStoreResponse{
-				Guid: req.Guid,
+				Guid: guid.String(),
 			})
 			if err != nil {
 				s.logger.Error("Error send response", zap.Error(err))
+
+				return fmt.Errorf("%w", err)
 			}
 		}
 	}

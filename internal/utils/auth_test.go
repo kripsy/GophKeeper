@@ -11,6 +11,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const secret = "testsecret"
+
 func TestGetHash(t *testing.T) {
 	// Create a logger for testing
 	logger, _ := zap.NewProduction()
@@ -37,6 +39,7 @@ func TestGetHash(t *testing.T) {
 			hashedPassword, err := utils.GetHash(context.Background(), tt.password, logger)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetHash() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 			if !tt.wantErr {
@@ -129,8 +132,6 @@ func TestIsPasswordCorrect(t *testing.T) {
 }
 
 func TestIsValidToken(t *testing.T) {
-	secret := "testsecret"
-
 	tests := []struct {
 		name      string
 		token     string
@@ -166,6 +167,7 @@ func TestIsValidToken(t *testing.T) {
 			valid, err := utils.IsValidToken(tt.token, tt.secret)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("IsValidToken() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 			if valid != tt.wantValid {
@@ -177,7 +179,6 @@ func TestIsValidToken(t *testing.T) {
 
 //nolint:dupl
 func TestGetUsernameFromToken(t *testing.T) {
-	secret := "testsecret"
 	tests := []struct {
 		name     string
 		token    string
@@ -213,6 +214,7 @@ func TestGetUsernameFromToken(t *testing.T) {
 			username, err := utils.GetUsernameFromToken(tt.token, tt.secret)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetUsernameFromToken() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 			if username != tt.wantUser {
@@ -224,7 +226,6 @@ func TestGetUsernameFromToken(t *testing.T) {
 
 //nolint:dupl
 func TestGetUseIDFromToken(t *testing.T) {
-	secret := "testsecret"
 	tests := []struct {
 		name    string
 		token   string
@@ -260,6 +261,7 @@ func TestGetUseIDFromToken(t *testing.T) {
 			userID, err := utils.GetUseIDFromToken(tt.token, tt.secret)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetUseIDFromToken() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 			if userID != tt.wantID {
@@ -307,9 +309,10 @@ func TestDeriveKey(t *testing.T) {
 			key, err := utils.DeriveKey(tt.password, tt.salt)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DeriveKey() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
-			if !tt.wantErr && (key == nil || len(key) == 0) {
+			if !tt.wantErr && len(key) == 0 {
 				t.Errorf("DeriveKey() key should not be nil or empty")
 			}
 			if !tt.wantErr && len(key) != 32 { // keyLen = 32
@@ -322,13 +325,15 @@ func TestDeriveKey(t *testing.T) {
 //nolint:dupl
 func TestExtractTokenFromContext(t *testing.T) {
 	tests := []struct {
-		name     string
+		name string
+		//nolint:containedctx
 		ctx      context.Context
 		expected string
 		expectOk bool
 	}{
 		{
-			name:     "Valid Token",
+			name: "Valid Token",
+			//nolint:staticcheck
 			ctx:      context.WithValue(context.Background(), utils.TOKENCONTEXTKEY, "testtoken"),
 			expected: "testtoken",
 			expectOk: true,
@@ -340,7 +345,8 @@ func TestExtractTokenFromContext(t *testing.T) {
 			expectOk: false,
 		},
 		{
-			name:     "Invalid Type",
+			name: "Invalid Type",
+			//nolint:staticcheck
 			ctx:      context.WithValue(context.Background(), utils.TOKENCONTEXTKEY, 12345),
 			expected: "",
 			expectOk: false,
@@ -363,13 +369,15 @@ func TestExtractTokenFromContext(t *testing.T) {
 //nolint:dupl
 func TestExtractUsernameFromContext(t *testing.T) {
 	tests := []struct {
-		name     string
+		name string
+		//nolint:containedctx
 		ctx      context.Context
 		expected string
 		expectOk bool
 	}{
 		{
-			name:     "Valid Username",
+			name: "Valid Username",
+			//nolint:staticcheck
 			ctx:      context.WithValue(context.Background(), utils.USERNAMECONTEXTKEY, "testuser"),
 			expected: "testuser",
 			expectOk: true,
@@ -381,7 +389,8 @@ func TestExtractUsernameFromContext(t *testing.T) {
 			expectOk: false,
 		},
 		{
-			name:     "Invalid Type",
+			name: "Invalid Type",
+			//nolint:staticcheck
 			ctx:      context.WithValue(context.Background(), utils.USERNAMECONTEXTKEY, 12345),
 			expected: "",
 			expectOk: false,
@@ -404,13 +413,15 @@ func TestExtractUsernameFromContext(t *testing.T) {
 //nolint:dupl
 func TestExtractUserIDFromContext(t *testing.T) {
 	tests := []struct {
-		name     string
+		name string
+		//nolint:containedctx
 		ctx      context.Context
 		expected int
 		expectOk bool
 	}{
 		{
-			name:     "Valid UserID",
+			name: "Valid UserID",
+			//nolint:staticcheck
 			ctx:      context.WithValue(context.Background(), utils.USERIDCONTEXTKEY, 12345),
 			expected: 12345,
 			expectOk: true,
@@ -422,7 +433,8 @@ func TestExtractUserIDFromContext(t *testing.T) {
 			expectOk: false,
 		},
 		{
-			name:     "Invalid Type",
+			name: "Invalid Type",
+			//nolint:staticcheck
 			ctx:      context.WithValue(context.Background(), utils.USERIDCONTEXTKEY, "testuser"),
 			expected: 0,
 			expectOk: false,
@@ -442,7 +454,9 @@ func TestExtractUserIDFromContext(t *testing.T) {
 	}
 }
 
-func returnToken(userID int, username string, secret string, duration time.Duration) (token string) {
-	token, _ = utils.BuildJWTString(userID, username, secret, duration)
-	return
+//nolint:unparam
+func returnToken(userID int, username string, secret string, duration time.Duration) string {
+	token, _ := utils.BuildJWTString(userID, username, secret, duration)
+
+	return token
 }
