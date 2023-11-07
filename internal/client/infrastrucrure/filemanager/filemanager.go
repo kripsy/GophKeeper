@@ -2,7 +2,6 @@ package filemanager
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -38,13 +37,8 @@ type FileStorage interface {
 func NewFileManager(storageDir, uploadDir, userDir string, meta models.UserMeta, key []byte) (*FileManager, error) {
 	if _, err := os.Stat(storageDir); os.IsNotExist(err) {
 		if err = os.MkdirAll(storageDir, permissions.DirMode); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%w", err)
 		}
-	}
-
-	err := meta.GetHash()
-	if err != nil {
-		return nil, err
 	}
 
 	return &FileManager{
@@ -66,16 +60,16 @@ func (fm *FileManager) AddToStorage(name string, data Data, info models.DataInfo
 	info.UpdatedAt = time.Now()
 	encryptedData, err := data.EncryptedData(fm.key)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 	hash, err := data.GetHash()
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 	info.Hash = hash
 
 	if err = os.WriteFile(filepath.Join(fm.storageDir, info.DataID), encryptedData, permissions.FileMode); err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	fm.Meta.Data[name] = info
@@ -91,14 +85,14 @@ func (fm *FileManager) AddEncryptedToStorage(name string, data chan []byte, info
 
 	outFile, err := os.Create(filepath.Join(fm.storageDir, info.DataID))
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	defer outFile.Close()
 
 	for chunk := range data {
 		if _, writeErr := outFile.Write(chunk); writeErr != nil {
-			return err
+			return fmt.Errorf("%w", err)
 		}
 	}
 
@@ -110,17 +104,17 @@ func (fm *FileManager) AddEncryptedToStorage(name string, data chan []byte, info
 func (fm *FileManager) GetByName(name string) ([]byte, models.DataInfo, error) {
 	info, ok := fm.Meta.Data[name]
 	if !ok {
-		return nil, models.DataInfo{}, errors.New("not found secret")
+		return nil, models.DataInfo{}, fmt.Errorf("%w", errNotFoundSecret)
 	}
 
 	data, err := os.ReadFile(filepath.Join(fm.storageDir, info.DataID))
 	if err != nil {
-		return nil, models.DataInfo{}, err
+		return nil, models.DataInfo{}, fmt.Errorf("%w", err)
 	}
 
 	decryptedData, err := utils.Decrypt(data, fm.key)
 	if err != nil {
-		return nil, models.DataInfo{}, err
+		return nil, models.DataInfo{}, fmt.Errorf("%w", err)
 	}
 
 	return decryptedData, info, nil
@@ -129,7 +123,7 @@ func (fm *FileManager) GetByName(name string) ([]byte, models.DataInfo, error) {
 func (fm *FileManager) ReadEncryptedByName(dataID string) (chan []byte, error) {
 	file, err := os.Open(filepath.Join(fm.storageDir, dataID))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	data := make(chan []byte, 1)
@@ -158,12 +152,12 @@ func (fm *FileManager) ReadEncryptedByName(dataID string) (chan []byte, error) {
 func (fm *FileManager) UpdateDataByName(name string, data Data) error {
 	savedInfo, ok := fm.Meta.Data[name]
 	if !ok {
-		return errors.New("not found secret")
+		return fmt.Errorf("%w", errNotFoundSecret)
 	}
 
 	encryptedData, err := data.EncryptedData(fm.key)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	if err = os.WriteFile(
@@ -171,7 +165,7 @@ func (fm *FileManager) UpdateDataByName(name string, data Data) error {
 		encryptedData,
 		permissions.FileMode,
 	); err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	return fm.saveMetaData()
@@ -180,7 +174,7 @@ func (fm *FileManager) UpdateDataByName(name string, data Data) error {
 func (fm *FileManager) UpdateInfoByName(name string, info models.DataInfo) error {
 	savedInfo, ok := fm.Meta.Data[name]
 	if !ok {
-		return errors.New("not found secret")
+		return fmt.Errorf("%w", errNotFoundSecret)
 	}
 
 	if info.Name != "" && savedInfo.Name != info.Name {
@@ -205,12 +199,12 @@ func (fm *FileManager) UpdateInfoByName(name string, info models.DataInfo) error
 func (fm *FileManager) DeleteByName(name string) error {
 	info, ok := fm.Meta.Data[name]
 	if !ok {
-		return errors.New("not found secret")
+		return fmt.Errorf("%w", errNotFoundSecret)
 	}
 
 	err := os.Remove(filepath.Join(fm.storageDir, info.DataID))
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	delete(fm.Meta.Data, name)
@@ -221,21 +215,16 @@ func (fm *FileManager) DeleteByName(name string) error {
 func (fm *FileManager) saveMetaData() error {
 	data, err := json.Marshal(fm.Meta)
 	if err != nil {
-		return err // todo удалить данные в случае ошибки, загрузите повторно
+		return fmt.Errorf("%w", err)
 	}
 
 	encrypt, err := utils.Encrypt(data, fm.key)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
-	if err = os.WriteFile(filepath.Dir(fm.userDir), encrypt, permissions.FileMode); err != nil {
-		return err
-	}
-
-	err = fm.Meta.GetHash()
-	if err != nil {
-		return err
+	if err = os.WriteFile(fm.userDir, encrypt, permissions.FileMode); err != nil {
+		return fmt.Errorf("%w", err)
 	}
 
 	return nil

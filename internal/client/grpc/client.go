@@ -1,3 +1,4 @@
+//nolint:gosec
 package grpc
 
 import (
@@ -52,7 +53,7 @@ func (c *Grpc) Register(login, password string) error {
 		Password: password,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("register: %w", err)
 	}
 	c.token = resp.GetToken()
 
@@ -121,14 +122,14 @@ func (c *Grpc) DownloadFile(ctx context.Context,
 				break loop
 			}
 			if err != nil {
-				return nil, fmt.Errorf("%w", err)
+				c.log.Err(err).Msg("failed download file")
 			}
 
 			data <- resp.GetContent()
 		}
 	}()
 
-	return data, fmt.Errorf("MultipartDownloadFile: %w", err)
+	return data, nil
 }
 
 func (c *Grpc) UploadFile(ctx context.Context, fileName string, hash string, syncKey string, data chan []byte) error {
@@ -149,6 +150,7 @@ func (c *Grpc) UploadFile(ctx context.Context, fileName string, hash string, syn
 			return fmt.Errorf("UploadFile: %w", err)
 		}
 	}
+	c.log.Debug().Msg("UploadFile")
 
 	return nil
 }
@@ -184,10 +186,13 @@ func (c *Grpc) TryToConnect() bool {
 
 	_, err = c.client.Ping(context.Background(), &emptypb.Empty{})
 	if err != nil {
+		c.log.Info().Err(err).Msg("failed connect to server")
+
 		return false
 	}
 
 	c.isAvailable = true
+
 	return true
 }
 
@@ -197,5 +202,6 @@ func (c *Grpc) getCtx(ctx context.Context, jwt string) context.Context {
 	})
 
 	newCtx := metadata.NewOutgoingContext(ctx, md)
+
 	return newCtx
 }

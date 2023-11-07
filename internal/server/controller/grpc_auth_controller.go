@@ -26,7 +26,7 @@ func (s *GrpcServer) Register(ctx context.Context, req *pb.AuthRequest) (*pb.Aut
 		return nil, fmt.Errorf("%w", status.Error(codes.InvalidArgument, "Validation error"))
 	}
 
-	user, err := entity.InitNewUser(req.Username, req.Password)
+	user, err := entity.InitNewUser(req.GetUsername(), req.GetPassword())
 	if err != nil {
 		s.logger.Error("Failed to init user", zap.Error(err))
 
@@ -69,7 +69,7 @@ func (s *GrpcServer) Login(ctx context.Context, req *pb.AuthRequest) (*pb.AuthRe
 		return nil, fmt.Errorf("%w", status.Error(codes.InvalidArgument, err.Error()))
 	}
 
-	user, err := entity.InitNewUser(req.Username, req.Password)
+	user, err := entity.InitNewUser(req.GetUsername(), req.GetPassword())
 	if err != nil {
 		s.logger.Error("Failed to init user", zap.Error(err))
 

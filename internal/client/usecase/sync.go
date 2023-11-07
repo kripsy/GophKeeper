@@ -1,8 +1,10 @@
+//nolint:nonamedreturns, durationcheck
 package usecase
 
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 
@@ -11,6 +13,8 @@ import (
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/kripsy/GophKeeper/internal/utils"
 )
+
+const help = time.Duration(4)
 
 func (c *ClientUsecase) sync() {
 	defer c.InMenu()
@@ -41,20 +45,7 @@ func (c *ClientUsecase) sync() {
 		return
 	}
 
-	toDownload, toUpload := findDifferences(c.userData.Meta.Data, serverMeta.Data)
-	if len(toUpload) == 0 && len(toDownload) == 0 {
-		return
-	}
-
-	if err = c.downloadSecrets(ctx, syncKey, toDownload); err != nil {
-		c.ui.PrintErr(ui.SyncErr)
-		c.log.Err(err).Msg("error upload secrets")
-		return
-	}
-
-	if err = c.uploadSecrets(ctx, syncKey, toUpload); err != nil {
-		c.ui.PrintErr(ui.SyncErr)
-		c.log.Err(err).Msg("error upload secrets")
+	if err = c.synchronizeWithServer(ctx, syncKey, serverMeta); err != nil {
 		return
 	}
 
@@ -65,24 +56,45 @@ func (c *ClientUsecase) sync() {
 		return
 	}
 
-	time.Sleep(time.Second * 5) //todo похоже ApplyChanges срабатывает раньше времени
-	if err = c.grpc.ApplyChanges(ctx, syncKey); err != nil {
+	time.Sleep(time.Second * help)
+	if err := c.grpc.ApplyChanges(ctx, syncKey); err != nil {
 		c.ui.PrintErr(ui.SyncErr)
 		c.log.Err(err).Msg("failed apply changes")
-
-		return
 	}
+}
+
+func (c *ClientUsecase) synchronizeWithServer(ctx context.Context, syncKey string, serverMeta *models.UserMeta) error {
+	toDownload, toUpload := findDifferences(c.userData.Meta.Data, serverMeta.Data)
+	if len(toUpload) == 0 && len(toDownload) == 0 {
+		return nil
+	}
+
+	if err := c.downloadSecrets(ctx, syncKey, toDownload); err != nil {
+		c.ui.PrintErr(ui.SyncErr)
+		c.log.Err(err).Msg("error upload secrets")
+
+		return err
+	}
+
+	if err := c.uploadSecrets(ctx, syncKey, toUpload); err != nil {
+		c.ui.PrintErr(ui.SyncErr)
+		c.log.Err(err).Msg("error upload secrets")
+
+		return err
+	}
+
+	return nil
 }
 
 func (c *ClientUsecase) uploadMeta(ctx context.Context, syncKey string) error {
 	data, err := c.fileManager.ReadEncryptedByName(c.userData.User.GetMetaFileName())
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	err = c.grpc.UploadFile(ctx, c.userData.User.GetMetaFileName(), c.userData.Meta.HashData, syncKey, data)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	return nil
@@ -96,12 +108,12 @@ func (c *ClientUsecase) uploadSecrets(ctx context.Context, syncKey string, toUpl
 
 		data, err := c.fileManager.ReadEncryptedByName(dataID)
 		if err != nil {
-			return err
+			return fmt.Errorf("%w", err)
 		}
 
 		err = c.grpc.UploadFile(ctx, dataID, info.Hash, syncKey, data)
 		if err != nil {
-			return err
+			return fmt.Errorf("%w", err)
 		}
 
 		wg.Done()
@@ -126,6 +138,7 @@ func (c *ClientUsecase) downloadSecrets(ctx context.Context, syncKey string, toD
 			if err != nil {
 				errors <- err
 				c.log.Err(err).Msg("failed download secret")
+
 				return
 			}
 
@@ -133,6 +146,7 @@ func (c *ClientUsecase) downloadSecrets(ctx context.Context, syncKey string, toD
 			if err != nil {
 				errors <- err
 				c.log.Err(err).Msg("AddEncryptedToStorage")
+
 				return
 			}
 		}(info)
@@ -149,7 +163,7 @@ func (c *ClientUsecase) downloadSecrets(ctx context.Context, syncKey string, toD
 func (c *ClientUsecase) downloadServerMeta(ctx context.Context, syncKey string) (*models.UserMeta, error) {
 	data, err := c.grpc.DownloadFile(ctx, c.userData.User.GetMetaFileName(), c.userData.Meta.HashData, syncKey)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w", err)
 	}
 	var concatenatedData []byte
 	var serverData models.UserMeta
@@ -170,17 +184,16 @@ func (c *ClientUsecase) downloadServerMeta(ctx context.Context, syncKey string) 
 
 	key, err := c.userData.User.GetUserKey()
 	if err != nil {
-
-		return nil, err
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	metaData, err := utils.Decrypt(concatenatedData, key)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	if err = json.Unmarshal(metaData, &serverData); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	return &serverData, nil
@@ -195,26 +208,25 @@ func (c *ClientUsecase) blockSync(ctx context.Context, syncKey string) error {
 		if err != nil {
 			c.log.Err(err).Msg("error block sync")
 			errChan <- err
+
 			return
 		}
 	}()
 
 	select {
-	case newGuid := <-guidChan:
-		if syncKey != newGuid {
+	case newGUID := <-guidChan:
+		if syncKey != newGUID {
 			c.log.Warn().Msg("sync key not equal server request key")
 		}
+
 		break
 	case err := <-errChan:
 		c.log.Err(err).Msg("error block sync")
+
 		return err
 	}
 
 	return nil
-}
-
-func (c *ClientUsecase) finishSync(done chan struct{}) {
-	done <- struct{}{}
 }
 
 func findDifferences(local, server models.MetaData) (needDownload, needUpload models.MetaData) {

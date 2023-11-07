@@ -30,7 +30,7 @@ func init() {
 }
 
 func (c *CLI) Clear() {
-	value, ok := clearMapByOS[runtime.GOOS] //runtime.GOOS -> linux, windows etc.
+	value, ok := clearMapByOS[runtime.GOOS] // runtime.GOOS -> linux, windows etc.
 	var err error
 	if ok {
 		if err = value(); err != nil {
@@ -55,7 +55,7 @@ func clearFunc(name string, args ...string) func() error {
 		cmd.Stdout = os.Stdout
 		err := cmd.Run()
 		if err != nil {
-			return err
+			return fmt.Errorf("clearFunc: %w", err)
 		}
 
 		return nil

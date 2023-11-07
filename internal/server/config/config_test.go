@@ -6,6 +6,7 @@ import (
 
 	"github.com/kripsy/GophKeeper/internal/server/config"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestInitConfig(t *testing.T) {
@@ -63,7 +64,7 @@ func TestInitConfig(t *testing.T) {
 
 			got, err := config.InitConfig()
 
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			assert.Equal(t, tt.expectedConfig, got)
 

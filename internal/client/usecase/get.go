@@ -16,8 +16,6 @@ import (
 func (c *ClientUsecase) getSecrets(secretName string, success bool) {
 	defer c.InMenu()
 	if !success {
-		c.ui.PrintErr(ui.GetErr)
-
 		return
 	}
 
@@ -32,20 +30,20 @@ func (c *ClientUsecase) getSecrets(secretName string, success bool) {
 	switch info.DataType {
 	case filemanager.NoteType:
 		var dataStruct filemanager.Note
-		c.getSecret(data, info, dataStruct)
+		c.getSecret(data, info, &dataStruct)
 	case filemanager.BasicAuthType:
 		var dataStruct filemanager.BasicAuth
-		c.getSecret(data, info, dataStruct)
+		c.getSecret(data, info, &dataStruct)
 	case filemanager.CardDataType:
 		var dataStruct filemanager.CardData
-		c.getSecret(data, info, dataStruct)
+		c.getSecret(data, info, &dataStruct)
 	case filemanager.FileType:
 		c.getFileSecret(data, info)
 	}
 }
 
 func (c *ClientUsecase) getSecret(data []byte, info models.DataInfo, dataStruct filemanager.Data) {
-	err := json.Unmarshal(data, &dataStruct)
+	err := json.Unmarshal(data, dataStruct)
 	if err != nil {
 		c.ui.PrintErr(ui.GetErr)
 		c.log.Err(err).Msg("failed unmarshal data")
@@ -60,6 +58,7 @@ func (c *ClientUsecase) getFileSecret(data []byte, info models.DataInfo) {
 	newFilePath, ok := c.ui.UploadFileTo(c.uploadPath)
 	if !ok {
 		c.ui.PrintErr(ui.GetErr)
+
 		return
 	}
 	err := json.Unmarshal(data, &dataStruct)

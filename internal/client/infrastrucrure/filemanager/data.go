@@ -77,43 +77,63 @@ func (a BasicAuth) String() string {
 func (f File) EncryptedData(key []byte) ([]byte, error) {
 	data, err := json.Marshal(f)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w", err)
 	}
 
-	return utils.Encrypt(data, key)
+	data, err = utils.Encrypt(data, key)
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+
+	return data, nil
 }
 
 func (c CardData) EncryptedData(key []byte) ([]byte, error) {
 	data, err := json.Marshal(c)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w", err)
 	}
 
-	return utils.Encrypt(data, key)
+	data, err = utils.Encrypt(data, key)
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+
+	return data, nil
 }
 
 func (n Note) EncryptedData(key []byte) ([]byte, error) {
 	data, err := json.Marshal(n)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w", err)
 	}
 
-	return utils.Encrypt(data, key)
+	data, err = utils.Encrypt(data, key)
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+
+	return data, nil
 }
 
 func (a BasicAuth) EncryptedData(key []byte) ([]byte, error) {
 	data, err := json.Marshal(a)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w", err)
 	}
 
-	return utils.Encrypt(data, key)
+	data, err = utils.Encrypt(data, key)
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+
+	return data, nil
 }
 
 func (f File) GetHash() (string, error) {
 	data, err := json.Marshal(f)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("%w", err)
 	}
 
 	return fmt.Sprintf("%x", sha256.Sum256(data)), nil
@@ -122,7 +142,7 @@ func (f File) GetHash() (string, error) {
 func (c CardData) GetHash() (string, error) {
 	data, err := json.Marshal(c)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("%w", err)
 	}
 
 	return fmt.Sprintf("%x", sha256.Sum256(data)), nil
@@ -131,7 +151,7 @@ func (c CardData) GetHash() (string, error) {
 func (n Note) GetHash() (string, error) {
 	data, err := json.Marshal(n)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("%w", err)
 	}
 
 	return fmt.Sprintf("%x", sha256.Sum256(data)), nil
@@ -140,7 +160,7 @@ func (n Note) GetHash() (string, error) {
 func (a BasicAuth) GetHash() (string, error) {
 	data, err := json.Marshal(a)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("%w", err)
 	}
 
 	return fmt.Sprintf("%x", sha256.Sum256(data)), nil

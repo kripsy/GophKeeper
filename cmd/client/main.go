@@ -19,6 +19,7 @@ func main() {
 	}
 	if err := a.PrepareApp(); err != nil {
 		fmt.Print("Something went wrong")
+
 		return
 	}
 

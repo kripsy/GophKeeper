@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	"github.com/kripsy/GophKeeper/internal/utils"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFromUser2BucketNameWithAsserts(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	prefix := "ilovesber"
 	tests := []struct {
 		name     string
@@ -52,11 +52,11 @@ func TestFromUser2BucketNameWithAsserts(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := utils.FromUser2BucketName(context.Background(), tt.username, tt.userID)
 			if tt.wantErr {
-				assert.Error(err, "FromUser2BucketName() should return an error")
+				require.Error(err, "FromUser2BucketName() should return an error")
 			} else {
-				assert.NoError(err, "FromUser2BucketName() should not return an error")
+				require.NoError(err, "FromUser2BucketName() should not return an error")
 			}
-			assert.Equal(tt.want, got, "FromUser2BucketName() returned unexpected bucket name")
+			require.Equal(tt.want, got, "FromUser2BucketName() returned unexpected bucket name")
 		})
 	}
 }

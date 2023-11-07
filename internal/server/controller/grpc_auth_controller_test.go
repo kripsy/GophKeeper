@@ -11,6 +11,7 @@ import (
 	"github.com/kripsy/GophKeeper/internal/server/controller"
 	"github.com/kripsy/GophKeeper/internal/server/controller/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -104,11 +105,11 @@ func TestGrpcServerRegister(t *testing.T) {
 			resp, err := grpcService.Register(context.Background(), tc.req)
 
 			if tc.expectedErr != nil {
-				assert.Equal(t, status.Code(tc.expectedErr), status.Code(err))
+				require.Equal(t, status.Code(tc.expectedErr), status.Code(err))
 			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, resp)
-				assert.Equal(t, tc.expectedToken, resp.Token)
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+				require.Equal(t, tc.expectedToken, resp.GetToken())
 			}
 		})
 	}
@@ -177,12 +178,12 @@ func TestGrpcServerLogin(t *testing.T) {
 			if tc.expectedErr != nil {
 				assert.Equal(t, status.Code(tc.expectedErr), status.Code(err))
 				if status.Code(err) == codes.InvalidArgument || status.Code(err) == codes.Unauthenticated {
-					assert.EqualError(t, tc.expectedErr, err.Error())
+					require.EqualError(t, tc.expectedErr, err.Error())
 				}
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.NotNil(t, resp)
-				assert.Equal(t, tc.expectedToken, resp.Token)
+				assert.Equal(t, tc.expectedToken, resp.GetToken())
 			}
 		})
 	}
@@ -212,8 +213,8 @@ func TestGrpcServerPing(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			resp, err := grpcService.Ping(context.Background(), tc.req)
 
-			assert.NoError(t, err)
-			assert.NotNil(t, resp)
+			require.NoError(t, err)
+			require.NotNil(t, resp)
 		})
 	}
 }

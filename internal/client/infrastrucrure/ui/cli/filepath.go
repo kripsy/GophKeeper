@@ -23,10 +23,11 @@ const (
 
 func (c *CLI) UploadFileTo(cfgDir string) (string, bool) {
 	chooseUpload := promptui.Select{
-		Label:     "Where do you want to move the file to?",
-		Items:     []string{CfgDir, CustomDir, ui.ExitKey},
-		Templates: menuTemplate,
-		HideHelp:  true,
+		Label:        "Where do you want to move the file to?",
+		Items:        []string{CfgDir, CustomDir, ui.ExitKey},
+		Templates:    menuTemplate,
+		HideHelp:     true,
+		HideSelected: true,
 	}
 
 	_, result, err := chooseUpload.Run()

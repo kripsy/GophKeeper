@@ -48,7 +48,6 @@ func (c *CLI) chooseSecret(metaData models.MetaData, label string, template *pro
 		return "", false
 	}
 
-	//return data.DataID, ok
 	return dataInfos[i].Name, true
 }
 

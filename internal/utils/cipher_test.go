@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/kripsy/GophKeeper/internal/utils"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -52,10 +51,10 @@ func TestEncrypt(t *testing.T) {
 			encryptedData, err := utils.Encrypt(tt.data, tt.cipherKey)
 
 			if tt.wantErr {
-				assert.Error(t, err, "Encrypt() should return an error")
+				require.Error(t, err, "Encrypt() should return an error")
 			} else {
-				assert.NoError(t, err, "Encrypt() should not return an error")
-				assert.NotEqual(t, tt.data, encryptedData, "Encrypted data should not match the original data")
+				require.NoError(t, err, "Encrypt() should not return an error")
+				require.NotEqual(t, tt.data, encryptedData, "Encrypted data should not match the original data")
 			}
 		})
 	}
@@ -109,15 +108,15 @@ func TestDecrypt(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert := assert.New(t)
+			require := require.New(t)
 
 			decryptedData, err := utils.Decrypt(tt.data, tt.cipherKey)
 
 			if tt.wantErr {
-				assert.Error(err, "Decrypt() should return an error")
+				require.Error(err, "Decrypt() should return an error")
 			} else {
-				assert.NoError(err, "Decrypt() should not return an error")
-				assert.Equal(originalText, string(decryptedData), "The decrypted data should match the original")
+				require.NoError(err, "Decrypt() should not return an error")
+				require.Equal(originalText, string(decryptedData), "The decrypted data should match the original")
 			}
 		})
 	}

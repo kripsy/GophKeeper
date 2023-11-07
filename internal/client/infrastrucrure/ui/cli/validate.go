@@ -1,11 +1,8 @@
-//nolint:gochecknoglobals
 package cli
 
 import (
-	"errors"
+	"fmt"
 	"strconv"
-
-	"github.com/manifoldco/promptui"
 )
 
 const (
@@ -15,11 +12,9 @@ const (
 	CardNumSize  = 16
 )
 
-var errStyle = promptui.Styler(promptui.BGRed, promptui.FGBold, promptui.FGBlack)
-
 func validatePassword(input string) error {
 	if len(input) < userSize {
-		return errors.New(errStyle("Password must have more than 6 characters"))
+		return fmt.Errorf("%w", errValidatePassword)
 	}
 
 	return nil
@@ -27,7 +22,7 @@ func validatePassword(input string) error {
 
 func validateUsername(input string) error {
 	if len(input) < passwordSize {
-		return errors.New(errStyle("Username must have more than 6 characters"))
+		return fmt.Errorf("%w", errValidateUsername)
 	}
 
 	return nil
@@ -35,11 +30,11 @@ func validateUsername(input string) error {
 
 func validateCVV(input string) error {
 	if _, err := strconv.Atoi(input); err != nil {
-		return errors.New("CVV must  be a number")
+		return fmt.Errorf("%w", errValidateCVVMustBeNum)
 	}
 
 	if len(input) != cvvSize {
-		return errors.New("CVV must contain 3 digits")
+		return fmt.Errorf("%w", errValidateCVVSize)
 	}
 
 	return nil
@@ -47,11 +42,11 @@ func validateCVV(input string) error {
 
 func validateCardNumber(input string) error {
 	if _, err := strconv.Atoi(input); err != nil {
-		return errors.New("Card number must  be a number ツ")
+		return fmt.Errorf("%w", errValidateCardNumberNotNum)
 	}
 
 	if len(input) > CardNumSize {
-		return errors.New("Card number cannot contain more than 16 digits")
+		return fmt.Errorf("%w", errValidateCardNumSize)
 	}
 
 	return nil

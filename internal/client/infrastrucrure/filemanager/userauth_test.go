@@ -66,6 +66,7 @@ func Test_userAuth_GetUser(t *testing.T) {
 			got, err := tt.auth.GetUser(tt.user)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetUser() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
@@ -103,6 +104,7 @@ func Test_userAuth_CreateUser(t *testing.T) {
 			got, err := tt.auth.CreateUser(tt.user, tt.isLocalStorage)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateUser() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {

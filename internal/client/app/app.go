@@ -2,10 +2,10 @@ package app
 
 import (
 	"fmt"
-	"github.com/kripsy/GophKeeper/internal/client/usecase"
 
 	"github.com/kripsy/GophKeeper/internal/client/config"
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui/cli"
+	"github.com/kripsy/GophKeeper/internal/client/usecase"
 	"github.com/rs/zerolog"
 )
 

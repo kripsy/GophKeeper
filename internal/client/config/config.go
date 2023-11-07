@@ -67,17 +67,17 @@ type Config struct {
 func parseConfig(filePath string, cfg any) error {
 	filename, err := filepath.Abs(filePath)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	yamlFile, err := os.ReadFile(filename)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	err = yaml.Unmarshal(yamlFile, cfg)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	return nil

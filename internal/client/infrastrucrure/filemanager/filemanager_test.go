@@ -77,7 +77,11 @@ func TestFileManager_AddToStorage(t *testing.T) {
 		{
 			name: "ok BasicAuth",
 			storage: func() filemanager.FileStorage {
-				fs, err := filemanager.NewFileManager(storageDir, userDir, userDir, models.UserMeta{Data: make(models.MetaData)}, testKey)
+				fs, err := filemanager.NewFileManager(
+					storageDir,
+					userDir,
+					userDir,
+					models.UserMeta{Data: make(models.MetaData)}, testKey)
 				if err != nil {
 					t.Fatalf("Failed to create FileManager: %v", err)
 				}
@@ -91,7 +95,11 @@ func TestFileManager_AddToStorage(t *testing.T) {
 		{
 			name: "ok File",
 			storage: func() filemanager.FileStorage {
-				fs, err := filemanager.NewFileManager(storageDir, userDir, userDir, models.UserMeta{Data: make(models.MetaData)}, testKey)
+				fs, err := filemanager.NewFileManager(
+					storageDir,
+					userDir,
+					userDir,
+					models.UserMeta{Data: make(models.MetaData)}, testKey)
 				if err != nil {
 					t.Fatalf("Failed to create FileManager: %v", err)
 				}
@@ -459,7 +467,7 @@ func TestFileManager_GetByName(t *testing.T) {
 				t.Errorf("GetByName() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if !tt.wantErr && !bytes.Equal(testData, marshaledData) {
-				t.Errorf("GetByName() error = recived data not equal with expected data")
+				t.Errorf("GetByName() error = received data not equal with expected data")
 			}
 		})
 	}
@@ -658,10 +666,10 @@ func TestFileManager_ReadEncryptedByName1(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			dataChan, err := tt.storage.ReadEncryptedByName(tt.dataID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ReadEncryptedByName() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 			if !tt.wantErr {
@@ -671,7 +679,7 @@ func TestFileManager_ReadEncryptedByName1(t *testing.T) {
 				}
 
 				if !bytes.Equal(data, testData) {
-					t.Errorf("ReadEncryptedByName() recived data not equal with expected data")
+					t.Errorf("ReadEncryptedByName() received data not equal with expected data")
 				}
 			}
 		})
