@@ -1,13 +1,13 @@
 package filemanager_test
 
 import (
-	"github.com/kripsy/GophKeeper/internal/client/permissions"
 	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
 
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/filemanager"
+	"github.com/kripsy/GophKeeper/internal/client/permissions"
 	"github.com/kripsy/GophKeeper/internal/models"
 )
 
