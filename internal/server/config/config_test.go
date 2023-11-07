@@ -57,7 +57,6 @@ func TestInitConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			for key, value := range tt.envVars {
 				os.Setenv(key, value)
 			}

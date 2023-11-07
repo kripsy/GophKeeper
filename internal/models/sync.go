@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"fmt"
 )
 
 // SyncError represents a synchronization error with a custom message.
@@ -11,9 +12,12 @@ type SyncError struct {
 
 // NewSyncError creates a new synchronization error with the provided text.
 func NewSyncError(errorNum SyncErrorEnum) error {
-	return &SyncError{
-		Err: errors.New(SyncErrorMessages[errorNum]),
+	err, ok := SyncErrorMessages[errorNum]
+	if !ok {
+		err = SyncErrorMessages[ErrSyncUnexpectedEnum] // Use a default error if the error number is not found
 	}
+
+	return fmt.Errorf("sync error: %w", err) // Wrap the static error
 }
 
 // Error returns the error message of the SyncError.
@@ -25,14 +29,25 @@ func (ue *SyncError) Error() string {
 type SyncErrorEnum int
 
 const (
-	ErrUserSyncExists SyncErrorEnum = iota // This sync for this user already exists
-	ErrSyncExists                          // Sync for this user already exists
-	ErrSyncNotFound                        // Sync not found
+	ErrUserSyncExistsEnum SyncErrorEnum = iota // This sync for this user already exists
+	ErrSyncExistsEnum                          // Sync for this user already exists
+	ErrSyncNotFoundEnum                        // Sync not found
+	ErrSyncUnexpectedEnum                      // Unexpected error
+)
+
+var (
+	ErrUserSyncExists = errors.New("this sync for this user already exists")
+	ErrSyncExists     = errors.New("sync for this user already exists")
+	ErrSyncNotFound   = errors.New("sync not found")
+	ErrSyncUnexpected = errors.New("unexpected sync error")
 )
 
 // SyncErrorMessages contains error messages corresponding to SyncErrorEnum.
-var SyncErrorMessages = map[SyncErrorEnum]string{
-	ErrUserSyncExists: "This sync for this user already exists",
-	ErrSyncExists:     "Sync for this user already exists",
-	ErrSyncNotFound:   "Sync not found",
+//
+//nolint:gochecknoglobals
+var SyncErrorMessages = map[SyncErrorEnum]error{
+	ErrUserSyncExistsEnum: ErrUserSyncExists,
+	ErrSyncExistsEnum:     ErrSyncExists,
+	ErrSyncNotFoundEnum:   ErrSyncNotFound,
+	ErrSyncUnexpectedEnum: ErrSyncUnexpected,
 }

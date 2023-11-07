@@ -5,6 +5,12 @@ import (
 	"fmt"
 )
 
+var (
+	ErrUserAlreadyExists = errors.New("user already exists")
+	ErrLoginFailed       = errors.New("login failed")
+	ErrInitSecretFailed  = errors.New("failed init secret")
+)
+
 type UserExistsError struct {
 	Text string
 	Err  error
@@ -13,7 +19,7 @@ type UserExistsError struct {
 func NewUserExistsError(username string) error {
 	return &UserExistsError{
 		Text: fmt.Sprintf("%v already exists", username),
-		Err:  errors.New("user already exists"),
+		Err:  ErrUserAlreadyExists,
 	}
 }
 
@@ -29,7 +35,7 @@ type UserLoginError struct {
 func NewUserLoginError(username string) error {
 	return &UserLoginError{
 		Text: fmt.Sprintf("login failed for %v", username),
-		Err:  errors.New("login failed"),
+		Err:  ErrLoginFailed,
 	}
 }
 
@@ -42,13 +48,33 @@ type SecretNotFoundError struct {
 	Err  error
 }
 
-func NewSecretNotFoundError(ID int) error {
+func NewSecretNotFoundError(id int) error {
 	return &SecretNotFoundError{
-		Text: fmt.Sprintf("failed init secret number %d", ID),
-		Err:  errors.New("failed init secret"),
+		Text: fmt.Sprintf("failed init secret number %d", id),
+		Err:  ErrInitSecretFailed,
 	}
 }
 
 func (ue *SecretNotFoundError) Error() string {
+	return ue.Err.Error()
+}
+
+var (
+	ErrUnionError = errors.New("union error")
+)
+
+type UnionError struct {
+	Text string
+	Err  error
+}
+
+func NewUnionError(text string) error {
+	return &SecretNotFoundError{
+		Text: fmt.Sprintf("error %s", text),
+		Err:  ErrUnionError,
+	}
+}
+
+func (ue *UnionError) Error() string {
 	return ue.Err.Error()
 }

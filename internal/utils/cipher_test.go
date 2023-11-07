@@ -1,16 +1,16 @@
-package utils
+package utils_test
 
 import (
 	"crypto/rand"
 	"io"
 	"testing"
 
+	"github.com/kripsy/GophKeeper/internal/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestEncrypt(t *testing.T) {
-
 	validKey := make([]byte, 32)
 	_, err := io.ReadFull(rand.Reader, validKey)
 	require.NoError(t, err, "Failed to generate a valid key")
@@ -49,7 +49,7 @@ func TestEncrypt(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			encryptedData, err := Encrypt(tt.data, tt.cipherKey)
+			encryptedData, err := utils.Encrypt(tt.data, tt.cipherKey)
 
 			if tt.wantErr {
 				assert.Error(t, err, "Encrypt() should return an error")
@@ -62,7 +62,6 @@ func TestEncrypt(t *testing.T) {
 }
 
 func TestDecrypt(t *testing.T) {
-
 	cipherKey := make([]byte, 32)
 	_, err := rand.Read(cipherKey)
 	if err != nil {
@@ -71,7 +70,7 @@ func TestDecrypt(t *testing.T) {
 
 	originalText := "The quick brown fox jumps over the lazy dog"
 
-	encryptedData, err := Encrypt([]byte(originalText), cipherKey)
+	encryptedData, err := utils.Encrypt([]byte(originalText), cipherKey)
 	if err != nil {
 		t.Fatalf("Failed to encrypt data: %v", err)
 	}
@@ -112,7 +111,7 @@ func TestDecrypt(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			decryptedData, err := Decrypt(tt.data, tt.cipherKey)
+			decryptedData, err := utils.Decrypt(tt.data, tt.cipherKey)
 
 			if tt.wantErr {
 				assert.Error(err, "Decrypt() should return an error")

@@ -21,3 +21,11 @@ linters:
     - tagliatelle
     - depguard
     - exhaustruct
+run:
+  skip-dirs:
+    # - internal/client
+    # - client
+    # dir for testing, develop.
+    - cmd/testServer
+    # dir for testing, develop.
+    - cmd/testClient

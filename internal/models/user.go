@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/hex"
+	"fmt"
 	"path/filepath"
 
 	"github.com/kripsy/GophKeeper/internal/utils"
@@ -23,13 +24,14 @@ type User struct {
 }
 
 func (u User) GetUserKey() ([]byte, error) {
+	//nolint:wrapcheck
 	return utils.DeriveKey(u.Password, u.Username)
 }
 
 func (u User) GetHashedPass() (string, error) {
 	hash, err := utils.DeriveKey(u.Username, u.Password)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("%w", err)
 	}
 
 	return hex.EncodeToString(hash), err

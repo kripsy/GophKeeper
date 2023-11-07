@@ -45,3 +45,10 @@ genmocks:
 	mockgen -destination=internal/server/controller/mocks/mock_gophkeeperservice_multipartdownloadfileserver.go -package=mocks github.com/kripsy/GophKeeper/gen/pkg/api/GophKeeper/v1 GophKeeperService_MultipartDownloadFileServer;
 # generate SyncStatus for controller	
 	mockgen -destination=internal/server/controller/mocks/mock_SyncStatus.go -package=mocks github.com/kripsy/GophKeeper/internal/server/controller SyncStatus;
+
+
+lint-all:
+	golangci-lint run ./internal/utils/...
+
+lint-one:
+	golangci-lint run --no-config --disable-all --enable goerr113 ./internal/utils/...

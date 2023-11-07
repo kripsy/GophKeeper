@@ -44,6 +44,7 @@ type Config struct {
 	IsUseSSLMinio bool
 }
 
+//nolint:gochecknoglobals
 var (
 	URLServer   *string
 	logLevel    *string
@@ -53,7 +54,6 @@ var (
 
 	isSecure *bool
 
-	// args for minio
 	endpointMinio *string
 
 	accessKeyIDMinio *string
@@ -65,10 +65,14 @@ var (
 	isUseSSLMinio *bool
 )
 
+//nolint:gochecknoinits
 func init() {
 	// declare flag set for subcommand
-	URLServer = flag.String("a", "localhost:8080", "Enter address exec http server as ip_address:port. Or use SERVER_ADDRESS env")
-	logLevel = flag.String("l", "Info", "log level: Debug, Info, Warn, Error and etc... Or use LOG_LEVEL env")
+	URLServer = flag.String("a", "localhost:8080",
+		"Enter address exec http server as ip_address:port. Or use SERVER_ADDRESS env")
+	logLevel = flag.String("l",
+		"Info",
+		"log level: Debug, Info, Warn, Error and etc... Or use LOG_LEVEL env")
 	databaseDsn = flag.String("d",
 		"postgres://gophkeeperdb:gophkeeperdbpwd@localhost:5432/gophkeeperdb?sslmode=disable",
 		`set path for database... Or use DATABASE_DSN env. 
@@ -101,8 +105,8 @@ func init() {
 		"enable ssl for Minio? Set true/false... Or use ISUSESSLMINIO env")
 }
 
+//nolint:cyclop
 func InitConfig() (*Config, error) {
-
 	flag.Parse()
 
 	if envSrvAddr := os.Getenv("SERVER_ADDRESS"); envSrvAddr != "" {
@@ -168,5 +172,6 @@ func InitConfig() (*Config, error) {
 		BucketNameMinio:      *bucketNameMinio,
 		IsUseSSLMinio:        *isUseSSLMinio,
 	}
+
 	return cfg, nil
 }

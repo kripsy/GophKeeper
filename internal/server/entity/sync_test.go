@@ -28,7 +28,7 @@ func TestSyncStatus(t *testing.T) {
 			name:       "Test Case 2 - Add Existing Sync",
 			userID:     1,
 			syncID:     uuid.New(),
-			wantErr:    models.NewSyncError(models.ErrUserSyncExists),
+			wantErr:    models.NewSyncError(models.ErrUserSyncExistsEnum),
 			wantExists: false,
 		},
 	}
@@ -39,8 +39,9 @@ func TestSyncStatus(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exists, err := ss.AddSync(tt.userID, tt.syncID)
 
-			assert.Equal(t, tt.wantErr, err)
-
+			if tt.wantErr != nil {
+				assert.EqualError(t, tt.wantErr, err.Error())
+			}
 			assert.Equal(t, tt.wantExists, exists)
 
 			if tt.wantExists {

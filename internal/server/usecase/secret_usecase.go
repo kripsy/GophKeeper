@@ -25,25 +25,32 @@ type MinioRepository interface {
 }
 
 type secretUseCase struct {
+	//nolint:containedctx
 	ctx        context.Context
 	userRepo   UserRepository
 	secretRepo MinioRepository
 	logger     *zap.Logger
 }
 
-func InitSecretUseCases(ctx context.Context, userRepo UserRepository, secretRepo MinioRepository, l *zap.Logger) (*secretUseCase, error) {
+//nolint:revive,nolintlint
+func InitSecretUseCases(ctx context.Context,
+	userRepo UserRepository,
+	secretRepo MinioRepository,
+	l *zap.Logger) (*secretUseCase, error) {
 	uc := &secretUseCase{
 		ctx:        ctx,
 		userRepo:   userRepo,
 		secretRepo: secretRepo,
 		logger:     l,
 	}
+
 	return uc, nil
 }
 
-func (uc *secretUseCase) MultipartUploadFile(ctx context.Context, dataChan <-chan *models.MultipartUploadFileData, bucketName string) (bool, error) {
-
-	parts := []models.ObjectPart{}
+func (uc *secretUseCase) MultipartUploadFile(ctx context.Context,
+	dataChan <-chan *models.MultipartUploadFileData,
+	bucketName string) (bool, error) {
+	// parts := []models.ObjectPart{}
 	var partNum int
 	var fileName string
 
@@ -56,19 +63,22 @@ loop:
 		case data, ok := <-dataChan:
 			if !ok {
 				uc.logger.Debug("loop getting data ended")
+
 				break loop
 			}
-			//	uc.logger.Debug("we got simple data", zap.Any("context", data)) //todo перегружает лог при получении большого пакета данных
+			//	uc.logger.Debug("we got simple data",
+			// zap.Any("context", data))
+			// перегружает лог при получении большого пакета данных.
 
 			partNum++
-			part, err := uc.secretRepo.MultipartUploadFile(ctx, data, partNum, bucketName)
+			_, err := uc.secretRepo.MultipartUploadFile(ctx, data, partNum, bucketName)
 			if err != nil {
 				uc.logger.Error("Error upload in usecase", zap.Error(err))
 
 				return false, fmt.Errorf("%w", err)
 			}
 			uc.logger.Debug("success upload part", zap.Int("part number", partNum))
-			parts = append(parts, *part)
+			// parts = append(parts, *part)
 			once.Do(func() {
 				fileName = data.FileName
 			})
@@ -77,21 +87,23 @@ loop:
 			uc.logger.Debug("ctx in MultipartUploadFile usecase exeed")
 
 			uc.logger.Debug("send empty to dataIdChan from usecase")
-			return false, ctx.Err()
+
+			return false, fmt.Errorf("%w", ctx.Err())
 		}
 	}
 
 	uc.logger.Debug("Multipart upload success", zap.String("filename", fileName))
+
 	return true, nil
 }
 
 func (uc *secretUseCase) CreateBucketSecret(ctx context.Context, username string, userID int) (bool, error) {
+	//nolint:wrapcheck
 	return uc.secretRepo.CreateBucketSecret(ctx, username, userID)
 }
 
 func (uc *secretUseCase) MultipartDownloadFile(ctx context.Context, req *models.MultipartDownloadFileRequest,
 	bucketName string) (chan *models.MultipartDownloadFileResponse, chan error) {
-
 	dataChan := make(chan *models.MultipartDownloadFileResponse)
 	errChan := make(chan error)
 
@@ -105,6 +117,7 @@ func (uc *secretUseCase) MultipartDownloadFile(ctx context.Context, req *models.
 		if err != nil {
 			uc.logger.Error("Error in uc.secretRepo.ListObjects")
 			errChan <- err
+
 			return
 		}
 
@@ -121,6 +134,7 @@ func (uc *secretUseCase) MultipartDownloadFile(ctx context.Context, req *models.
 		sort.Slice(objectNames, func(i, j int) bool {
 			iPartNum := utils.ExtractPartNumber(objectNames[i])
 			jPartNum := utils.ExtractPartNumber(objectNames[j])
+
 			return iPartNum < jPartNum
 		})
 
@@ -165,7 +179,7 @@ func (uc *secretUseCase) ApplyChanges(ctx context.Context, bucketName string) (b
 	if err != nil {
 		uc.logger.Error("Error in ApplyChanges", zap.Error(err))
 
-		return false, err
+		return false, fmt.Errorf("%w", err)
 	}
 
 	return true, nil
@@ -176,7 +190,7 @@ func (uc *secretUseCase) DiscardChanges(ctx context.Context, bucketName string) 
 	if err != nil {
 		uc.logger.Error("Error in discard changes - usecase", zap.Error(err))
 
-		return false, err
+		return false, fmt.Errorf("%w", err)
 	}
 
 	return true, nil

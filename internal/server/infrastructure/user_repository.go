@@ -8,12 +8,14 @@ import (
 	"time"
 
 	"github.com/Masterminds/squirrel"
+	//nolint:revive,nolintlint
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/kripsy/GophKeeper/internal/server/entity"
 	"github.com/kripsy/GophKeeper/internal/utils"
 
+	//nolint:revive,nolintlint
 	_ "github.com/jackc/pgx/v5/stdlib"
 
 	"go.uber.org/zap"
@@ -26,14 +28,13 @@ type userRepository struct {
 }
 
 func (r *userRepository) RegisterUser(ctx context.Context, user entity.User) (int, error) {
-
 	userExist, err := r.isUserExists(ctx, user.Username)
 	if err != nil {
 		return 0, fmt.Errorf("%w", err)
 	}
 
 	if userExist {
-		return 0, models.NewUserExistsError(user.Username)
+		return 0, fmt.Errorf("%w", models.NewUserExistsError(user.Username))
 	}
 
 	tx, err := r.db.Begin()
@@ -83,7 +84,6 @@ func (r *userRepository) RegisterUser(ctx context.Context, user entity.User) (in
 
 	err = tx.Commit()
 	if err != nil {
-
 		return 0, fmt.Errorf("%w", err)
 	}
 	r.logger.Debug("success commit RegisterUser")
@@ -98,7 +98,7 @@ func (r *userRepository) LoginUser(ctx context.Context, user entity.User) (int, 
 	}
 
 	if !userExist {
-		return 0, models.NewUserExistsError(user.Username)
+		return 0, fmt.Errorf("%w", models.NewUserExistsError(user.Username))
 	}
 
 	userID, hashPassword, err := r.getUserHashPassword(ctx, user.Username)
@@ -112,14 +112,13 @@ func (r *userRepository) LoginUser(ctx context.Context, user entity.User) (int, 
 	if err != nil {
 		r.logger.Error("password incorrect", zap.Error(err))
 
-		return 0, models.NewUserLoginError(user.Username)
+		return 0, fmt.Errorf("%w", models.NewUserLoginError(user.Username))
 	}
 
 	return userID, nil
 }
 
 func (r *userRepository) isUserExists(ctx context.Context, username string) (bool, error) {
-
 	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 	r.logger.Debug("start IsUserExists")
@@ -135,7 +134,7 @@ func (r *userRepository) isUserExists(ctx context.Context, username string) (boo
 	if err != nil {
 		r.logger.Error("failed to Begin Tx in IsUserExists", zap.Error(err))
 
-		return false, err
+		return false, fmt.Errorf("%w", err)
 	}
 
 	var userExists bool
@@ -150,7 +149,7 @@ func (r *userRepository) isUserExists(ctx context.Context, username string) (boo
 	if err != nil {
 		r.logger.Error("failed to build sql in IsUserExists", zap.Error(err))
 
-		return false, err
+		return false, fmt.Errorf("%w", err)
 	}
 
 	r.logger.Debug("success build sql", zap.String("msg", sql))
@@ -162,21 +161,20 @@ func (r *userRepository) isUserExists(ctx context.Context, username string) (boo
 	if err != nil {
 		r.logger.Error("failed scan userExists", zap.Error(err))
 
-		return false, err
+		return false, fmt.Errorf("%w", err)
 	}
 	r.logger.Debug("success scan userExists, value ->", zap.Bool("msg", userExists))
 	err = tx.Commit()
 	if err != nil {
 		r.logger.Error("Error tx.Commit()", zap.Error(err))
 
-		return false, err
+		return false, fmt.Errorf("%w", err)
 	}
 
 	return userExists, nil
 }
 
 func (r *userRepository) getNextRowID(ctx context.Context, tableName string) (int, error) {
-
 	ctx, canlcel := context.WithTimeout(ctx, time.Second)
 	defer canlcel()
 	r.logger.Debug("start getNextRowID")
@@ -209,6 +207,7 @@ func (r *userRepository) getNextRowID(ctx context.Context, tableName string) (in
 
 	r.logger.Debug("success build sql", zap.String("msg", qbsql))
 
+	//nolint:sqlclosecheck
 	stmt, err := tx.PrepareContext(ctx, qbsql)
 	defer func(stmt *sql.Stmt) {
 		err := stmt.Close()
@@ -286,7 +285,7 @@ func (r *userRepository) getUserHashPassword(ctx context.Context, username strin
 		if errors.Is(err, sql.ErrNoRows) {
 			r.logger.Debug("error compare username and pwd", zap.String("msg", username))
 
-			return 0, "", models.NewUserLoginError(username)
+			return 0, "", fmt.Errorf("%w", models.NewUserLoginError(username))
 		}
 		r.logger.Error("failed scan userExists", zap.String("msg", err.Error()))
 
@@ -296,13 +295,13 @@ func (r *userRepository) getUserHashPassword(ctx context.Context, username strin
 	r.logger.Debug("success get hash password ->", zap.String("msg", hashPassword))
 	err = tx.Commit()
 	if err != nil {
-
 		return 0, "", fmt.Errorf("%w", err)
 	}
 
 	return userID, hashPassword, nil
 }
 
+//nolint:revive,nolintlint
 func NewUserRepository(repo *repository) (*userRepository, error) {
 	return &userRepository{
 		db:     repo.db,
