@@ -26,7 +26,6 @@ func InitGrpcServiceServer(userUseCase UserUseCase,
 	secretUseCase SecretUseCase,
 	secret string,
 	logger *zap.Logger, syncStatus SyncStatus) *GrpcServer {
-
 	return &GrpcServer{
 		userUseCase:   userUseCase,
 		secretUseCase: secretUseCase,

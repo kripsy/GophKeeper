@@ -21,7 +21,9 @@ import (
 	"go.uber.org/zap"
 )
 
+//nolint:cyclop
 func main() {
+	grcpPort := ":50051"
 	serverCertPath := "./cert/server.crt"
 	privateKeyPath := "./cert/server.key"
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -31,12 +33,14 @@ func main() {
 	cfg, err := config.InitConfig()
 	if err != nil {
 		fmt.Printf("Error init cfg: %v", err)
+
 		return
 	}
 
 	l, err := logger.InitLog(cfg.LoggerLevel)
 	if err != nil {
 		fmt.Printf("Error init logger: %v", err)
+
 		return
 	}
 
@@ -59,12 +63,14 @@ func main() {
 	repo, err := infrastructure.InitNewRepository(cfg.DatabaseDsn, l)
 	if err != nil {
 		l.Error("error create db instance", zap.String("msg", err.Error()))
+
 		return
 	}
 
 	userRepo, err := infrastructure.NewUserRepository(repo)
 	if err != nil {
 		l.Error("error init user repository", zap.String("msg", err.Error()))
+
 		return
 	}
 	l.Debug("NewUserRepository initialized")
@@ -91,6 +97,7 @@ func main() {
 	userUseCase, err := usecase.InitUseCases(ctx, userRepo, cfg.Secret, cfg.TokenExp, l)
 	if err != nil {
 		l.Error("error create user usecase instance", zap.String("msg", err.Error()))
+
 		return
 	}
 	l.Debug("userUseCase initialized")
@@ -98,6 +105,7 @@ func main() {
 	secretUseCase, err := usecase.InitSecretUseCases(ctx, userRepo, minioRepo, l)
 	if err != nil {
 		l.Error("error create user usecase instance", zap.String("msg", err.Error()))
+
 		return
 	}
 	l.Debug("secretUseCase initialized")
@@ -116,30 +124,29 @@ func main() {
 	}
 
 	// start shutdown application
-	wg.Add(2)
+
+	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		lis, err := net.Listen("tcp", ":50051")
+		//nolint:gosec
+		lis, err := net.Listen("tcp", grcpPort)
 		if err != nil {
 			l.Error("Error", zap.Error(err))
 
 			return
 		}
-		l.Debug("Starting gRPC server on :50051")
+		l.Debug("Starting gRPC server", zap.String("port", grcpPort))
 		err = s.Serve(lis)
 		if err != nil {
 			l.Error("Error", zap.Error(err))
 		}
-
-		return
 	}()
+	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
 		log.Println("Closing GRPC Server")
-
 		s.GracefulStop()
-
 	}()
 	wg.Wait()
 
@@ -147,6 +154,7 @@ func main() {
 	l.Debug("close repository")
 	if err := repo.Close(); err != nil {
 		l.Error("Failed to close repository", zap.Error(err))
+
 		return
 	}
 	l.Debug("I'm leaving, bye!")

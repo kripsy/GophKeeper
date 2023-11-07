@@ -1,9 +1,10 @@
-package utils
+package utils_test
 
 import (
 	"os"
 	"testing"
 
+	"github.com/kripsy/GophKeeper/internal/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -32,7 +33,7 @@ func TestCreateCertificate(t *testing.T) {
 			tt.serverCertPath = tempDir + "/server.crt"
 			tt.privateKeyPath = tempDir + "/server.key"
 
-			err = CreateCertificate(tt.serverCertPath, tt.privateKeyPath)
+			err = utils.CreateCertificate(tt.serverCertPath, tt.privateKeyPath)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

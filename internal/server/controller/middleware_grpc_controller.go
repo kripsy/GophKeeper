@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"sync"
 
@@ -43,8 +44,10 @@ func InitMyMiddleware(myLogger *zap.Logger, secret string) *MyMiddleware {
 	return instance
 }
 
-func (m MyMiddleware) AuthInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-
+func (m MyMiddleware) AuthInterceptor(ctx context.Context,
+	req interface{},
+	info *grpc.UnaryServerInfo,
+	handler grpc.UnaryHandler) (interface{}, error) {
 	switch info.FullMethod {
 	case loginMethod,
 		registerMethod,
@@ -59,44 +62,55 @@ func (m MyMiddleware) AuthInterceptor(ctx context.Context, req interface{}, info
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		m.myLogger.Debug("couldn't extract metadata from req")
-		return nil, status.Error(codes.Internal, "couldn't extract metadata from req")
+
+		return nil, fmt.Errorf("%w", status.Error(codes.Internal, "couldn't extract metadata from req"))
 	}
 
 	authHeaders, ok := md[utils.AUTHORIZATIONHEADER]
 	if !ok || len(authHeaders) != 1 {
 		m.myLogger.Debug("authorization not exists")
-		return nil, status.Error(codes.Unauthenticated, "authorization not exists")
+
+		return nil, fmt.Errorf("%w", status.Error(codes.Unauthenticated, "authorization not exists"))
 	}
 
 	token := strings.TrimPrefix(authHeaders[0], utils.TOKENPREFIX)
 	if token == "" {
 		m.myLogger.Debug("token empty or not valid")
-		return nil, status.Error(codes.Unauthenticated, "token empty or not valid")
+
+		return nil, fmt.Errorf("%w", status.Error(codes.Unauthenticated, "token empty or not valid"))
 	}
 
 	if isValid, err := utils.IsValidToken(token, m.secret); err != nil || !isValid {
 		m.myLogger.Debug("token is not valid")
-		return nil, status.Error(codes.Unauthenticated, "token empty or not valid")
+
+		return nil, fmt.Errorf("%w", status.Error(codes.Unauthenticated, "token empty or not valid"))
 	}
 	username, err := utils.GetUsernameFromToken(token, m.secret)
 	if err != nil {
 		m.myLogger.Debug("cannot get username")
-		return nil, status.Error(codes.Unauthenticated, "token empty or not valid")
+
+		return nil, fmt.Errorf("%w", status.Error(codes.Unauthenticated, "token empty or not valid"))
 	}
 
 	userID, err := utils.GetUseIDFromToken(token, m.secret)
 	if err != nil {
 		m.myLogger.Debug("cannot get userID")
-		return nil, status.Error(codes.Unauthenticated, "token empty or not valid")
+
+		return nil, fmt.Errorf("%w", status.Error(codes.Unauthenticated, "token empty or not valid"))
 	}
 
+	//nolint:staticcheck
 	newCtx := context.WithValue(ctx, utils.USERNAMECONTEXTKEY, username)
+	//nolint:staticcheck
 	newCtx = context.WithValue(newCtx, utils.USERIDCONTEXTKEY, userID)
 
 	return handler(newCtx, req)
 }
 
-func (m MyMiddleware) StreamAuthInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+func (m MyMiddleware) StreamAuthInterceptor(srv interface{},
+	ss grpc.ServerStream,
+	info *grpc.StreamServerInfo,
+	handler grpc.StreamHandler) error {
 	// Получаем контекст из потокового сервера
 	ctx := ss.Context()
 
@@ -106,44 +120,52 @@ func (m MyMiddleware) StreamAuthInterceptor(srv interface{}, ss grpc.ServerStrea
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		m.myLogger.Debug("couldn't extract metadata from req")
-		return status.Error(codes.Internal, "couldn't extract metadata from req")
+
+		return fmt.Errorf("%w", status.Error(codes.Internal, "couldn't extract metadata from req"))
 	}
 
 	authHeaders, ok := md[utils.AUTHORIZATIONHEADER]
 	if !ok || len(authHeaders) != 1 {
 		m.myLogger.Debug("authorization not exists")
-		return status.Error(codes.Unauthenticated, "authorization not exists")
+
+		return fmt.Errorf("%w", status.Error(codes.Unauthenticated, "authorization not exists"))
 	}
 
 	token := strings.TrimPrefix(authHeaders[0], utils.TOKENPREFIX)
 	if token == "" {
 		m.myLogger.Debug("token empty or not valid")
-		return status.Error(codes.Unauthenticated, "token empty or not valid")
+
+		return fmt.Errorf("%w", status.Error(codes.Unauthenticated, "token empty or not valid"))
 	}
 
 	if isValid, err := utils.IsValidToken(token, m.secret); err != nil || !isValid {
 		m.myLogger.Debug("token is not valid")
-		return status.Error(codes.Unauthenticated, "token empty or not valid")
+
+		return fmt.Errorf("%w", status.Error(codes.Unauthenticated, "token empty or not valid"))
 	}
 
 	username, err := utils.GetUsernameFromToken(token, m.secret)
 	if err != nil {
 		m.myLogger.Debug("cannot get username")
-		return status.Error(codes.Unauthenticated, "token empty or not valid")
+
+		return fmt.Errorf("%w", status.Error(codes.Unauthenticated, "token empty or not valid"))
 	}
 
 	userID, err := utils.GetUseIDFromToken(token, m.secret)
 	if err != nil {
 		m.myLogger.Debug("cannot get userID")
-		return status.Error(codes.Unauthenticated, "token empty or not valid")
+
+		return fmt.Errorf("%w", status.Error(codes.Unauthenticated, "token empty or not valid"))
 	}
 
 	// Добавляем имя пользователя в контекст
+	//nolint:staticcheck
 	newCtx := context.WithValue(ctx, utils.USERNAMECONTEXTKEY, username)
 	// Заменяем старый контекст новым в потоковом сервере
 	wrappedStream := grpc_middleware.WrapServerStream(ss)
 	wrappedStream.WrappedContext = newCtx
 
+	//nolint:staticcheck
 	newCtx = context.WithValue(newCtx, utils.USERIDCONTEXTKEY, userID)
 	wrappedStream = grpc_middleware.WrapServerStream(ss)
 	wrappedStream.WrappedContext = newCtx

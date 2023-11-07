@@ -20,7 +20,13 @@ type minioRepository struct {
 	logger *zap.Logger
 }
 
-func NewMinioRepository(ctx context.Context, endpoint, accessKeyID, secretAccessKey, bucketName string, isUseSSL bool, l *zap.Logger) (*minioRepository, error) {
+//nolint:revive,nolintlint
+func NewMinioRepository(ctx context.Context,
+	endpoint,
+	accessKeyID,
+	secretAccessKey,
+	bucketName string,
+	isUseSSL bool, l *zap.Logger) (*minioRepository, error) {
 	l.Debug("start init minio repository")
 	client, err := initMinioClient(endpoint, accessKeyID, secretAccessKey, isUseSSL)
 
@@ -77,7 +83,10 @@ func initBucket(ctx context.Context, bucketName string, client *minio.Client) er
 	return nil
 }
 
-func (m *minioRepository) MultipartUploadFile(ctx context.Context, data *models.MultipartUploadFileData, partNum int, bucketName string) (*models.ObjectPart, error) {
+func (m *minioRepository) MultipartUploadFile(ctx context.Context,
+	data *models.MultipartUploadFileData,
+	partNum int,
+	bucketName string) (*models.ObjectPart, error) {
 	objectName := fmt.Sprintf("%s-part-%d.rc", data.FileName, partNum)
 	opts := minio.PutObjectOptions{
 		UserMetadata: map[string]string{
@@ -86,7 +95,11 @@ func (m *minioRepository) MultipartUploadFile(ctx context.Context, data *models.
 		},
 	}
 
-	_, err := m.client.PutObject(ctx, bucketName, objectName, bytes.NewReader(data.Content), int64(len(data.Content)), opts)
+	_, err := m.client.PutObject(ctx,
+		bucketName,
+		objectName,
+		bytes.NewReader(data.Content),
+		int64(len(data.Content)), opts)
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
@@ -131,10 +144,12 @@ func (m *minioRepository) ListObjects(ctx context.Context, bucketName, prefix st
 
 	objectCh := m.client.ListObjects(ctx, bucketName, opts)
 
+	//nolint:prealloc
 	var objectNames []string
 	for object := range objectCh {
 		if object.Err != nil {
 			log.Println("Error listing objects:", object.Err)
+
 			return nil, object.Err
 		}
 		objectNames = append(objectNames, object.Key)
@@ -149,7 +164,7 @@ func (m *minioRepository) GetObject(ctx context.Context,
 	if err != nil {
 		m.logger.Debug("Error in minio GetObject", zap.Error(err))
 
-		return nil, "", err
+		return nil, "", fmt.Errorf("%w", err)
 	}
 	defer object.Close()
 
@@ -157,14 +172,14 @@ func (m *minioRepository) GetObject(ctx context.Context,
 	if err != nil {
 		m.logger.Debug("Error reading object content", zap.Error(err))
 
-		return nil, "", err
+		return nil, "", fmt.Errorf("%w", err)
 	}
 
 	s, err := object.Stat()
 	if err != nil {
 		m.logger.Debug("Error reading object stat", zap.Error(err))
 
-		return nil, "", err
+		return nil, "", fmt.Errorf("%w", err)
 	}
 
 	hash := s.UserMetadata["Hash"]
@@ -182,7 +197,8 @@ func (m *minioRepository) ListFilesWithPostfix(bucketName, postfix string) ([]st
 	for object := range objectCh {
 		if object.Err != nil {
 			log.Println("Error listing objects:", object.Err)
-			return nil, object.Err
+
+			return nil, fmt.Errorf("%w", object.Err)
 		}
 
 		// Проверяем, оканчивается ли имя файла на заданный постфикс
@@ -194,10 +210,12 @@ func (m *minioRepository) ListFilesWithPostfix(bucketName, postfix string) ([]st
 	return fileList, nil
 }
 
+//nolint:cyclop
 func (m *minioRepository) ApplyChanges(ctx context.Context, bucketName string) error {
 	postfix := ".rc"
 
 	// Получить список файлов с расширением .rc
+	//nolint:contextcheck
 	rcFiles, err := m.ListFilesWithPostfix(bucketName, postfix)
 	if err != nil {
 		m.logger.Error("Error to get list files with rc prefix", zap.Error(err))
@@ -216,6 +234,7 @@ func (m *minioRepository) ApplyChanges(ctx context.Context, bucketName string) e
 	m.logger.Debug("Current rcMap - files, that without rc, union by -path-", zap.Any("map", rcMap))
 
 	// Получить список всех файлов
+	//nolint:contextcheck
 	allFiles, err := m.ListFilesWithPostfix(bucketName, "")
 	if err != nil {
 		m.logger.Error("Error to get list all files", zap.Error(err))
@@ -234,7 +253,7 @@ func (m *minioRepository) ApplyChanges(ctx context.Context, bucketName string) e
 			if err != nil {
 				m.logger.Error("Error remove file, that should be updated", zap.Error(err))
 
-				return err
+				return fmt.Errorf("%w", err)
 			}
 		}
 	}
@@ -256,7 +275,7 @@ func (m *minioRepository) ApplyChanges(ctx context.Context, bucketName string) e
 		if err != nil {
 			m.logger.Error("Error copy rc file", zap.Error(err))
 
-			return err
+			return fmt.Errorf("%w", err)
 		}
 
 		// Удалить исходный файл .rc после копирования
@@ -264,7 +283,7 @@ func (m *minioRepository) ApplyChanges(ctx context.Context, bucketName string) e
 		if err != nil {
 			m.logger.Error("Error remove rc file", zap.Error(err))
 
-			return err
+			return fmt.Errorf("%w", err)
 		}
 	}
 
@@ -273,6 +292,7 @@ func (m *minioRepository) ApplyChanges(ctx context.Context, bucketName string) e
 
 func (m *minioRepository) DiscardChanges(ctx context.Context, bucketName string) error {
 	postfix := ".rc"
+	//nolint:contextcheck
 	rcFiles, err := m.ListFilesWithPostfix(bucketName, postfix)
 	if err != nil {
 		return err
@@ -281,18 +301,20 @@ func (m *minioRepository) DiscardChanges(ctx context.Context, bucketName string)
 	for _, file := range rcFiles {
 		err := m.client.RemoveObject(ctx, bucketName, file, minio.RemoveObjectOptions{})
 		if err != nil {
-			return err
+			return fmt.Errorf("%w", err)
 		}
 	}
+
 	return nil
 }
 
-// Функция для проверки, находится ли файл в списке rcFiles
+// Функция для проверки, находится ли файл в списке rcFiles.
 func isInRCFiles(file string, rcFiles []string) bool {
 	for _, rcFile := range rcFiles {
 		if file == rcFile {
 			return true
 		}
 	}
+
 	return false
 }

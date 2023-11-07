@@ -54,6 +54,7 @@ func TestInitGrpcServer(t *testing.T) {
 
 				tt.serverCertPath = tempDir + "/server.crt"
 				tt.privateKeyPath = tempDir + "/server.key"
+				//nolint:errcheck
 				utils.CreateCertificate(tt.serverCertPath, tt.privateKeyPath)
 			}
 			_, err := controller.InitGrpcServer(mockUserUseCase,

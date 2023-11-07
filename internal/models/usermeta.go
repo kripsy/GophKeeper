@@ -18,13 +18,15 @@ type UserMeta struct {
 }
 
 type DataInfo struct {
-	Name        string    `json:"name,omitempty"`
-	DataID      string    `json:"data_id"`
-	DataType    int       `json:"data_type"`
-	Description string    `json:"description"`
-	FileName    *string   `json:"file_name,omitempty"`
-	Hash        string    `json:"hash"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	Name        string  `json:"name,omitempty"`
+	DataID      string  `json:"data_id"`
+	DataType    int     `json:"data_type"`
+	Description string  `json:"description"`
+	FileName    *string `json:"file_name,omitempty"`
+	Hash        string  `json:"hash"`
+	//nolint:godox
+	IsDeleted bool      `json:"is_deleted"` // todo вынести в отдельное поле
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 func (di *DataInfo) SetFileName(path string) {
@@ -37,10 +39,11 @@ func (di *DataInfo) SetFileName(path string) {
 	di.FileName = &fileName
 }
 
-func (md *UserMeta) GetHash() error { //todo delete
+//nolint:godox
+func (md *UserMeta) GetHash() error { // todo delete
 	meta, err := json.Marshal(md.Data)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	md.HashData = fmt.Sprintf("%x", sha256.Sum256(meta))

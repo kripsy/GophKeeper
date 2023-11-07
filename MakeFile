@@ -43,8 +43,9 @@ genmocks:
 # generate SyncStatus for controller	
 	mockgen -destination=internal/server/controller/mocks/mock_SyncStatus.go -package=mocks github.com/kripsy/GophKeeper/internal/server/controller SyncStatus;
 
-docker run --rm -v /path/to/your/project:/go/project -w /go/project golangci/golangci-lint golangci-lint run
-docker run --rm -v $(pwd):/app -w /app golangci/golangci-lint golangci-lint run --config ./.golangci.yaml
 
-docker run --rm -v /home/gg/GolandProjects/GophKeeper:/app -w /app golangci/golangci-lint:v1.55.2 golangci-lint run -c ./.golangci.yml
-docker run --rm -v $(pwd):/app -w /app golangci/golangci-lint:v1.55.2 golangci-lint run -v -c ./.golangci.yml
+lint-all:
+	golangci-lint run ./internal/utils/...
+
+lint-one:
+	golangci-lint run --no-config --disable-all --enable goerr113 ./internal/utils/...
