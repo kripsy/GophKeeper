@@ -24,7 +24,7 @@ func Test_validateUsername(t *testing.T) {
 		}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := validation.ValidateCardNumber(tt.input); (err != nil) != tt.wantErr {
+			if err := validation.ValidateUsername(tt.input); (err != nil) != tt.wantErr {
 				t.Errorf("validateUsername() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
