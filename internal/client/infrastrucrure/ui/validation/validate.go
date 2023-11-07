@@ -1,4 +1,4 @@
-package cli
+package validation
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ const (
 	CardNumSize  = 16
 )
 
-func validatePassword(input string) error {
+func ValidatePassword(input string) error {
 	if len(input) < userSize {
 		return fmt.Errorf("%w", errValidatePassword)
 	}
@@ -20,7 +20,7 @@ func validatePassword(input string) error {
 	return nil
 }
 
-func validateUsername(input string) error {
+func ValidateUsername(input string) error {
 	if len(input) < passwordSize {
 		return fmt.Errorf("%w", errValidateUsername)
 	}
@@ -28,7 +28,7 @@ func validateUsername(input string) error {
 	return nil
 }
 
-func validateCVV(input string) error {
+func ValidateCVV(input string) error {
 	if _, err := strconv.Atoi(input); err != nil {
 		return fmt.Errorf("%w", errValidateCVVMustBeNum)
 	}
@@ -40,7 +40,7 @@ func validateCVV(input string) error {
 	return nil
 }
 
-func validateCardNumber(input string) error {
+func ValidateCardNumber(input string) error {
 	if _, err := strconv.Atoi(input); err != nil {
 		return fmt.Errorf("%w", errValidateCardNumberNotNum)
 	}

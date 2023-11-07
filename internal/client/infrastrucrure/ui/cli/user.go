@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui"
+	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui/validation"
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/manifoldco/promptui"
 )
@@ -11,12 +12,12 @@ import (
 func (c *CLI) GetUser() (models.User, error) {
 	username := promptui.Prompt{
 		Label:       "Username",
-		Validate:    validateUsername,
+		Validate:    validation.ValidateUsername,
 		HideEntered: true,
 	}
 	pass := promptui.Prompt{
 		Label:       "Password",
-		Validate:    validatePassword,
+		Validate:    validation.ValidatePassword,
 		HideEntered: true,
 		Mask:        '#',
 	}
@@ -43,7 +44,7 @@ func (c *CLI) GetUser() (models.User, error) {
 func (c *CLI) GetRepeatedPassword() (string, error) {
 	pass := promptui.Prompt{
 		Label:       "Repeat Password",
-		Validate:    validatePassword,
+		Validate:    validation.ValidatePassword,
 		HideEntered: true,
 		Mask:        '#',
 	}

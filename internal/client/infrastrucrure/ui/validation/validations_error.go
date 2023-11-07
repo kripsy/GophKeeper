@@ -1,5 +1,5 @@
 //nolint:gochecknoglobals
-package cli
+package validation
 
 import (
 	"errors"

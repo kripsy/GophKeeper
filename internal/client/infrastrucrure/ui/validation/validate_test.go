@@ -1,7 +1,10 @@
-//nolint:testpackage
-package cli
+package validation_test
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui/validation"
+)
 
 func Test_validateUsername(t *testing.T) {
 	tests := []struct {
@@ -21,7 +24,7 @@ func Test_validateUsername(t *testing.T) {
 		}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := validateUsername(tt.input); (err != nil) != tt.wantErr {
+			if err := validation.ValidateCardNumber(tt.input); (err != nil) != tt.wantErr {
 				t.Errorf("validateUsername() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -47,7 +50,7 @@ func Test_validatePassword(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := validatePassword(tt.input); (err != nil) != tt.wantErr {
+			if err := validation.ValidatePassword(tt.input); (err != nil) != tt.wantErr {
 				t.Errorf("validatePassword() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -78,7 +81,7 @@ func Test_validateCVV(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := validateCVV(tt.input); (err != nil) != tt.wantErr {
+			if err := validation.ValidateCVV(tt.input); (err != nil) != tt.wantErr {
 				t.Errorf("validateCVV() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -109,7 +112,7 @@ func Test_validateCardNumber(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := validateCardNumber(tt.input); (err != nil) != tt.wantErr {
+			if err := validation.ValidateCardNumber(tt.input); (err != nil) != tt.wantErr {
 				t.Errorf("validateCardNumber() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

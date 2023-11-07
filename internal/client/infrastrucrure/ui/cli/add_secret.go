@@ -5,6 +5,7 @@ import (
 
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/filemanager"
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui"
+	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui/validation"
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/manifoldco/promptui"
 )
@@ -83,7 +84,7 @@ func (c *CLI) AddBasicAuth() (filemanager.BasicAuth, error) {
 func (c *CLI) AddCard() (filemanager.CardData, error) {
 	cardNum := promptui.Prompt{
 		Label:       "Card Number",
-		Validate:    validateCardNumber,
+		Validate:    validation.ValidateCardNumber,
 		HideEntered: true,
 	}
 
@@ -95,7 +96,7 @@ func (c *CLI) AddCard() (filemanager.CardData, error) {
 	cardCvv := promptui.Prompt{
 		Label:       "CVV",
 		HideEntered: true,
-		Validate:    validateCVV,
+		Validate:    validation.ValidateCVV,
 		Mask:        '⏀',
 	}
 
