@@ -12,7 +12,7 @@ import (
 
 type Auth interface {
 	IsUserNotExisting(userDit string) bool
-	CreateUser(user *models.User, isLocalStorage bool) (models.UserMeta, error)
+	CreateUser(user *models.User, isSyncStorage bool) (models.UserMeta, error)
 	GetUser(user *models.User) (models.UserMeta, error)
 }
 
@@ -43,9 +43,9 @@ func (a *userAuth) IsUserNotExisting(userDit string) bool {
 
 func (a *userAuth) CreateUser(user *models.User, isSyncStorage bool) (models.UserMeta, error) {
 	meta := models.UserMeta{
-		Username:       user.Username,
-		IsLocalStorage: !isSyncStorage,
-		Data:           make(map[string]models.DataInfo),
+		Username:      user.Username,
+		IsSyncStorage: isSyncStorage,
+		Data:          make(map[string]models.DataInfo),
 	}
 	body, err := json.Marshal(meta)
 	if err != nil {

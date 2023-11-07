@@ -37,7 +37,7 @@ func Test_userAuth_GetUser(t *testing.T) {
 				}
 			},
 			user:    &models.User{Username: Login, Password: Password},
-			want:    models.UserMeta{Username: Login, IsLocalStorage: true, Data: make(models.MetaData)},
+			want:    models.UserMeta{Username: Login, IsSyncStorage: true, Data: make(models.MetaData)},
 			wantErr: false,
 		},
 		{
@@ -83,25 +83,25 @@ func Test_userAuth_CreateUser(t *testing.T) {
 		t.Fatalf("Failed to create NewUserAuth: %v", err)
 	}
 	tests := []struct {
-		name           string
-		auth           filemanager.Auth
-		user           *models.User
-		want           models.UserMeta
-		isLocalStorage bool
-		wantErr        bool
+		name          string
+		auth          filemanager.Auth
+		user          *models.User
+		want          models.UserMeta
+		IsSyncStorage bool
+		wantErr       bool
 	}{
 		{
-			name:           "ok",
-			auth:           auth,
-			user:           &models.User{Username: Login, Password: Password},
-			want:           models.UserMeta{Username: Login, IsLocalStorage: true, Data: make(models.MetaData)},
-			isLocalStorage: true,
-			wantErr:        false,
+			name:          "ok",
+			auth:          auth,
+			user:          &models.User{Username: Login, Password: Password},
+			want:          models.UserMeta{Username: Login, IsSyncStorage: true, Data: make(models.MetaData)},
+			IsSyncStorage: true,
+			wantErr:       false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.auth.CreateUser(tt.user, tt.isLocalStorage)
+			got, err := tt.auth.CreateUser(tt.user, tt.IsSyncStorage)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateUser() error = %v, wantErr %v", err, tt.wantErr)
 

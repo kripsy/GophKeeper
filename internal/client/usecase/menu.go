@@ -5,7 +5,7 @@ import (
 )
 
 func (c *ClientUsecase) InMenu() {
-	switch ui.MenuTable[c.ui.Menu(c.userData.Meta.IsLocalStorage)] {
+	switch ui.MenuTable[c.ui.Menu(c.userData.Meta.IsSyncStorage)] {
 	case ui.SecretsKey:
 		c.getSecrets(c.ui.GetSecret(c.userData.Meta.Data))
 	case ui.AddSecretKey:
