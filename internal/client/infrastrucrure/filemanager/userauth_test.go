@@ -1,7 +1,9 @@
 package filemanager_test
 
 import (
+	"github.com/kripsy/GophKeeper/internal/client/permissions"
 	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -109,6 +111,44 @@ func Test_userAuth_CreateUser(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("CreateUser() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_userAuth_IsUserNotExisting(t *testing.T) {
+	user := "user"
+	defer os.RemoveAll(storageDir)
+	auth, err := filemanager.NewUserAuth(storageDir)
+	if err != nil {
+		t.Fatalf("Failed to create NewUserAuth: %v", err)
+	}
+	if err = os.WriteFile(filepath.Join(storageDir, user), nil, permissions.FileMode); err != nil {
+		t.Fatalf("Failed to create testFile: %v", err)
+	}
+	tests := []struct {
+		name    string
+		auth    filemanager.Auth
+		userDit string
+		want    bool
+	}{
+		{
+			name:    "user existing",
+			auth:    auth,
+			userDit: storageDir + user,
+			want:    false,
+		},
+		{
+			name:    "user not existing",
+			auth:    auth,
+			userDit: storageDir + "test",
+			want:    true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.auth.IsUserNotExisting(tt.userDit); got != tt.want {
+				t.Errorf("IsUserNotExisting() = %v, want %v", got, tt.want)
 			}
 		})
 	}

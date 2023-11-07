@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	testKey  = []byte("superSuperTestScretKeyWithSalt!!")
+	testKey  = []byte("superSuperTestSecretKeyWithSalt!")
 	filename = "test.txt"
 )
 

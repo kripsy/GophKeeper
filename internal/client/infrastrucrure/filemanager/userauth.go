@@ -93,10 +93,6 @@ func (a *userAuth) GetUser(user *models.User) (models.UserMeta, error) {
 		return models.UserMeta{}, fmt.Errorf("%w", err)
 	}
 
-	if user.Username != meta.Username {
-		return models.UserMeta{}, fmt.Errorf("%w", errNotEqualData)
-	}
-
 	user.Key = key
 
 	return meta, nil
