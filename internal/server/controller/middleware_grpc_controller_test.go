@@ -10,7 +10,7 @@ import (
 	"github.com/kripsy/GophKeeper/internal/server/controller"
 	"github.com/kripsy/GophKeeper/internal/server/controller/mocks"
 	"github.com/kripsy/GophKeeper/internal/utils"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -36,11 +36,11 @@ func TestInitMyMiddleware(t *testing.T) {
 			// Переинициализация одиночки перед каждым тестом
 
 			middleware := controller.InitMyMiddleware(mockLogger, tt.secret)
-			assert.NotNil(t, middleware)
+			require.NotNil(t, middleware)
 
 			// Проверяем, что повторный вызов возвращает тот же экземпляр
 			sameMiddleware := controller.InitMyMiddleware(mockLogger, "newSecret")
-			assert.Equal(t, middleware, sameMiddleware)
+			require.Equal(t, middleware, sameMiddleware)
 		})
 	}
 }
@@ -61,10 +61,10 @@ func TestAuthInterceptor(t *testing.T) {
 	userID := 1
 	userName := "testuser"
 	validToken, err := utils.BuildJWTString(userID, userName, secret, time.Hour)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	invalidToken, err := utils.BuildJWTString(userID, userName, secret+"fake", time.Hour)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	tests := []struct {
 		name        string
@@ -163,9 +163,9 @@ func TestAuthInterceptor(t *testing.T) {
 			_, err := middleware.AuthInterceptor(ctx, nil, info, testHandler)
 
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -258,12 +258,12 @@ func TestStreamAuthInterceptor(t *testing.T) {
 				})
 
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 				if err != nil {
-					assert.Equal(t, tt.wantCode, status.Code(err))
+					require.Equal(t, tt.wantCode, status.Code(err))
 				}
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}

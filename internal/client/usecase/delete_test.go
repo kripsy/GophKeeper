@@ -6,12 +6,12 @@ import (
 	"os"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	mock_filemanager "github.com/kripsy/GophKeeper/internal/client/infrastrucrure/filemanager/mocks"
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui"
 	mock_ui "github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui/mocks"
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/rs/zerolog"
-	"go.uber.org/mock/gomock"
 )
 
 func TestClientUsecase_deleteSecret(t *testing.T) {

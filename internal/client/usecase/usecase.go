@@ -119,7 +119,7 @@ func (c *ClientUsecase) checkUserOnServer(userAuth filemanager.Auth) bool {
 		return false
 	}
 
-	meta, err := userAuth.CreateUser(&c.userData.User, false)
+	meta, err := userAuth.CreateUser(&c.userData.User, true)
 	if err != nil {
 		return false
 	}

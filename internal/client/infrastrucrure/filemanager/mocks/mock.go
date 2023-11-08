@@ -7,9 +7,9 @@ package mock_filemanager
 import (
 	reflect "reflect"
 
+	gomock "github.com/golang/mock/gomock"
 	filemanager "github.com/kripsy/GophKeeper/internal/client/infrastrucrure/filemanager"
 	models "github.com/kripsy/GophKeeper/internal/models"
-	gomock "go.uber.org/mock/gomock"
 )
 
 // MockFileStorage is a mock of FileStorage interface.
@@ -61,6 +61,20 @@ func (m *MockFileStorage) AddToStorage(name string, data filemanager.Data, info 
 func (mr *MockFileStorageMockRecorder) AddToStorage(name, data, info interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddToStorage", reflect.TypeOf((*MockFileStorage)(nil).AddToStorage), name, data, info)
+}
+
+// DeleteByIOs mocks base method.
+func (m *MockFileStorage) DeleteByIDs(ids []string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteByIDs", ids)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteByIOs indicates an expected call of DeleteByIOs.
+func (mr *MockFileStorageMockRecorder) DeleteByIOs(ids interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteByIDs", reflect.TypeOf((*MockFileStorage)(nil).DeleteByIDs), ids)
 }
 
 // DeleteByName mocks base method.

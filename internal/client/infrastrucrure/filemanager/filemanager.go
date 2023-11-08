@@ -31,6 +31,7 @@ type FileStorage interface {
 	ReadEncryptedByName(name string) (chan []byte, error)
 	UpdateDataByName(name string, data Data) error
 	UpdateInfoByName(name string, info models.DataInfo) error
+	DeleteByIDs(ids []string) error
 	DeleteByName(name string) error
 }
 
@@ -211,6 +212,35 @@ func (fm *FileManager) DeleteByName(name string) error {
 	fm.Meta.DeletedData[info.DataID] = struct{}{}
 
 	return fm.saveMetaData()
+}
+
+func (fm *FileManager) DeleteByIDs(ids []string) error {
+	var delErr error
+	for _, id := range ids {
+		if _, err := os.Stat(filepath.Join(fm.storageDir, id)); !os.IsNotExist(err) {
+			err := os.Remove(filepath.Join(fm.storageDir, id))
+			if err != nil {
+				delErr = fmt.Errorf("%w, %s: %w", delErr, id, err)
+			}
+		}
+
+	finder:
+		for name, info := range fm.Meta.Data {
+			if info.DataID == id {
+				delete(fm.Meta.Data, name)
+
+				break finder
+			}
+		}
+	}
+	if err := fm.saveMetaData(); err != nil {
+		delErr = fmt.Errorf("%w, save meta err: %w", delErr, err)
+	}
+	if delErr != nil {
+		return fmt.Errorf("%w", delErr)
+	}
+
+	return nil
 }
 
 func (fm *FileManager) saveMetaData() error {

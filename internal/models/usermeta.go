@@ -50,3 +50,9 @@ func (md *UserMeta) GetHash() error { // todo delete
 
 	return nil
 }
+
+func (d Deleted) IsDeleted(dataID string) bool {
+	_, deleted := d[dataID]
+
+	return deleted
+}

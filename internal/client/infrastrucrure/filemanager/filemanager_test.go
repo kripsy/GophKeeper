@@ -489,7 +489,7 @@ func TestFileManager_DeleteByName(t *testing.T) {
 		{
 			name: "ok",
 			storage: func() filemanager.FileStorage {
-				meta := models.UserMeta{Data: make(models.MetaData)}
+				meta := models.UserMeta{Data: make(models.MetaData), DeletedData: make(models.Deleted)}
 				testInfo := info
 				testInfo.DataID = filename
 				meta.Data["testData"] = testInfo
@@ -509,7 +509,7 @@ func TestFileManager_DeleteByName(t *testing.T) {
 		{
 			name: "failed if secret not exist",
 			storage: func() filemanager.FileStorage {
-				meta := models.UserMeta{Data: make(models.MetaData)}
+				meta := models.UserMeta{Data: make(models.MetaData), DeletedData: make(models.Deleted)}
 				fs, err := filemanager.NewFileManager(storageDir, userDir, userDir, meta, testKey)
 				if err != nil {
 					t.Fatalf("Failed to create FileManager: %v", err)

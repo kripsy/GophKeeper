@@ -64,6 +64,8 @@ func (c *ClientUsecase) synchronizeWithServer(ctx context.Context, syncKey strin
 		return nil
 	}
 
+	defer c.syncDeletedSecret(serverMeta.DeletedData)
+
 	toDownload, toUpload := findDifferences(c.userData.Meta, *serverMeta)
 	if len(toUpload) == 0 && len(toDownload) == 0 {
 		return nil
@@ -101,14 +103,21 @@ func (c *ClientUsecase) uploadMeta(ctx context.Context, syncKey string) error {
 }
 
 func (c *ClientUsecase) syncDeletedSecret(deleted models.Deleted) {
-	//	var needDeleted []string
+	var needDeleted []string
 	for dataID := range deleted {
 		if _, ok := c.userData.Meta.DeletedData[dataID]; !ok {
 			c.userData.Meta.DeletedData[dataID] = struct{}{}
-			//	needDeleted = append(needDeleted, dataID)
+			needDeleted = append(needDeleted, dataID)
 		}
 	}
 
+	if len(needDeleted) == 0 {
+		return
+	}
+
+	if err := c.fileManager.DeleteByIDs(needDeleted); err != nil {
+		c.log.Err(err).Msg("failed sync deleted secret")
+	}
 }
 
 func (c *ClientUsecase) uploadSecrets(ctx context.Context, syncKey string, toUpload models.MetaData) error {
@@ -255,23 +264,28 @@ func findDifferences(local, server models.UserMeta) (needDownload, needUpload mo
 		serverData[data.DataID] = data
 	}
 
-	// проверяем данные сервера, если данные не обнаружены или устарели добавляем в список на скачивание
+	// проверяем данные сервера, пропускаем удаленные локально.
+	// если данные не обнаружены или устарели добавляем в список на скачивание
 	for dataID, sData := range serverData {
+		if local.DeletedData.IsDeleted(dataID) {
+			continue
+		}
 		lData, found := localData[dataID]
 		if !found || lData.UpdatedAt.Before(sData.UpdatedAt) {
-			if _, deleted := local.DeletedData[dataID]; !deleted {
-				needDownload[dataID] = sData
-			}
+			needDownload[dataID] = sData
 		}
 	}
 
-	// проверяем локальные данные, если данные не обнаружены или устарели добавляем в список на выгрузку
+	// проверяем локальные данные, пропускаем удаленные на сервере.
+	// если данные не обнаружены или устарели добавляем в список на выгрузку
 	for dataID, lData := range localData {
+		if server.DeletedData.IsDeleted(dataID) {
+			continue
+		}
+
 		sData, found := serverData[dataID]
 		if !found || sData.UpdatedAt.Before(lData.UpdatedAt) {
-			if _, deleted := server.DeletedData[dataID]; !deleted {
-				needUpload[dataID] = lData
-			}
+			needUpload[dataID] = lData
 		}
 	}
 

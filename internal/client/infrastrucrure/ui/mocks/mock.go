@@ -7,9 +7,9 @@ package mock_ui
 import (
 	reflect "reflect"
 
+	gomock "github.com/golang/mock/gomock"
 	filemanager "github.com/kripsy/GophKeeper/internal/client/infrastrucrure/filemanager"
 	models "github.com/kripsy/GophKeeper/internal/models"
-	gomock "go.uber.org/mock/gomock"
 )
 
 // MockUserInterface is a mock of UserInterface interface.
@@ -223,17 +223,17 @@ func (mr *MockUserInterfaceMockRecorder) IsLocalStorage() *gomock.Call {
 }
 
 // Menu mocks base method.
-func (m *MockUserInterface) Menu(isLocalStorage bool) int {
+func (m *MockUserInterface) Menu(isSyncStorage bool) int {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Menu", isLocalStorage)
+	ret := m.ctrl.Call(m, "Menu", isSyncStorage)
 	ret0, _ := ret[0].(int)
 	return ret0
 }
 
 // Menu indicates an expected call of Menu.
-func (mr *MockUserInterfaceMockRecorder) Menu(isLocalStorage interface{}) *gomock.Call {
+func (mr *MockUserInterfaceMockRecorder) Menu(isSyncStorage interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Menu", reflect.TypeOf((*MockUserInterface)(nil).Menu), isLocalStorage)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Menu", reflect.TypeOf((*MockUserInterface)(nil).Menu), isSyncStorage)
 }
 
 // PrintErr mocks base method.

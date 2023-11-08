@@ -38,8 +38,9 @@ func Test_userAuth_GetUser(t *testing.T) {
 					t.Fatalf("Failed prepare user: %v", err)
 				}
 			},
-			user:    &models.User{Username: Login, Password: Password},
-			want:    models.UserMeta{Username: Login, IsSyncStorage: true, Data: make(models.MetaData)},
+			user: &models.User{Username: Login, Password: Password},
+			want: models.UserMeta{Username: Login, IsSyncStorage: true,
+				Data: make(models.MetaData), DeletedData: make(models.Deleted)},
 			wantErr: false,
 		},
 		{
@@ -64,7 +65,6 @@ func Test_userAuth_GetUser(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.prepareFunc()
-
 			got, err := tt.auth.GetUser(tt.user)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetUser() error = %v, wantErr %v", err, tt.wantErr)
@@ -93,10 +93,11 @@ func Test_userAuth_CreateUser(t *testing.T) {
 		wantErr       bool
 	}{
 		{
-			name:          "ok",
-			auth:          auth,
-			user:          &models.User{Username: Login, Password: Password},
-			want:          models.UserMeta{Username: Login, IsSyncStorage: true, Data: make(models.MetaData)},
+			name: "ok",
+			auth: auth,
+			user: &models.User{Username: Login, Password: Password},
+			want: models.UserMeta{Username: Login, IsSyncStorage: true,
+				Data: make(models.MetaData), DeletedData: make(models.Deleted)},
 			IsSyncStorage: true,
 			wantErr:       false,
 		},
