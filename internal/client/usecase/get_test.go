@@ -148,6 +148,36 @@ func TestClientUsecase_getSecrets(t *testing.T) {
 			args: args{secretName: secretName, success: true},
 		},
 		{
+			name: "get file",
+			usecase: func() ClientUsecase {
+				testDataInfo := dataInfo
+				testDataInfo.DataType = filemanager.FileType
+				testDataInfo.FileName = &file
+				data := filemanager.File{Data: []byte("test")}
+				body, err := json.Marshal(data)
+				if err != nil {
+					t.Fatalf("marshal data err: %v", err)
+				}
+
+				fm := mock_filemanager.NewMockFileStorage(mockCtrl)
+				fm.EXPECT().GetByName(secretName).Return(body, testDataInfo, nil)
+
+				cli := mock_ui.NewMockUserInterface(mockCtrl)
+				cli.EXPECT().UploadFileTo("").Return("./../../../../../../../../..//../../../../../..test/../../..//", true)
+				cli.EXPECT().PrintErr(ui.GetErr)
+
+				usecase := ClientUsecase{
+					userData:    &models.UserData{},
+					fileManager: fm,
+					ui:          cli,
+					log:         log,
+				}
+
+				return usecase
+			}(),
+			args: args{secretName: secretName, success: true},
+		},
+		{
 			name: "get file path err",
 			usecase: func() ClientUsecase {
 				testDataInfo := dataInfo

@@ -17,7 +17,7 @@ import (
 )
 
 func TestClientUsecase_updateSecret(t *testing.T) {
-	file := "path"
+	file := "pathf"
 	secretName := "test"
 	testErr := fmt.Errorf("error")
 

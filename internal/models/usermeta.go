@@ -1,9 +1,6 @@
 package models
 
 import (
-	"crypto/sha256"
-	"encoding/json"
-	"fmt"
 	"path/filepath"
 	"time"
 )
@@ -37,18 +34,6 @@ func (di *DataInfo) SetFileName(path string) {
 		return
 	}
 	di.FileName = &fileName
-}
-
-//nolint:godox
-func (md *UserMeta) GetHash() error { // todo delete
-	meta, err := json.Marshal(md.Data)
-	if err != nil {
-		return fmt.Errorf("%w", err)
-	}
-
-	md.HashData = fmt.Sprintf("%x", sha256.Sum256(meta))
-
-	return nil
 }
 
 func (d Deleted) IsDeleted(dataID string) bool {

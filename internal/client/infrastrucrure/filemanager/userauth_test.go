@@ -61,6 +61,17 @@ func Test_userAuth_GetUser(t *testing.T) {
 			user:    &models.User{Username: Login, Password: "invalidPassword"},
 			wantErr: true,
 		},
+		{
+			name: "failed invalid password",
+			auth: auth,
+			prepareFunc: func() {
+				if _, err = auth.CreateUser(&models.User{Username: Login, Password: Password}, true); err != nil {
+					t.Fatalf("Failed prepare user: %v", err)
+				}
+			},
+			user:    &models.User{Username: Login, Password: "invalidPassword"},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -100,6 +111,16 @@ func Test_userAuth_CreateUser(t *testing.T) {
 				Data: make(models.MetaData), DeletedData: make(models.Deleted)},
 			IsSyncStorage: true,
 			wantErr:       false,
+		},
+		{
+			name: "not ok",
+			auth: auth,
+			user: &models.User{
+				Username: "../../../../../../../../../..//../../../../../..test/../../..//",
+				Password: Password},
+			want:          models.UserMeta{},
+			IsSyncStorage: true,
+			wantErr:       true,
 		},
 	}
 	for _, tt := range tests {
@@ -150,6 +171,35 @@ func Test_userAuth_IsUserNotExisting(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.auth.IsUserNotExisting(tt.userDit); got != tt.want {
 				t.Errorf("IsUserNotExisting() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNewUserAuth(t *testing.T) {
+	tests := []struct {
+		name     string
+		userPath string
+		wantErr  bool
+	}{
+		{
+			name:     "ok",
+			userPath: "./..",
+			wantErr:  false,
+		},
+		{
+			name:     "not ok",
+			userPath: "../../../../../../../../../..//../../../../../..test/../../..//",
+			wantErr:  true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := filemanager.NewUserAuth(tt.userPath)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("NewUserAuth() error = %v, wantErr %v", err, tt.wantErr)
+
+				return
 			}
 		})
 	}
