@@ -1,4 +1,4 @@
-//nolint:nonamedreturns, durationcheck
+//nolint:nonamedreturns,durationcheck,nolintlint
 package usecase
 
 import (
@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui"
@@ -14,7 +13,7 @@ import (
 	"github.com/kripsy/GophKeeper/internal/utils"
 )
 
-const help = time.Duration(4)
+// const help = time.Duration(4)
 
 func (c *ClientUsecase) sync() {
 	defer c.InMenu()
@@ -56,7 +55,7 @@ func (c *ClientUsecase) sync() {
 		return
 	}
 
-	time.Sleep(time.Second * help)
+	// time.Sleep(time.Second * help)
 	if err := c.grpc.ApplyChanges(ctx, syncKey); err != nil {
 		c.ui.PrintErr(ui.SyncErr)
 		c.log.Err(err).Msg("failed apply changes")

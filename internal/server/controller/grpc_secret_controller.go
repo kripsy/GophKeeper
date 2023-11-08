@@ -17,11 +17,17 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-//nolint:cyclop
+//nolint:cyclop,gocognit
 func (s *GrpcServer) MultipartUploadFile(stream pb.GophKeeperService_MultipartUploadFileServer) error {
 	s.logger.Debug("Start MultipartUploadFile")
 
-	ctx := stream.Context()
+	// streamCtx := stream.Context()
+	ctx, cancel := context.WithCancel(stream.Context())
+	defer func() {
+		s.logger.Debug("Defer context")
+		cancel()
+	}()
+
 	userID, ok := utils.ExtractUserIDFromContext(ctx)
 	if !ok {
 		s.logger.Error("cannot get userID from context")
@@ -97,7 +103,7 @@ func (s *GrpcServer) MultipartUploadFile(stream pb.GophKeeperService_MultipartUp
 
 	go func() {
 		defer close(errChanUsecase)
-		success, err := s.secretUseCase.MultipartUploadFile(stream.Context(), reqChan, bucketName)
+		success, err := s.secretUseCase.MultipartUploadFile(ctx, reqChan, bucketName)
 		if err != nil {
 			s.logger.Error("Error in s.secretUseCase.MultipartUploadFile", zap.Error(err))
 			errChanUsecase <- err
@@ -112,27 +118,35 @@ func (s *GrpcServer) MultipartUploadFile(stream pb.GophKeeperService_MultipartUp
 		}
 		doneChan <- true
 	}()
+loop:
+	for {
+		select {
+		case <-doneChan:
+			s.logger.Debug("end upload")
 
-	select {
-	case <-doneChan:
-		s.logger.Debug("end upload")
+			break loop
 
-	case err := <-errChanStream:
+		case err := <-errChanStream:
 
-		if err != nil {
-			s.logger.Debug("was some error in receive data", zap.Any("msg", err))
+			if err != nil {
+				s.logger.Error("was some error in receive data", zap.Any("msg", err))
 
-			return fmt.Errorf("%w", status.Error(codes.Internal, err.Error()))
-		}
+				return fmt.Errorf("%w", status.Error(codes.Internal, err.Error()))
+			}
+			s.logger.Debug("Error nil")
 
-	case err := <-errChanUsecase:
+		case err := <-errChanUsecase:
 
-		if err != nil {
-			s.logger.Debug("was some error in usecase", zap.Any("msg", err))
+			if err != nil {
+				s.logger.Error("was some error in usecase", zap.Any("msg", err))
 
-			return fmt.Errorf("%w", status.Error(codes.Internal, err.Error()))
+				return fmt.Errorf("%w", status.Error(codes.Internal, err.Error()))
+			}
+			s.logger.Debug("Error nil")
 		}
 	}
+
+	s.logger.Debug("Send and close")
 	err = stream.SendAndClose(&pb.MultipartUploadFileResponse{
 		FileId: fileID,
 	})

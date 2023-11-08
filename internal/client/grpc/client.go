@@ -150,6 +150,14 @@ func (c *Grpc) UploadFile(ctx context.Context, fileName string, hash string, syn
 			return fmt.Errorf("UploadFile: %w", err)
 		}
 	}
+	//nolint:ineffassign,nolintlint
+	_, err = stream.CloseAndRecv()
+	if err != nil {
+		c.log.Err(err).Msg("failed upload")
+
+		return fmt.Errorf("UploadFile: %w", err)
+	}
+
 	c.log.Debug().Msg("UploadFile")
 
 	return nil
