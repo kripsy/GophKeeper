@@ -68,11 +68,7 @@ func (c *ClientUsecase) SetUser() error {
 				continue
 			}
 
-			if err = c.handleUserRegistration(userAuth); err != nil {
-				return err
-			}
-
-			return nil
+			return c.handleUserRegistration(userAuth)
 		}
 		if err = c.handleUserLogin(userAuth); err != nil {
 			c.log.Err(err).Msg("failed handle user login")

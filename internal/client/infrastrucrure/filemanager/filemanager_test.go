@@ -530,6 +530,69 @@ func TestFileManager_DeleteByName(t *testing.T) {
 	}
 }
 
+func TestFileManager_DeleteByIDs(t *testing.T) {
+	info := models.DataInfo{
+		Name:        "testData",
+		Description: "Test data description",
+	}
+	defer os.RemoveAll(storageDir)
+
+	tests := []struct {
+		name    string
+		storage filemanager.FileStorage
+		ids     []string
+		wantErr bool
+	}{
+		{
+			name: "ok",
+			storage: func() filemanager.FileStorage {
+				meta := models.UserMeta{Data: make(models.MetaData), DeletedData: make(models.Deleted)}
+
+				testInfo := info
+				testInfo.DataID = "1"
+				meta.Data["testData"] = testInfo
+
+				fs, err := filemanager.NewFileManager(storageDir, userDir, userDir, meta, testKey)
+				if err != nil {
+					t.Fatalf("Failed to create FileManager: %v", err)
+				}
+				if err = os.WriteFile(filepath.Join(storageDir, "1"), nil, permissions.FileMode); err != nil {
+					t.Fatalf("Failed to create testFile: %v", err)
+				}
+
+				return fs
+			}(),
+			ids:     []string{"1"},
+			wantErr: false,
+		},
+		{
+			name: "failed with invalid key",
+			storage: func() filemanager.FileStorage {
+				meta := models.UserMeta{Data: make(models.MetaData), DeletedData: make(models.Deleted)}
+				testInfo := info
+				testInfo.DataID = "1"
+				meta.Data["testData"] = testInfo
+
+				fs, err := filemanager.NewFileManager(storageDir, userDir, userDir, meta, []byte(""))
+				if err != nil {
+					t.Fatalf("Failed to create FileManager: %v", err)
+				}
+
+				return fs
+			}(),
+			ids:     []string{"1"},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := tt.storage.DeleteByIDs(tt.ids); (err != nil) != tt.wantErr {
+				t.Errorf("DeleteByName() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
 func TestFileManager_AddEncryptedToStorage(t *testing.T) {
 	info := models.DataInfo{
 		Name:        "NewTestData",
