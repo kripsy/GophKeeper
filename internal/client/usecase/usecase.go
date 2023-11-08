@@ -67,6 +67,7 @@ func (c *ClientUsecase) SetUser() error {
 			if c.ui.TryAgain() {
 				continue
 			}
+			//nolint:revive
 			if err = c.handleUserRegistration(userAuth); err != nil {
 				return err
 			}
