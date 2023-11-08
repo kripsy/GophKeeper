@@ -20,7 +20,7 @@ type userAuth struct {
 	userFilePath string
 }
 
-//nolint:revive
+//nolint:revive,nolintlint
 func NewUserAuth(userPath string) (*userAuth, error) {
 	if _, err := os.Stat(userPath); os.IsNotExist(err) {
 		if err = os.MkdirAll(userPath, permissions.DirMode); err != nil {

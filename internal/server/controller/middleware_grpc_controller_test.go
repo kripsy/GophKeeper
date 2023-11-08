@@ -2,6 +2,7 @@ package controller_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -123,13 +124,14 @@ func TestAuthInterceptor(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			var ErrContext = errors.New("context error")
 			testHandler := func(ctx context.Context, req interface{}) (interface{}, error) {
 				if tt.isProtected {
 					if ctx.Value(utils.USERNAMECONTEXTKEY) != userName {
-						t.Errorf("Username in context is incorrect")
+						return "", ErrContext
 					}
 					if ctx.Value(utils.USERIDCONTEXTKEY) != userID {
-						t.Errorf("UserID in context is incorrect")
+						return "", ErrContext
 					}
 				}
 
@@ -159,8 +161,10 @@ func TestAuthInterceptor(t *testing.T) {
 
 			_, err := middleware.AuthInterceptor(ctx, nil, info, testHandler)
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("AuthInterceptor() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
