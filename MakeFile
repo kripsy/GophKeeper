@@ -42,6 +42,8 @@ genmocks:
 	mockgen -destination=internal/server/controller/mocks/mock_gophkeeperservice_multipartdownloadfileserver.go -package=mocks github.com/kripsy/GophKeeper/gen/pkg/api/GophKeeper/v1 GophKeeperService_MultipartDownloadFileServer;
 # generate SyncStatus for controller	
 	mockgen -destination=internal/server/controller/mocks/mock_SyncStatus.go -package=mocks github.com/kripsy/GophKeeper/internal/server/controller SyncStatus;
+# generate ServerStream for controller	
+	mockgen -destination=internal/server/controller/mocks/mock_server_stream.go -package=mocks google.golang.org/grpc ServerStream;
 
 
 lint-all:
