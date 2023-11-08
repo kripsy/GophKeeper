@@ -45,7 +45,8 @@ func (a *userAuth) CreateUser(user *models.User, isSyncStorage bool) (models.Use
 	meta := models.UserMeta{
 		Username:      user.Username,
 		IsSyncStorage: isSyncStorage,
-		Data:          make(map[string]models.DataInfo),
+		Data:          make(models.MetaData),
+		DeletedData:   make(models.Deleted),
 	}
 	body, err := json.Marshal(meta)
 	if err != nil {

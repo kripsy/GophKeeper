@@ -17,7 +17,7 @@ import (
 )
 
 func TestClientUsecase_createSecret(t *testing.T) {
-	file := "path"
+	file := "filepath"
 	testErr := fmt.Errorf("error")
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()

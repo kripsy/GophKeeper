@@ -13,8 +13,6 @@ import (
 	"github.com/kripsy/GophKeeper/internal/utils"
 )
 
-// const help = time.Duration(4)
-
 func (c *ClientUsecase) sync() {
 	defer c.InMenu()
 	if c.grpc.IsNotAvailable() || !c.grpc.TryToConnect() {
@@ -55,7 +53,6 @@ func (c *ClientUsecase) sync() {
 		return
 	}
 
-	// time.Sleep(time.Second * help)
 	if err := c.grpc.ApplyChanges(ctx, syncKey); err != nil {
 		c.ui.PrintErr(ui.SyncErr)
 		c.log.Err(err).Msg("failed apply changes")
@@ -63,7 +60,11 @@ func (c *ClientUsecase) sync() {
 }
 
 func (c *ClientUsecase) synchronizeWithServer(ctx context.Context, syncKey string, serverMeta *models.UserMeta) error {
-	toDownload, toUpload := findDifferences(c.userData.Meta.Data, serverMeta.Data)
+	if nil == serverMeta {
+		return nil
+	}
+
+	toDownload, toUpload := findDifferences(c.userData.Meta, *serverMeta)
 	if len(toUpload) == 0 && len(toDownload) == 0 {
 		return nil
 	}
@@ -97,6 +98,17 @@ func (c *ClientUsecase) uploadMeta(ctx context.Context, syncKey string) error {
 	}
 
 	return nil
+}
+
+func (c *ClientUsecase) syncDeletedSecret(deleted models.Deleted) {
+	//	var needDeleted []string
+	for dataID := range deleted {
+		if _, ok := c.userData.Meta.DeletedData[dataID]; !ok {
+			c.userData.Meta.DeletedData[dataID] = struct{}{}
+			//	needDeleted = append(needDeleted, dataID)
+		}
+	}
+
 }
 
 func (c *ClientUsecase) uploadSecrets(ctx context.Context, syncKey string, toUpload models.MetaData) error {
@@ -228,17 +240,18 @@ func (c *ClientUsecase) blockSync(ctx context.Context, syncKey string) error {
 	return nil
 }
 
-func findDifferences(local, server models.MetaData) (needDownload, needUpload models.MetaData) {
+//nolint:cyclop
+func findDifferences(local, server models.UserMeta) (needDownload, needUpload models.MetaData) {
 	needDownload = make(models.MetaData)
 	needUpload = make(models.MetaData)
 
 	localData := make(map[string]models.DataInfo)
 	serverData := make(map[string]models.DataInfo)
 
-	for _, data := range local {
+	for _, data := range local.Data {
 		localData[data.DataID] = data
 	}
-	for _, data := range server {
+	for _, data := range server.Data {
 		serverData[data.DataID] = data
 	}
 
@@ -246,7 +259,9 @@ func findDifferences(local, server models.MetaData) (needDownload, needUpload mo
 	for dataID, sData := range serverData {
 		lData, found := localData[dataID]
 		if !found || lData.UpdatedAt.Before(sData.UpdatedAt) {
-			needDownload[dataID] = sData
+			if _, deleted := local.DeletedData[dataID]; !deleted {
+				needDownload[dataID] = sData
+			}
 		}
 	}
 
@@ -254,7 +269,9 @@ func findDifferences(local, server models.MetaData) (needDownload, needUpload mo
 	for dataID, lData := range localData {
 		sData, found := serverData[dataID]
 		if !found || sData.UpdatedAt.Before(lData.UpdatedAt) {
-			needUpload[dataID] = lData
+			if _, deleted := server.DeletedData[dataID]; !deleted {
+				needUpload[dataID] = lData
+			}
 		}
 	}
 

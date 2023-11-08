@@ -158,8 +158,6 @@ func (c *Grpc) UploadFile(ctx context.Context, fileName string, hash string, syn
 		return fmt.Errorf("UploadFile: %w", err)
 	}
 
-	c.log.Debug().Msg("UploadFile")
-
 	return nil
 }
 

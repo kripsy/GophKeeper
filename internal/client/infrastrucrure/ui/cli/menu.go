@@ -5,11 +5,11 @@ import (
 	"github.com/manifoldco/promptui"
 )
 
-func (c *CLI) Menu(isLocalStorage bool) int {
+func (c *CLI) Menu(isSyncStorage bool) int {
 	defer c.Clear()
 
 	items := ui.MenuTable
-	if isLocalStorage {
+	if !isSyncStorage {
 		items = ui.LocalMenuTable
 	}
 	action := promptui.Select{
@@ -24,10 +24,10 @@ func (c *CLI) Menu(isLocalStorage bool) int {
 
 	id, _, err := action.Run()
 	if err != nil {
-		return c.Menu(isLocalStorage)
+		return c.Menu(isSyncStorage)
 	}
 
-	if isLocalStorage {
+	if !isSyncStorage {
 		return id + 1
 	}
 

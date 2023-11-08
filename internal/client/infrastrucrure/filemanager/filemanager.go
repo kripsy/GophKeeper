@@ -208,6 +208,7 @@ func (fm *FileManager) DeleteByName(name string) error {
 	}
 
 	delete(fm.Meta.Data, name)
+	fm.Meta.DeletedData[info.DataID] = struct{}{}
 
 	return fm.saveMetaData()
 }

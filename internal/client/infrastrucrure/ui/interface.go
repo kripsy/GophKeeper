@@ -7,7 +7,7 @@ import (
 
 type UserInterface interface {
 	Auth
-	Menu(isLocalStorage bool) int
+	Menu(isSyncStorage bool) int
 	SecretManager
 	FileDirector
 	Sync(stop <-chan struct{})
