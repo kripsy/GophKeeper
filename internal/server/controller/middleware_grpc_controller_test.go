@@ -46,6 +46,8 @@ func TestInitMyMiddleware(t *testing.T) {
 }
 
 func TestAuthInterceptor(t *testing.T) {
+	//nolint:goerr113
+	var ErrContext = errors.New("context error")
 	const (
 		loginMethod    = "/pkg.api.gophkeeper.v1.GophKeeperService/Login"
 		registerMethod = "/pkg.api.gophkeeper.v1.GophKeeperService/Register"
@@ -124,7 +126,6 @@ func TestAuthInterceptor(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var ErrContext = errors.New("context error")
 			testHandler := func(ctx context.Context, req interface{}) (interface{}, error) {
 				if tt.isProtected {
 					if ctx.Value(utils.USERNAMECONTEXTKEY) != userName {
