@@ -83,7 +83,7 @@ func (c *CLI) TryAgain() bool {
 	return false
 }
 
-func (c *CLI) IsLocalStorage() bool {
+func (c *CLI) IsSyncStorage() bool {
 	isLocal := promptui.Prompt{
 		Label:       "Do you want to synchronize your secrets across devices?",
 		HideEntered: true,

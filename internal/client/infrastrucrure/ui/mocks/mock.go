@@ -209,9 +209,9 @@ func (mr *MockUserInterfaceMockRecorder) GetUser() *gomock.Call {
 }
 
 // IsLocalStorage mocks base method.
-func (m *MockUserInterface) IsLocalStorage() bool {
+func (m *MockUserInterface) IsSyncStorage() bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsLocalStorage")
+	ret := m.ctrl.Call(m, "IsSyncStorage")
 	ret0, _ := ret[0].(bool)
 	return ret0
 }
@@ -219,7 +219,7 @@ func (m *MockUserInterface) IsLocalStorage() bool {
 // IsLocalStorage indicates an expected call of IsLocalStorage.
 func (mr *MockUserInterfaceMockRecorder) IsLocalStorage() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsLocalStorage", reflect.TypeOf((*MockUserInterface)(nil).IsLocalStorage))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsSyncStorage", reflect.TypeOf((*MockUserInterface)(nil).IsSyncStorage))
 }
 
 // Menu mocks base method.
@@ -359,9 +359,9 @@ func (mr *MockAuthMockRecorder) GetUser() *gomock.Call {
 }
 
 // IsLocalStorage mocks base method.
-func (m *MockAuth) IsLocalStorage() bool {
+func (m *MockAuth) IsSyncStorage() bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsLocalStorage")
+	ret := m.ctrl.Call(m, "IsSyncStorage")
 	ret0, _ := ret[0].(bool)
 	return ret0
 }
@@ -369,7 +369,7 @@ func (m *MockAuth) IsLocalStorage() bool {
 // IsLocalStorage indicates an expected call of IsLocalStorage.
 func (mr *MockAuthMockRecorder) IsLocalStorage() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsLocalStorage", reflect.TypeOf((*MockAuth)(nil).IsLocalStorage))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsSyncStorage", reflect.TypeOf((*MockAuth)(nil).IsSyncStorage))
 }
 
 // TryAgain mocks base method.

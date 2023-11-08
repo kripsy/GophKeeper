@@ -20,7 +20,7 @@ type Auth interface {
 	GetUser() (models.User, error)
 	GetRepeatedPassword() (string, error)
 	TryAgain() bool
-	IsLocalStorage() bool
+	IsSyncStorage() bool
 }
 
 type SecretCreator interface {

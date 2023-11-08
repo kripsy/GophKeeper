@@ -149,7 +149,7 @@ func (c *ClientUsecase) handleUserRegistration(userAuth filemanager.Auth) error 
 
 	var isSyncStorage bool
 	if c.grpc.IsAvailable() {
-		isSyncStorage = c.ui.IsLocalStorage()
+		isSyncStorage = c.ui.IsSyncStorage()
 	}
 	if isSyncStorage {
 		hash, err := c.userData.User.GetHashedPass()
@@ -180,7 +180,8 @@ func (c *ClientUsecase) handleUserLogin(userAuth filemanager.Auth) error {
 	var err error
 	switch c.grpc.TryToConnect() {
 	case true:
-		hash, err := c.userData.User.GetHashedPass()
+		var hash string
+		hash, err = c.userData.User.GetHashedPass()
 		if err != nil {
 			c.log.Err(err).Msg("failed get hashed password")
 
