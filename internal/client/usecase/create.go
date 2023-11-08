@@ -11,7 +11,6 @@ import (
 )
 
 func (c *ClientUsecase) createSecret(secretType int, success bool) {
-	defer c.InMenu()
 	if !success {
 		return
 	}
@@ -52,16 +51,13 @@ func (c *ClientUsecase) getSecretrData(secretType int) (filemanager.Data, models
 		data, err = c.ui.AddCard()
 	case filemanager.FileType:
 		filePath = c.ui.GetFilePath()
-		body, err := os.ReadFile(filePath)
-		if err == nil {
-			data = filemanager.File{Data: body}
-		}
+		var body []byte
+		body, err = os.ReadFile(filePath)
+		data = filemanager.File{Data: body}
 	}
-
 	if err != nil {
 		return nil, models.DataInfo{}, fmt.Errorf("%w", err)
 	}
-
 	info, err := c.ui.AddMetaInfo()
 	if err != nil {
 		return nil, models.DataInfo{}, fmt.Errorf("%w", err)

@@ -11,7 +11,6 @@ import (
 )
 
 func (c *ClientUsecase) updateSecret(secretName string, updateType int, success bool) {
-	defer c.InMenu()
 	if !success {
 		return
 	}
@@ -70,18 +69,18 @@ func (c *ClientUsecase) getUpdatedData(secretName string, dataType int) (fileman
 		path := c.ui.GetFilePath()
 		newInfo := models.DataInfo{}
 		newInfo.SetFileName(path)
-		body, err := os.ReadFile(path)
+		var body []byte
+		body, err = os.ReadFile(path)
 		if err != nil {
 			return nil, fmt.Errorf("%w", err)
 		}
+		data = filemanager.File{Data: body}
 
 		err = c.fileManager.UpdateInfoByName(secretName, newInfo)
-		if err != nil {
-			return nil, fmt.Errorf("%w", err)
-		}
-
-		data = filemanager.File{Data: body}
+	}
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
 	}
 
-	return data, fmt.Errorf("%w", err)
+	return data, nil
 }

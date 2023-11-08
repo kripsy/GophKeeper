@@ -3,7 +3,6 @@ package usecase
 import "github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui"
 
 func (c *ClientUsecase) deleteSecret(secretName string, success bool) {
-	defer c.InMenu()
 	if !success {
 		return
 	}

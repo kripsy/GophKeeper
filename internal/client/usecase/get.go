@@ -14,7 +14,6 @@ import (
 )
 
 func (c *ClientUsecase) getSecrets(secretName string, success bool) {
-	defer c.InMenu()
 	if !success {
 		return
 	}

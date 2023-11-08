@@ -1,3 +1,4 @@
+//nolint:staticcheck
 package usecase
 
 import (
@@ -21,4 +22,6 @@ func (c *ClientUsecase) InMenu() {
 	case ui.ExitKey:
 		c.ui.Exit()
 	}
+
+	c.InMenu()
 }
