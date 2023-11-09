@@ -214,6 +214,7 @@ func TestClientUsecase_SetUser(t *testing.T) {
 				cli := mock_ui.NewMockUserInterface(mockCtrl)
 				fm := mock_filemanager.NewMockFileStorage(mockCtrl)
 				grpc := mock_grpc.NewMockClient(mockCtrl)
+				cli.EXPECT().GetUser().Return(models.User{}, testErr)
 				cli.EXPECT().GetUser().Return(models.User{Username: "username", Password: "password"}, nil)
 				grpc.EXPECT().TryToConnect().Return(false)
 
@@ -228,6 +229,26 @@ func TestClientUsecase_SetUser(t *testing.T) {
 
 				return usecase
 			}(),
+		},
+		{
+			name: "login with path err",
+			usecase: func() ClientUsecase {
+				cli := mock_ui.NewMockUserInterface(mockCtrl)
+				fm := mock_filemanager.NewMockFileStorage(mockCtrl)
+				grpc := mock_grpc.NewMockClient(mockCtrl)
+
+				usecase := ClientUsecase{
+					userData:    &models.UserData{},
+					dataPath:    "../../../../../../../../../..//../../../../../..test/../../..//",
+					fileManager: fm,
+					grpc:        grpc,
+					ui:          cli,
+					log:         log,
+				}
+
+				return usecase
+			}(),
+			wantErr: true,
 		},
 		{
 			name: "check user online",
