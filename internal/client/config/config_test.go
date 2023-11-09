@@ -1,10 +1,11 @@
 package config_test
 
 import (
-	"github.com/kripsy/GophKeeper/internal/client/config"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/kripsy/GophKeeper/internal/client/config"
 )
 
 func TestGetConfig1(t *testing.T) {

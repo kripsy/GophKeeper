@@ -27,6 +27,7 @@ func GetConfig() (Config, error) {
 	if _, err := os.Stat(configPath); !os.IsNotExist(err) {
 		if err = parseConfig(configPath, &fileCfg); err != nil {
 			fmt.Print("failed read yaml config file: ", err.Error())
+
 			return Config{}, err
 		}
 	}
