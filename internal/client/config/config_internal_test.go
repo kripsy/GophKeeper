@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -70,4 +71,41 @@ storage_path: ["./data"]
 
 	//nolint:gosec
 	require.NoError(t, os.WriteFile(configPath, invalidYAMLContent, 0644))
+}
+
+func TestSetConfig(t *testing.T) {
+	tests := []struct {
+		name    string
+		fileCfg Config
+		flagCfg Flags
+		wantCfg Config
+	}{
+		{
+			name:    "all defaults",
+			fileCfg: Config{},
+			flagCfg: Flags{},
+			wantCfg: Config{StoragePath: defaultStoragePath, UploadPath: defaultUploadPath, ServerAddress: defaultServerAddress},
+		},
+		{
+			name:    "all flags provided",
+			fileCfg: Config{},
+			flagCfg: Flags{StoragePath: "/custom/storage", UploadPath: "/custom/upload", ServerAddress: "192.168.1.1:6000"},
+			wantCfg: Config{StoragePath: "/custom/storage", UploadPath: "/custom/upload", ServerAddress: "192.168.1.1:6000"},
+		},
+		{
+			name:    "some flags provided",
+			fileCfg: Config{},
+			flagCfg: Flags{StoragePath: "/custom/storage"},
+			wantCfg: Config{StoragePath: "/custom/storage", UploadPath: defaultUploadPath, ServerAddress: defaultServerAddress},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotCfg := setConfig(tt.fileCfg, tt.flagCfg)
+			if !reflect.DeepEqual(gotCfg, tt.wantCfg) {
+				t.Errorf("%s: setConfig() got = %v, want %v", tt.name, gotCfg, tt.wantCfg)
+			}
+		})
+	}
 }
