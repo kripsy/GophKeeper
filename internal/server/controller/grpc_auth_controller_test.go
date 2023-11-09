@@ -2,6 +2,7 @@ package controller_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -96,6 +97,59 @@ func TestGrpcServerRegister(t *testing.T) {
 			expectedToken: "",
 			expectedErr:   status.Error(codes.InvalidArgument, "Validation error"),
 		},
+		{
+			name: "Error create bucket",
+			req: &pb.AuthRequest{
+				Username: "testuser",
+				Password: "testpass",
+			},
+			mockSetup: func() {
+				mockUserUseCase.EXPECT().
+					RegisterUser(gomock.Any(), gomock.Any()).
+					Return("token123", 123, nil)
+				mockSecretUseCase.EXPECT().
+					CreateBucketSecret(gomock.Any(), "testuser", 123).
+					Return(false, ErrEmpty)
+			},
+			expectedToken: "",
+			expectedErr:   status.Error(codes.Internal, "failed to create bucket secret"),
+		},
+		{
+			name: "Failed init user",
+			req: &pb.AuthRequest{
+				Username: "te",
+				Password: "te",
+			},
+			mockSetup: func() {
+
+			},
+			expectedToken: "",
+			expectedErr:   status.Error(codes.InvalidArgument, "Invalid request payload"),
+		},
+		{
+			name: "validation error",
+			req: &pb.AuthRequest{
+				Username: "",
+				Password: "1",
+			},
+			mockSetup: func() {
+
+			},
+			expectedToken: "",
+			expectedErr:   status.Error(codes.InvalidArgument, "Validation error"),
+		},
+		{
+			name: "validation error",
+			req: &pb.AuthRequest{
+				Username: "1",
+				Password: "",
+			},
+			mockSetup: func() {
+
+			},
+			expectedToken: "",
+			expectedErr:   status.Error(codes.InvalidArgument, "Validation error"),
+		},
 	}
 
 	for _, tc := range testCases {
@@ -167,6 +221,59 @@ func TestGrpcServerLogin(t *testing.T) {
 			expectedToken: "",
 			expectedErr:   status.Error(codes.Unauthenticated, "Failed to login"),
 		},
+		{
+			name: "Error create bucket",
+			req: &pb.AuthRequest{
+				Username: "testuser",
+				Password: "wrongpass",
+			},
+			mockSetup: func() {
+				mockUserUseCase.EXPECT().
+					LoginUser(gomock.Any(), gomock.Any()).
+					Return("token123", 123, nil)
+				mockSecretUseCase.EXPECT().
+					CreateBucketSecret(gomock.Any(), "testuser", 123).
+					Return(false, ErrEmpty)
+			},
+			expectedToken: "",
+			expectedErr:   status.Error(codes.Internal, "failed to create bucket secret"),
+		},
+		{
+			name: "Failed init user",
+			req: &pb.AuthRequest{
+				Username: "te",
+				Password: "te",
+			},
+			mockSetup: func() {
+
+			},
+			expectedToken: "",
+			expectedErr:   status.Error(codes.InvalidArgument, "Invalid request payload"),
+		},
+		{
+			name: "validation error",
+			req: &pb.AuthRequest{
+				Username: "",
+				Password: "1",
+			},
+			mockSetup: func() {
+
+			},
+			expectedToken: "",
+			expectedErr:   status.Error(codes.InvalidArgument, "Validation error"),
+		},
+		{
+			name: "validation error",
+			req: &pb.AuthRequest{
+				Username: "1",
+				Password: "",
+			},
+			mockSetup: func() {
+
+			},
+			expectedToken: "",
+			expectedErr:   status.Error(codes.InvalidArgument, "Validation error"),
+		},
 	}
 
 	for _, tc := range testCases {
@@ -177,9 +284,8 @@ func TestGrpcServerLogin(t *testing.T) {
 
 			if tc.expectedErr != nil {
 				assert.Equal(t, status.Code(tc.expectedErr), status.Code(err))
-				if status.Code(err) == codes.InvalidArgument || status.Code(err) == codes.Unauthenticated {
-					require.EqualError(t, tc.expectedErr, err.Error())
-				}
+				fmt.Println(err.Error())
+				require.EqualError(t, tc.expectedErr, err.Error())
 			} else {
 				require.NoError(t, err)
 				assert.NotNil(t, resp)

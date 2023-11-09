@@ -57,6 +57,7 @@ func TestRemoveClientSync(t *testing.T) {
 	ss := entity.NewSyncStatus()
 	userID := 1
 	syncID := uuid.New()
+	//nolint:errcheck
 	ss.AddSync(userID, syncID) // Предполагаем, что AddSync работает корректно
 
 	tests := []struct {
@@ -87,6 +88,7 @@ func TestRemoveClientSync(t *testing.T) {
 			syncID: uuid.New(), // Новый UUID, который не совпадает с добавленным
 			setup: func() {
 				// Добавляем синхронизацию снова, так как она была удалена в первом тесте
+				//nolint:errcheck
 				ss.AddSync(userID, syncID)
 			},
 			wantErr: models.NewSyncError(models.ErrSyncNotFoundEnum),
@@ -104,7 +106,6 @@ func TestRemoveClientSync(t *testing.T) {
 			// Проверка ожидаемого результата
 			if tt.wantErr != nil {
 				require.Error(t, err)
-
 			} else {
 				require.NoError(t, err)
 			}
@@ -125,6 +126,7 @@ func TestIsSyncExists(t *testing.T) {
 	wrongSyncID := uuid.New()
 
 	// Добавляем синхронизацию для существующего пользователя
+	//nolint:errcheck
 	ss.AddSync(existingUserID, existingSyncID) // Предполагаем, что AddSync работает корректно
 
 	tests := []struct {
@@ -175,6 +177,7 @@ func TestAddSync(t *testing.T) {
 	existingSyncID := uuid.New()
 
 	// Предварительно добавляем синхронизацию для существующего пользователя
+	//nolint:errcheck
 	ss.AddSync(existingUserID, existingSyncID) // Предполагаем, что AddSync работает корректно
 
 	tests := []struct {
