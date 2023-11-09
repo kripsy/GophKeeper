@@ -1,9 +1,9 @@
-package utils_test
+package filesort_test
 
 import (
 	"testing"
 
-	"github.com/kripsy/GophKeeper/internal/utils"
+	"github.com/kripsy/GophKeeper/internal/utils/filesort"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -39,7 +39,7 @@ func TestExtractPartNumber(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			partNumber := utils.ExtractPartNumber(tt.objectName)
+			partNumber := filesort.ExtractPartNumber(tt.objectName)
 			assert.Equal(tt.expectedPart, partNumber, "ExtractPartNumber() did not return the expected part number")
 		})
 	}

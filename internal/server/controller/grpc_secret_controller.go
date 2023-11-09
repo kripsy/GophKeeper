@@ -11,7 +11,8 @@ import (
 	"github.com/google/uuid"
 	pb "github.com/kripsy/GophKeeper/gen/pkg/api/GophKeeper/v1"
 	"github.com/kripsy/GophKeeper/internal/models"
-	"github.com/kripsy/GophKeeper/internal/utils"
+	"github.com/kripsy/GophKeeper/internal/utils/auth"
+	"github.com/kripsy/GophKeeper/internal/utils/minio"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -28,21 +29,21 @@ func (s *GrpcServer) MultipartUploadFile(stream pb.GophKeeperService_MultipartUp
 		cancel()
 	}()
 
-	userID, ok := utils.ExtractUserIDFromContext(ctx)
+	userID, ok := auth.ExtractUserIDFromContext(ctx)
 	if !ok {
 		s.logger.Error("cannot get userID from context")
 
 		return status.Errorf(codes.Internal, "Failed to extract userID")
 	}
 
-	username, ok := utils.ExtractUsernameFromContext(ctx)
+	username, ok := auth.ExtractUsernameFromContext(ctx)
 	if !ok {
 		s.logger.Error("cannot get username from context")
 
 		return status.Errorf(codes.Internal, "Failed to extract username")
 	}
 
-	bucketName, err := utils.FromUser2BucketName(ctx, username, userID)
+	bucketName, err := minio.FromUser2BucketName(ctx, username, userID)
 	if err != nil {
 		s.logger.Error("cannot get bucketName")
 
@@ -166,7 +167,7 @@ func (s *GrpcServer) BlockStore(stream pb.GophKeeperService_BlockStoreServer) er
 
 	var guid uuid.UUID
 	ctx := stream.Context()
-	userID, ok := utils.ExtractUserIDFromContext(ctx)
+	userID, ok := auth.ExtractUserIDFromContext(ctx)
 	if !ok {
 		s.logger.Error("cannot get userID from context")
 
@@ -174,21 +175,21 @@ func (s *GrpcServer) BlockStore(stream pb.GophKeeperService_BlockStoreServer) er
 	}
 	// clear temp files
 	defer func(ctx context.Context) {
-		userID, ok := utils.ExtractUserIDFromContext(ctx)
+		userID, ok := auth.ExtractUserIDFromContext(ctx)
 		if !ok {
 			s.logger.Error("cannot get userID from context")
 
 			return
 		}
 
-		username, ok := utils.ExtractUsernameFromContext(ctx)
+		username, ok := auth.ExtractUsernameFromContext(ctx)
 		if !ok {
 			s.logger.Error("cannot get username from context")
 
 			return
 		}
 
-		bucketName, err := utils.FromUser2BucketName(ctx, username, userID)
+		bucketName, err := minio.FromUser2BucketName(ctx, username, userID)
 		if err != nil {
 			s.logger.Error("cannot get bucketName")
 
@@ -319,21 +320,21 @@ func (s *GrpcServer) MultipartDownloadFile(req *pb.MultipartDownloadFileRequest,
 	s.logger.Debug("Start MultipartDownloadFile")
 
 	ctx := stream.Context()
-	userID, ok := utils.ExtractUserIDFromContext(ctx)
+	userID, ok := auth.ExtractUserIDFromContext(ctx)
 	if !ok {
 		s.logger.Error("cannot get userID from context")
 
 		return status.Errorf(codes.Internal, "Failed to extract userID")
 	}
 
-	username, ok := utils.ExtractUsernameFromContext(ctx)
+	username, ok := auth.ExtractUsernameFromContext(ctx)
 	if !ok {
 		s.logger.Error("cannot get username from context")
 
 		return status.Errorf(codes.Internal, "Failed to extract username")
 	}
 
-	bucketName, err := utils.FromUser2BucketName(ctx, username, userID)
+	bucketName, err := minio.FromUser2BucketName(ctx, username, userID)
 	if err != nil {
 		s.logger.Error("cannot get bucketName")
 
@@ -424,21 +425,21 @@ func (s *GrpcServer) ApplyChanges(ctx context.Context,
 		return nil, fmt.Errorf("%w", status.Error(codes.InvalidArgument, err.Error()))
 	}
 
-	userID, ok := utils.ExtractUserIDFromContext(ctx)
+	userID, ok := auth.ExtractUserIDFromContext(ctx)
 	if !ok {
 		s.logger.Error("cannot get userID from context")
 
 		return nil, status.Errorf(codes.Internal, "Failed to extract userID")
 	}
 
-	username, ok := utils.ExtractUsernameFromContext(ctx)
+	username, ok := auth.ExtractUsernameFromContext(ctx)
 	if !ok {
 		s.logger.Error("cannot get username from context")
 
 		return nil, status.Errorf(codes.Internal, "Failed to extract username")
 	}
 
-	bucketName, err := utils.FromUser2BucketName(ctx, username, userID)
+	bucketName, err := minio.FromUser2BucketName(ctx, username, userID)
 	if err != nil {
 		s.logger.Error("cannot get bucketName")
 

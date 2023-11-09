@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/kripsy/GophKeeper/internal/client/permissions"
 	"github.com/kripsy/GophKeeper/internal/models"
-	"github.com/kripsy/GophKeeper/internal/utils"
+	"github.com/kripsy/GophKeeper/internal/utils/crypto"
 )
 
 const chunkSize = 4 * 1000 * 1000 // 4 МБ
@@ -113,7 +113,7 @@ func (fm *FileManager) GetByName(name string) ([]byte, models.DataInfo, error) {
 		return nil, models.DataInfo{}, fmt.Errorf("%w", err)
 	}
 
-	decryptedData, err := utils.Decrypt(data, fm.key)
+	decryptedData, err := crypto.Decrypt(data, fm.key)
 	if err != nil {
 		return nil, models.DataInfo{}, fmt.Errorf("%w", err)
 	}
@@ -249,7 +249,7 @@ func (fm *FileManager) saveMetaData() error {
 		return fmt.Errorf("%w", err)
 	}
 
-	encrypt, err := utils.Encrypt(data, fm.key)
+	encrypt, err := crypto.Encrypt(data, fm.key)
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}

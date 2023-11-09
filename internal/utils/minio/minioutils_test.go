@@ -1,10 +1,10 @@
-package utils_test
+package minio_test
 
 import (
 	"context"
 	"testing"
 
-	"github.com/kripsy/GophKeeper/internal/utils"
+	"github.com/kripsy/GophKeeper/internal/utils/minio"
 	"github.com/stretchr/testify/require"
 )
 
@@ -50,7 +50,7 @@ func TestFromUser2BucketNameWithAsserts(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := utils.FromUser2BucketName(context.Background(), tt.username, tt.userID)
+			got, err := minio.FromUser2BucketName(context.Background(), tt.username, tt.userID)
 			if tt.wantErr {
 				require.Error(err, "FromUser2BucketName() should return an error")
 			} else {

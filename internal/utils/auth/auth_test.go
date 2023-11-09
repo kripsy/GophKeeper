@@ -1,11 +1,11 @@
-package utils_test
+package auth_test
 
 import (
 	"context"
 	"testing"
 	"time"
 
-	"github.com/kripsy/GophKeeper/internal/utils"
+	"github.com/kripsy/GophKeeper/internal/utils/auth"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
@@ -36,7 +36,7 @@ func TestGetHash(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hashedPassword, err := utils.GetHash(context.Background(), tt.password, logger)
+			hashedPassword, err := auth.GetHash(context.Background(), tt.password, logger)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetHash() error = %v, wantErr %v", err, tt.wantErr)
 
@@ -81,7 +81,7 @@ func TestBuildJWTString(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			token, err := utils.BuildJWTString(tt.userID, tt.username, tt.secretKey, tt.tokenExp)
+			token, err := auth.BuildJWTString(tt.userID, tt.username, tt.secretKey, tt.tokenExp)
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {
@@ -94,7 +94,7 @@ func TestBuildJWTString(t *testing.T) {
 
 func TestIsPasswordCorrect(t *testing.T) {
 	logger, _ := zap.NewProduction()
-	correctPasswordHash, _ := utils.GetHash(context.Background(), "testpassword", logger)
+	correctPasswordHash, _ := auth.GetHash(context.Background(), "testpassword", logger)
 	tests := []struct {
 		name         string
 		password     string
@@ -123,7 +123,7 @@ func TestIsPasswordCorrect(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := utils.IsPasswordCorrect(context.Background(), []byte(tt.password), []byte(tt.hashPassword), logger)
+			err := auth.IsPasswordCorrect(context.Background(), []byte(tt.password), []byte(tt.hashPassword), logger)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("IsPasswordCorrect() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -164,7 +164,7 @@ func TestIsValidToken(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			valid, err := utils.IsValidToken(tt.token, tt.secret)
+			valid, err := auth.IsValidToken(tt.token, tt.secret)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("IsValidToken() error = %v, wantErr %v", err, tt.wantErr)
 
@@ -211,7 +211,7 @@ func TestGetUsernameFromToken(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			username, err := utils.GetUsernameFromToken(tt.token, tt.secret)
+			username, err := auth.GetUsernameFromToken(tt.token, tt.secret)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetUsernameFromToken() error = %v, wantErr %v", err, tt.wantErr)
 
@@ -258,7 +258,7 @@ func TestGetUseIDFromToken(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			userID, err := utils.GetUseIDFromToken(tt.token, tt.secret)
+			userID, err := auth.GetUseIDFromToken(tt.token, tt.secret)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetUseIDFromToken() error = %v, wantErr %v", err, tt.wantErr)
 
@@ -306,7 +306,7 @@ func TestDeriveKey(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			key, err := utils.DeriveKey(tt.password, tt.salt)
+			key, err := auth.DeriveKey(tt.password, tt.salt)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DeriveKey() error = %v, wantErr %v", err, tt.wantErr)
 
@@ -334,7 +334,7 @@ func TestExtractTokenFromContext(t *testing.T) {
 		{
 			name: "Valid Token",
 			//nolint:staticcheck
-			ctx:      context.WithValue(context.Background(), utils.TOKENCONTEXTKEY, "testtoken"),
+			ctx:      context.WithValue(context.Background(), auth.TOKENCONTEXTKEY, "testtoken"),
 			expected: "testtoken",
 			expectOk: true,
 		},
@@ -347,7 +347,7 @@ func TestExtractTokenFromContext(t *testing.T) {
 		{
 			name: "Invalid Type",
 			//nolint:staticcheck
-			ctx:      context.WithValue(context.Background(), utils.TOKENCONTEXTKEY, 12345),
+			ctx:      context.WithValue(context.Background(), auth.TOKENCONTEXTKEY, 12345),
 			expected: "",
 			expectOk: false,
 		},
@@ -355,7 +355,7 @@ func TestExtractTokenFromContext(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			token, ok := utils.ExtractTokenFromContext(tt.ctx)
+			token, ok := auth.ExtractTokenFromContext(tt.ctx)
 			if ok != tt.expectOk {
 				t.Errorf("ExtractTokenFromContext() ok = %v, expectOk %v", ok, tt.expectOk)
 			}
@@ -378,7 +378,7 @@ func TestExtractUsernameFromContext(t *testing.T) {
 		{
 			name: "Valid Username",
 			//nolint:staticcheck
-			ctx:      context.WithValue(context.Background(), utils.USERNAMECONTEXTKEY, "testuser"),
+			ctx:      context.WithValue(context.Background(), auth.USERNAMECONTEXTKEY, "testuser"),
 			expected: "testuser",
 			expectOk: true,
 		},
@@ -391,7 +391,7 @@ func TestExtractUsernameFromContext(t *testing.T) {
 		{
 			name: "Invalid Type",
 			//nolint:staticcheck
-			ctx:      context.WithValue(context.Background(), utils.USERNAMECONTEXTKEY, 12345),
+			ctx:      context.WithValue(context.Background(), auth.USERNAMECONTEXTKEY, 12345),
 			expected: "",
 			expectOk: false,
 		},
@@ -399,7 +399,7 @@ func TestExtractUsernameFromContext(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			username, ok := utils.ExtractUsernameFromContext(tt.ctx)
+			username, ok := auth.ExtractUsernameFromContext(tt.ctx)
 			if ok != tt.expectOk {
 				t.Errorf("ExtractUsernameFromContext() ok = %v, expectOk %v", ok, tt.expectOk)
 			}
@@ -422,7 +422,7 @@ func TestExtractUserIDFromContext(t *testing.T) {
 		{
 			name: "Valid UserID",
 			//nolint:staticcheck
-			ctx:      context.WithValue(context.Background(), utils.USERIDCONTEXTKEY, 12345),
+			ctx:      context.WithValue(context.Background(), auth.USERIDCONTEXTKEY, 12345),
 			expected: 12345,
 			expectOk: true,
 		},
@@ -435,7 +435,7 @@ func TestExtractUserIDFromContext(t *testing.T) {
 		{
 			name: "Invalid Type",
 			//nolint:staticcheck
-			ctx:      context.WithValue(context.Background(), utils.USERIDCONTEXTKEY, "testuser"),
+			ctx:      context.WithValue(context.Background(), auth.USERIDCONTEXTKEY, "testuser"),
 			expected: 0,
 			expectOk: false,
 		},
@@ -443,7 +443,7 @@ func TestExtractUserIDFromContext(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			userID, ok := utils.ExtractUserIDFromContext(tt.ctx)
+			userID, ok := auth.ExtractUserIDFromContext(tt.ctx)
 			if ok != tt.expectOk {
 				t.Errorf("ExtractUserIDFromContext() ok = %v, expectOk %v", ok, tt.expectOk)
 			}
@@ -456,7 +456,7 @@ func TestExtractUserIDFromContext(t *testing.T) {
 
 //nolint:unparam
 func returnToken(userID int, username string, secret string, duration time.Duration) string {
-	token, _ := utils.BuildJWTString(userID, username, secret, duration)
+	token, _ := auth.BuildJWTString(userID, username, secret, duration)
 
 	return token
 }

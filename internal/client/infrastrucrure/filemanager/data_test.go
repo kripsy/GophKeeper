@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/filemanager"
-	"github.com/kripsy/GophKeeper/internal/utils"
+	"github.com/kripsy/GophKeeper/internal/utils/crypto"
 )
 
 func TestGetTypeName(t *testing.T) {
@@ -158,7 +158,7 @@ func TestFile_EncryptedData(t *testing.T) {
 
 					return
 				}
-				gotData, err := utils.Decrypt(got, tt.key)
+				gotData, err := crypto.Decrypt(got, tt.key)
 				if err != nil {
 					t.Errorf("utils.Decrypt() error = %v", err)
 

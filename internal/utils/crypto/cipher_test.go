@@ -1,11 +1,11 @@
-package utils_test
+package crypto_test
 
 import (
 	"crypto/rand"
 	"io"
 	"testing"
 
-	"github.com/kripsy/GophKeeper/internal/utils"
+	"github.com/kripsy/GophKeeper/internal/utils/crypto"
 	"github.com/stretchr/testify/require"
 )
 
@@ -48,7 +48,7 @@ func TestEncrypt(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			encryptedData, err := utils.Encrypt(tt.data, tt.cipherKey)
+			encryptedData, err := crypto.Encrypt(tt.data, tt.cipherKey)
 
 			if tt.wantErr {
 				require.Error(t, err, "Encrypt() should return an error")
@@ -69,7 +69,7 @@ func TestDecrypt(t *testing.T) {
 
 	originalText := "The quick brown fox jumps over the lazy dog"
 
-	encryptedData, err := utils.Encrypt([]byte(originalText), cipherKey)
+	encryptedData, err := crypto.Encrypt([]byte(originalText), cipherKey)
 	if err != nil {
 		t.Fatalf("Failed to encrypt data: %v", err)
 	}
@@ -110,7 +110,7 @@ func TestDecrypt(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
 
-			decryptedData, err := utils.Decrypt(tt.data, tt.cipherKey)
+			decryptedData, err := crypto.Decrypt(tt.data, tt.cipherKey)
 
 			if tt.wantErr {
 				require.Error(err, "Decrypt() should return an error")

@@ -13,7 +13,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/kripsy/GophKeeper/internal/server/entity"
-	"github.com/kripsy/GophKeeper/internal/utils"
+	"github.com/kripsy/GophKeeper/internal/utils/auth"
 
 	//nolint:revive,nolintlint
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -56,7 +56,7 @@ func (r *userRepository) RegisterUser(ctx context.Context, user entity.User) (in
 		return 0, fmt.Errorf("%w", err)
 	}
 
-	hashPassword, err := utils.GetHash(ctx, user.Password, r.logger)
+	hashPassword, err := auth.GetHash(ctx, user.Password, r.logger)
 	if err != nil {
 		return 0, fmt.Errorf("%w", err)
 	}
@@ -108,7 +108,7 @@ func (r *userRepository) LoginUser(ctx context.Context, user entity.User) (int, 
 		return 0, fmt.Errorf("%w", err)
 	}
 
-	err = utils.IsPasswordCorrect(ctx, []byte(user.Password), []byte(hashPassword), r.logger)
+	err = auth.IsPasswordCorrect(ctx, []byte(user.Password), []byte(hashPassword), r.logger)
 	if err != nil {
 		r.logger.Error("password incorrect", zap.Error(err))
 

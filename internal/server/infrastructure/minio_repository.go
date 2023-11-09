@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/kripsy/GophKeeper/internal/models"
-	"github.com/kripsy/GophKeeper/internal/utils"
+	minio2 "github.com/kripsy/GophKeeper/internal/utils/minio"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"go.uber.org/zap"
@@ -110,7 +110,7 @@ func (m *minioRepository) MultipartUploadFile(ctx context.Context,
 }
 
 func (m *minioRepository) CreateBucketSecret(ctx context.Context, username string, userID int) (bool, error) {
-	bucketName, err := utils.FromUser2BucketName(ctx, username, userID)
+	bucketName, err := minio2.FromUser2BucketName(ctx, username, userID)
 	if err != nil {
 		m.logger.Error("Error in CreateBucketSecret", zap.Error(err))
 

@@ -9,7 +9,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/kripsy/GophKeeper/internal/server/controller"
 	"github.com/kripsy/GophKeeper/internal/server/controller/mocks"
-	"github.com/kripsy/GophKeeper/internal/utils"
+	"github.com/kripsy/GophKeeper/internal/utils/auth"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -60,10 +60,10 @@ func TestAuthInterceptor(t *testing.T) {
 
 	userID := 1
 	userName := "testuser"
-	validToken, err := utils.BuildJWTString(userID, userName, secret, time.Hour)
+	validToken, err := auth.BuildJWTString(userID, userName, secret, time.Hour)
 	require.NoError(t, err)
 
-	invalidToken, err := utils.BuildJWTString(userID, userName, secret+"fake", time.Hour)
+	invalidToken, err := auth.BuildJWTString(userID, userName, secret+"fake", time.Hour)
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -128,10 +128,10 @@ func TestAuthInterceptor(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			testHandler := func(ctx context.Context, req interface{}) (interface{}, error) {
 				if tt.isProtected {
-					if ctx.Value(utils.USERNAMECONTEXTKEY) != userName {
+					if ctx.Value(auth.USERNAMECONTEXTKEY) != userName {
 						return "", ErrContext
 					}
-					if ctx.Value(utils.USERIDCONTEXTKEY) != userID {
+					if ctx.Value(auth.USERIDCONTEXTKEY) != userID {
 						return "", ErrContext
 					}
 				}
@@ -140,7 +140,7 @@ func TestAuthInterceptor(t *testing.T) {
 			}
 
 			md := metadata.New(map[string]string{
-				utils.AUTHORIZATIONHEADER: tt.token,
+				auth.AUTHORIZATIONHEADER: tt.token,
 			})
 			ctx := metadata.NewIncomingContext(context.Background(), md)
 			switch tt.name {
@@ -151,7 +151,7 @@ func TestAuthInterceptor(t *testing.T) {
 				ctx = metadata.NewIncomingContext(context.Background(), md)
 			case "EmptyToken":
 				md := metadata.New(map[string]string{
-					utils.AUTHORIZATIONHEADER: "Bearer ",
+					auth.AUTHORIZATIONHEADER: "Bearer ",
 				})
 				ctx = metadata.NewIncomingContext(context.Background(), md)
 			}
@@ -177,8 +177,8 @@ func TestStreamAuthInterceptor(t *testing.T) {
 	middleware := controller.InitMyMiddleware(logger, secret)
 	userID := 1
 	userName := "testuser"
-	validToken, _ := utils.BuildJWTString(userID, userName, secret, time.Hour)
-	invalidToken, _ := utils.BuildJWTString(userID, userName, "fake", time.Hour)
+	validToken, _ := auth.BuildJWTString(userID, userName, secret, time.Hour)
+	invalidToken, _ := auth.BuildJWTString(userID, userName, "fake", time.Hour)
 
 	tests := []struct {
 		name       string
@@ -195,7 +195,7 @@ func TestStreamAuthInterceptor(t *testing.T) {
 			wantErr:    false,
 			setup: func(mockStream *mocks.MockServerStream) {
 				md := metadata.New(map[string]string{
-					utils.AUTHORIZATIONHEADER: utils.TOKENPREFIX + validToken,
+					auth.AUTHORIZATIONHEADER: auth.TOKENPREFIX + validToken,
 				})
 				ctx := metadata.NewIncomingContext(context.Background(), md)
 				mockStream.EXPECT().Context().Return(ctx).AnyTimes()
@@ -209,7 +209,7 @@ func TestStreamAuthInterceptor(t *testing.T) {
 			wantCode:   codes.Unauthenticated,
 			setup: func(mockStream *mocks.MockServerStream) {
 				md := metadata.New(map[string]string{
-					utils.AUTHORIZATIONHEADER: utils.TOKENPREFIX + invalidToken,
+					auth.AUTHORIZATIONHEADER: auth.TOKENPREFIX + invalidToken,
 				})
 				ctx := metadata.NewIncomingContext(context.Background(), md)
 				mockStream.EXPECT().Context().Return(ctx).AnyTimes()

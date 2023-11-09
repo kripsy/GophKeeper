@@ -11,7 +11,7 @@ import (
 	"sync"
 
 	"github.com/kripsy/GophKeeper/internal/models"
-	"github.com/kripsy/GophKeeper/internal/utils"
+	"github.com/kripsy/GophKeeper/internal/utils/filesort"
 	"go.uber.org/zap"
 )
 
@@ -136,8 +136,8 @@ func (uc *secretUseCase) MultipartDownloadFile(ctx context.Context, req *models.
 
 		// sort list
 		sort.Slice(objectNames, func(i, j int) bool {
-			iPartNum := utils.ExtractPartNumber(objectNames[i])
-			jPartNum := utils.ExtractPartNumber(objectNames[j])
+			iPartNum := filesort.ExtractPartNumber(objectNames[i])
+			jPartNum := filesort.ExtractPartNumber(objectNames[j])
 
 			return iPartNum < jPartNum
 		})

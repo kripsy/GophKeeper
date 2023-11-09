@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	"github.com/kripsy/GophKeeper/internal/utils"
+	"github.com/kripsy/GophKeeper/internal/utils/auth"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -66,33 +66,33 @@ func (m MyMiddleware) AuthInterceptor(ctx context.Context,
 		return nil, fmt.Errorf("%w", status.Error(codes.Internal, "couldn't extract metadata from req"))
 	}
 
-	authHeaders, ok := md[utils.AUTHORIZATIONHEADER]
+	authHeaders, ok := md[auth.AUTHORIZATIONHEADER]
 	if !ok || len(authHeaders) != 1 {
 		m.myLogger.Debug("authorization not exists")
 
 		return nil, fmt.Errorf("%w", status.Error(codes.Unauthenticated, "authorization not exists"))
 	}
 
-	token := strings.TrimPrefix(authHeaders[0], utils.TOKENPREFIX)
+	token := strings.TrimPrefix(authHeaders[0], auth.TOKENPREFIX)
 	if token == "" {
 		m.myLogger.Debug("token empty or not valid")
 
 		return nil, fmt.Errorf("%w", status.Error(codes.Unauthenticated, "token empty or not valid"))
 	}
 
-	if isValid, err := utils.IsValidToken(token, m.secret); err != nil || !isValid {
+	if isValid, err := auth.IsValidToken(token, m.secret); err != nil || !isValid {
 		m.myLogger.Debug("token is not valid")
 
 		return nil, fmt.Errorf("%w", status.Error(codes.Unauthenticated, "token empty or not valid"))
 	}
-	username, err := utils.GetUsernameFromToken(token, m.secret)
+	username, err := auth.GetUsernameFromToken(token, m.secret)
 	if err != nil {
 		m.myLogger.Debug("cannot get username")
 
 		return nil, fmt.Errorf("%w", status.Error(codes.Unauthenticated, "token empty or not valid"))
 	}
 
-	userID, err := utils.GetUseIDFromToken(token, m.secret)
+	userID, err := auth.GetUseIDFromToken(token, m.secret)
 	if err != nil {
 		m.myLogger.Debug("cannot get userID")
 
@@ -100,9 +100,9 @@ func (m MyMiddleware) AuthInterceptor(ctx context.Context,
 	}
 
 	//nolint:staticcheck
-	newCtx := context.WithValue(ctx, utils.USERNAMECONTEXTKEY, username)
+	newCtx := context.WithValue(ctx, auth.USERNAMECONTEXTKEY, username)
 	//nolint:staticcheck
-	newCtx = context.WithValue(newCtx, utils.USERIDCONTEXTKEY, userID)
+	newCtx = context.WithValue(newCtx, auth.USERIDCONTEXTKEY, userID)
 
 	return handler(newCtx, req)
 }
@@ -124,34 +124,34 @@ func (m MyMiddleware) StreamAuthInterceptor(srv interface{},
 		return fmt.Errorf("%w", status.Error(codes.Internal, "couldn't extract metadata from req"))
 	}
 
-	authHeaders, ok := md[utils.AUTHORIZATIONHEADER]
+	authHeaders, ok := md[auth.AUTHORIZATIONHEADER]
 	if !ok || len(authHeaders) != 1 {
 		m.myLogger.Debug("authorization not exists")
 
 		return fmt.Errorf("%w", status.Error(codes.Unauthenticated, "authorization not exists"))
 	}
 
-	token := strings.TrimPrefix(authHeaders[0], utils.TOKENPREFIX)
+	token := strings.TrimPrefix(authHeaders[0], auth.TOKENPREFIX)
 	if token == "" {
 		m.myLogger.Debug("token empty or not valid")
 
 		return fmt.Errorf("%w", status.Error(codes.Unauthenticated, "token empty or not valid"))
 	}
 
-	if isValid, err := utils.IsValidToken(token, m.secret); err != nil || !isValid {
+	if isValid, err := auth.IsValidToken(token, m.secret); err != nil || !isValid {
 		m.myLogger.Debug("token is not valid")
 
 		return fmt.Errorf("%w", status.Error(codes.Unauthenticated, "token empty or not valid"))
 	}
 
-	username, err := utils.GetUsernameFromToken(token, m.secret)
+	username, err := auth.GetUsernameFromToken(token, m.secret)
 	if err != nil {
 		m.myLogger.Debug("cannot get username")
 
 		return fmt.Errorf("%w", status.Error(codes.Unauthenticated, "token empty or not valid"))
 	}
 
-	userID, err := utils.GetUseIDFromToken(token, m.secret)
+	userID, err := auth.GetUseIDFromToken(token, m.secret)
 	if err != nil {
 		m.myLogger.Debug("cannot get userID")
 
@@ -160,13 +160,13 @@ func (m MyMiddleware) StreamAuthInterceptor(srv interface{},
 
 	// Добавляем имя пользователя в контекст
 	//nolint:staticcheck
-	newCtx := context.WithValue(ctx, utils.USERNAMECONTEXTKEY, username)
+	newCtx := context.WithValue(ctx, auth.USERNAMECONTEXTKEY, username)
 	// Заменяем старый контекст новым в потоковом сервере
 	wrappedStream := grpc_middleware.WrapServerStream(ss)
 	wrappedStream.WrappedContext = newCtx
 
 	//nolint:staticcheck
-	newCtx = context.WithValue(newCtx, utils.USERIDCONTEXTKEY, userID)
+	newCtx = context.WithValue(newCtx, auth.USERIDCONTEXTKEY, userID)
 	wrappedStream = grpc_middleware.WrapServerStream(ss)
 	wrappedStream.WrappedContext = newCtx
 

@@ -7,7 +7,7 @@ import (
 
 	"github.com/kripsy/GophKeeper/internal/client/permissions"
 	"github.com/kripsy/GophKeeper/internal/models"
-	"github.com/kripsy/GophKeeper/internal/utils"
+	"github.com/kripsy/GophKeeper/internal/utils/crypto"
 )
 
 type Auth interface {
@@ -58,7 +58,7 @@ func (a *userAuth) CreateUser(user *models.User, isSyncStorage bool) (models.Use
 		return models.UserMeta{}, fmt.Errorf("%w", err)
 	}
 
-	encryptData, err := utils.Encrypt(body, key)
+	encryptData, err := crypto.Encrypt(body, key)
 	if err != nil {
 		return models.UserMeta{}, fmt.Errorf("%w", err)
 	}
@@ -83,7 +83,7 @@ func (a *userAuth) GetUser(user *models.User) (models.UserMeta, error) {
 	if err != nil {
 		return models.UserMeta{}, fmt.Errorf("%w", err)
 	}
-	userData, err := utils.Decrypt(fileData, key)
+	userData, err := crypto.Decrypt(fileData, key)
 	if err != nil {
 		return models.UserMeta{}, fmt.Errorf("%w", err)
 	}

@@ -12,7 +12,8 @@ import (
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/kripsy/GophKeeper/internal/server/controller"
 	"github.com/kripsy/GophKeeper/internal/server/controller/mocks"
-	"github.com/kripsy/GophKeeper/internal/utils"
+	"github.com/kripsy/GophKeeper/internal/utils/auth"
+	"github.com/kripsy/GophKeeper/internal/utils/minio"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -46,9 +47,9 @@ func TestGrpcServerMultipartUploadFile(t *testing.T) {
 			name: "Success",
 			setupMocks: func() {
 				//nolint:staticcheck
-				newCtx := context.WithValue(context.Background(), utils.USERNAMECONTEXTKEY, "user")
+				newCtx := context.WithValue(context.Background(), auth.USERNAMECONTEXTKEY, "user")
 				//nolint:staticcheck
-				newCtx = context.WithValue(newCtx, utils.USERIDCONTEXTKEY, 1)
+				newCtx = context.WithValue(newCtx, auth.USERIDCONTEXTKEY, 1)
 				mockStream.EXPECT().Context().Return(newCtx).AnyTimes()
 				mockSyncStatus.EXPECT().IsSyncExists(gomock.Any(), gomock.Any()).Return(true, nil).AnyTimes()
 				mockStream.EXPECT().Recv().Return(&pb.MultipartUploadFileRequest{}, io.EOF)
@@ -62,9 +63,9 @@ func TestGrpcServerMultipartUploadFile(t *testing.T) {
 			name: "Error upload in usecase",
 			setupMocks: func() {
 				//nolint:staticcheck
-				newCtx := context.WithValue(context.Background(), utils.USERNAMECONTEXTKEY, "user")
+				newCtx := context.WithValue(context.Background(), auth.USERNAMECONTEXTKEY, "user")
 				//nolint:staticcheck
-				newCtx = context.WithValue(newCtx, utils.USERIDCONTEXTKEY, 1)
+				newCtx = context.WithValue(newCtx, auth.USERIDCONTEXTKEY, 1)
 				mockStream.EXPECT().Context().Return(newCtx).AnyTimes()
 				mockStream.EXPECT().Recv().Return(nil, models.NewUnionError("stream receive error")).AnyTimes()
 				mockSecretUseCase.EXPECT().MultipartUploadFile(gomock.Any(),
@@ -134,10 +135,10 @@ func TestBlockStore(t *testing.T) {
 			setup: func() {
 				guid := uuid.New().String()
 				//nolint:staticcheck
-				newCtx := context.WithValue(context.Background(), utils.USERNAMECONTEXTKEY, "user")
+				newCtx := context.WithValue(context.Background(), auth.USERNAMECONTEXTKEY, "user")
 				//nolint:staticcheck
-				newCtx = context.WithValue(newCtx, utils.USERIDCONTEXTKEY, 1)
-				bucketName, _ := utils.FromUser2BucketName(newCtx, "user", 1)
+				newCtx = context.WithValue(newCtx, auth.USERIDCONTEXTKEY, 1)
+				bucketName, _ := minio.FromUser2BucketName(newCtx, "user", 1)
 				mockStream.EXPECT().Context().Return(newCtx).AnyTimes()
 				gomock.InOrder(
 					mockStream.EXPECT().Recv().Return(&pb.BlockStoreRequest{Guid: guid, IsFinish: false}, nil).Times(1),
@@ -154,10 +155,10 @@ func TestBlockStore(t *testing.T) {
 			name: "RecvError",
 			setup: func() {
 				//nolint:staticcheck
-				newCtx := context.WithValue(context.Background(), utils.USERNAMECONTEXTKEY, "user")
+				newCtx := context.WithValue(context.Background(), auth.USERNAMECONTEXTKEY, "user")
 				//nolint:staticcheck
-				newCtx = context.WithValue(newCtx, utils.USERIDCONTEXTKEY, 1)
-				bucketName, _ := utils.FromUser2BucketName(newCtx, "user", 1)
+				newCtx = context.WithValue(newCtx, auth.USERIDCONTEXTKEY, 1)
+				bucketName, _ := minio.FromUser2BucketName(newCtx, "user", 1)
 				mockStream.EXPECT().Context().Return(newCtx).AnyTimes()
 				mockStream.EXPECT().Recv().Return(nil, models.NewUnionError("error")).Times(1)
 				mockSecretUseCase.EXPECT().DiscardChanges(gomock.Any(), bucketName).Return(true, nil).AnyTimes()
@@ -215,14 +216,14 @@ func TestApplyChanges(t *testing.T) {
 			setup: func(ctx context.Context) {
 				userID := 1
 				username := "user"
-				bucketName, _ := utils.FromUser2BucketName(ctx, username, userID)
+				bucketName, _ := minio.FromUser2BucketName(ctx, username, userID)
 				mockSyncStatus.EXPECT().IsSyncExists(userID, gomock.Any()).Return(true, nil).AnyTimes()
 				mockSecretUseCase.EXPECT().ApplyChanges(gomock.Any(), bucketName).Return(true, nil).AnyTimes()
 			},
 			wantErr: false,
 			ctx: context.WithValue(context.WithValue(context.Background(),
 				//nolint:staticcheck
-				utils.USERNAMECONTEXTKEY, "user"), utils.USERIDCONTEXTKEY, 1),
+				auth.USERNAMECONTEXTKEY, "user"), auth.USERIDCONTEXTKEY, 1),
 		},
 		{
 			name: "ValidationError",
@@ -235,7 +236,7 @@ func TestApplyChanges(t *testing.T) {
 			wantErr: true,
 			ctx: context.WithValue(context.WithValue(context.Background(),
 				//nolint:staticcheck
-				utils.USERNAMECONTEXTKEY, "user"), utils.USERIDCONTEXTKEY, 1),
+				auth.USERNAMECONTEXTKEY, "user"), auth.USERIDCONTEXTKEY, 1),
 			errCode: codes.InvalidArgument,
 		},
 	}
@@ -328,16 +329,16 @@ func TestMultipartDownloadFile(t *testing.T) {
 			setup: func(ctx context.Context) {
 				userID := 1
 				username := "user"
-				bucketName, _ := utils.FromUser2BucketName(ctx, username, userID)
+				bucketName, _ := minio.FromUser2BucketName(ctx, username, userID)
 				dataChan := make(chan *models.MultipartDownloadFileResponse)
 				errChan := make(chan error, 1)
 
 				errChan <- models.NewUnionError("test error")
 				close(errChan)
 				//nolint:staticcheck
-				newCtx := context.WithValue(context.Background(), utils.USERNAMECONTEXTKEY, "user")
+				newCtx := context.WithValue(context.Background(), auth.USERNAMECONTEXTKEY, "user")
 				//nolint:staticcheck
-				newCtx = context.WithValue(newCtx, utils.USERIDCONTEXTKEY, 1)
+				newCtx = context.WithValue(newCtx, auth.USERIDCONTEXTKEY, 1)
 				mockStream.EXPECT().Context().Return(newCtx).AnyTimes()
 				mockSyncStatus.EXPECT().IsSyncExists(userID,
 					gomock.Any()).Return(true, nil).AnyTimes()
@@ -348,7 +349,7 @@ func TestMultipartDownloadFile(t *testing.T) {
 			wantErr: true,
 			ctx: context.WithValue(context.WithValue(context.Background(),
 				//nolint:staticcheck
-				utils.USERNAMECONTEXTKEY, "user"), utils.USERIDCONTEXTKEY, 1),
+				auth.USERNAMECONTEXTKEY, "user"), auth.USERIDCONTEXTKEY, 1),
 		},
 	}
 

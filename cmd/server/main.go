@@ -17,7 +17,7 @@ import (
 	"github.com/kripsy/GophKeeper/internal/server/controller"
 	"github.com/kripsy/GophKeeper/internal/server/infrastructure"
 	"github.com/kripsy/GophKeeper/internal/server/usecase"
-	"github.com/kripsy/GophKeeper/internal/utils"
+	"github.com/kripsy/GophKeeper/internal/utils/cert"
 	"go.uber.org/zap"
 )
 
@@ -46,7 +46,7 @@ func main() {
 
 	if cfg.IsSecure {
 		l.Debug("creating cert")
-		err = utils.CreateCertificate(serverCertPath, privateKeyPath)
+		err = cert.CreateCertificate(serverCertPath, privateKeyPath)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 

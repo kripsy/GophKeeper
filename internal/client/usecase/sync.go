@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui"
 	"github.com/kripsy/GophKeeper/internal/models"
-	"github.com/kripsy/GophKeeper/internal/utils"
+	"github.com/kripsy/GophKeeper/internal/utils/crypto"
 )
 
 func (c *ClientUsecase) sync() {
@@ -207,7 +207,7 @@ func (c *ClientUsecase) downloadServerMeta(ctx context.Context, syncKey string) 
 		return nil, fmt.Errorf("%w", err)
 	}
 
-	metaData, err := utils.Decrypt(concatenatedData, key)
+	metaData, err := crypto.Decrypt(concatenatedData, key)
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}

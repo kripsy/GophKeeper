@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/kripsy/GophKeeper/internal/utils"
+	"github.com/kripsy/GophKeeper/internal/utils/auth"
 )
 
 const (
@@ -25,11 +25,11 @@ type User struct {
 
 func (u User) GetUserKey() ([]byte, error) {
 	//nolint:wrapcheck
-	return utils.DeriveKey(u.Password, u.Username)
+	return auth.DeriveKey(u.Password, u.Username)
 }
 
 func (u User) GetHashedPass() (string, error) {
-	hash, err := utils.DeriveKey(u.Username, u.Password)
+	hash, err := auth.DeriveKey(u.Username, u.Password)
 	if err != nil {
 		return "", fmt.Errorf("%w", err)
 	}

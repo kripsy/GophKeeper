@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/kripsy/GophKeeper/internal/utils"
+	"github.com/kripsy/GophKeeper/internal/utils/crypto"
 )
 
 const (
@@ -80,7 +80,7 @@ func (f File) EncryptedData(key []byte) ([]byte, error) {
 		return nil, fmt.Errorf("%w", err)
 	}
 
-	data, err = utils.Encrypt(data, key)
+	data, err = crypto.Encrypt(data, key)
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
@@ -94,7 +94,7 @@ func (c CardData) EncryptedData(key []byte) ([]byte, error) {
 		return nil, fmt.Errorf("%w", err)
 	}
 
-	data, err = utils.Encrypt(data, key)
+	data, err = crypto.Encrypt(data, key)
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
@@ -108,7 +108,7 @@ func (n Note) EncryptedData(key []byte) ([]byte, error) {
 		return nil, fmt.Errorf("%w", err)
 	}
 
-	data, err = utils.Encrypt(data, key)
+	data, err = crypto.Encrypt(data, key)
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
@@ -122,7 +122,7 @@ func (a BasicAuth) EncryptedData(key []byte) ([]byte, error) {
 		return nil, fmt.Errorf("%w", err)
 	}
 
-	data, err = utils.Encrypt(data, key)
+	data, err = crypto.Encrypt(data, key)
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/kripsy/GophKeeper/internal/server/entity"
-	"github.com/kripsy/GophKeeper/internal/utils"
+	"github.com/kripsy/GophKeeper/internal/utils/auth"
 	"go.uber.org/zap"
 )
 
@@ -53,7 +53,7 @@ func (uc *userUseCase) RegisterUser(ctx context.Context, user entity.User) (stri
 		return "", 0, fmt.Errorf("%w", err)
 	}
 
-	token, err := utils.BuildJWTString(userID, user.Username, uc.secret, uc.tokenExp)
+	token, err := auth.BuildJWTString(userID, user.Username, uc.secret, uc.tokenExp)
 	if err != nil {
 		return "", 0, fmt.Errorf("%w", err)
 	}
@@ -86,7 +86,7 @@ func (uc *userUseCase) LoginUser(ctx context.Context, user entity.User) (string,
 		return "", 0, fmt.Errorf("%w", err)
 	}
 
-	token, err := utils.BuildJWTString(userID, user.Username, uc.secret, uc.tokenExp)
+	token, err := auth.BuildJWTString(userID, user.Username, uc.secret, uc.tokenExp)
 	if err != nil {
 		return "", 0, fmt.Errorf("%w", err)
 	}

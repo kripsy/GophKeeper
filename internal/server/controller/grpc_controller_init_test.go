@@ -7,7 +7,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/kripsy/GophKeeper/internal/server/controller"
 	"github.com/kripsy/GophKeeper/internal/server/controller/mocks"
-	"github.com/kripsy/GophKeeper/internal/utils"
+	"github.com/kripsy/GophKeeper/internal/utils/cert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
@@ -54,7 +54,7 @@ func TestInitGrpcServer(t *testing.T) {
 				tt.serverCertPath = tempDir + "/server.crt"
 				tt.privateKeyPath = tempDir + "/server.key"
 				//nolint:errcheck
-				utils.CreateCertificate(tt.serverCertPath, tt.privateKeyPath)
+				cert.CreateCertificate(tt.serverCertPath, tt.privateKeyPath)
 			}
 			_, err := controller.InitGrpcServer(mockUserUseCase,
 				mockSecretUseCase,
