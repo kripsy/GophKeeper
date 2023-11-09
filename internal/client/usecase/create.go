@@ -1,4 +1,3 @@
-//nolint:ireturn
 package usecase
 
 import (
@@ -37,6 +36,7 @@ func (c *ClientUsecase) createSecret(secretType int, success bool) {
 	}
 }
 
+//nolint:ireturn,nolintlint
 func (c *ClientUsecase) getSecretrData(secretType int) (filemanager.Data, models.DataInfo, error) {
 	var data filemanager.Data
 	var filePath string

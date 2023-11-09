@@ -16,7 +16,10 @@ const (
 	defaultServerAddress = "127.0.0.1:50051"
 )
 
+//nolint:gochecknoglobals
 var flags Flags
+
+//nolint:gochecknoglobals
 var once sync.Once
 
 func GetConfig() (Config, error) {
@@ -32,6 +35,7 @@ func GetConfig() (Config, error) {
 
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		// Возвращаем ошибку, если файл конфигурации не существует
+		//nolint:goerr113
 		return Config{}, fmt.Errorf("config file not found: %s", configPath)
 	} else if err != nil {
 		// Возвращаем ошибку, если есть другая ошибка при проверке файла
@@ -41,6 +45,7 @@ func GetConfig() (Config, error) {
 	// Попытка парсинга файла конфигурации
 	if err := parseConfig(configPath, &fileCfg); err != nil {
 		fmt.Printf("failed to read yaml config file: %v\n", err)
+
 		return Config{}, err
 	}
 

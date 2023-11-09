@@ -83,6 +83,7 @@ server_address: "127.0.0.1:8080"
 		t.Run(tt.name, func(t *testing.T) {
 			// Если указаны данные конфигурации, записываем их в файл
 			if len(tt.configFileData) > 0 {
+				//nolint:gosec
 				if err := os.WriteFile(tt.configFile, tt.configFileData, 0644); err != nil {
 					t.Fatalf("Failed to write to config file: %v", err)
 				}

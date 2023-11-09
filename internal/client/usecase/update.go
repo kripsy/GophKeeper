@@ -1,4 +1,3 @@
-//nolint:ireturn
 package usecase
 
 import (
@@ -54,6 +53,7 @@ func (c *ClientUsecase) updateMetaInfo(secretName string, metaInfo models.DataIn
 	return nil
 }
 
+//nolint:ireturn,nolintlint
 func (c *ClientUsecase) getUpdatedData(secretName string, dataType int) (filemanager.Data, error) {
 	var data filemanager.Data
 	var err error
