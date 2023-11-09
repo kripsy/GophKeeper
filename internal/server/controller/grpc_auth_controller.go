@@ -66,7 +66,7 @@ func (s *GrpcServer) Login(ctx context.Context, req *pb.AuthRequest) (*pb.AuthRe
 	}
 
 	if err = v.Validate(req); err != nil {
-		return nil, fmt.Errorf("%w", status.Error(codes.InvalidArgument, err.Error()))
+		return nil, fmt.Errorf("%w", status.Error(codes.InvalidArgument, "Validation error"))
 	}
 
 	user, err := entity.InitNewUser(req.GetUsername(), req.GetPassword())
