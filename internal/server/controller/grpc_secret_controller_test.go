@@ -2,9 +2,10 @@ package controller_test
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"io"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
@@ -18,6 +19,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+var ErrEmpty = errors.New("")
 
 func TestGrpcServerMultipartUploadFile(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
@@ -73,19 +76,61 @@ func TestGrpcServerMultipartUploadFile(t *testing.T) {
 			},
 			expectedError: status.Error(codes.Internal, ""),
 		},
-		// {
-		// 	name: "Error recv data",
-		// 	setupMocks: func() {
-		// 		newCtx := context.WithValue(context.Background(), utils.USERNAMECONTEXTKEY, "user")
-		// 		newCtx = context.WithValue(newCtx, utils.USERIDCONTEXTKEY, 1)
-		// 		mockStream.EXPECT().Context().Return(newCtx).AnyTimes()
-		// 		mockStream.EXPECT().Recv().Return(nil, errors.New("stream receive error")).AnyTimes()
-		// 		mockSecretUseCase.EXPECT().MultipartUploadFile(gomock.Any(),
-		// gomock.Any(),
-		// gomock.Any()).Return(false, errors.New("")).AnyTimes()
-		// 	},
-		// 	expectedError: status.Error(codes.Internal, ""),
-		// },
+		{
+			name: "Error get userID from context",
+			setupMocks: func() {
+				//nolint:staticcheck
+				newCtx := context.WithValue(context.Background(), utils.USERNAMECONTEXTKEY, "user")
+				//nolint:staticcheck
+				newCtx = context.WithValue(newCtx, utils.USERIDCONTEXTKEY+"fake", 1)
+				mockStream.EXPECT().Context().Return(newCtx).AnyTimes()
+			},
+			expectedError: status.Error(codes.Internal, ""),
+		},
+		{
+			name: "Error get userName from context",
+			setupMocks: func() {
+				//nolint:staticcheck
+				newCtx := context.WithValue(context.Background(), utils.USERNAMECONTEXTKEY+"fake", "user")
+				//nolint:staticcheck
+				newCtx = context.WithValue(newCtx, utils.USERIDCONTEXTKEY, 1)
+				mockStream.EXPECT().Context().Return(newCtx).AnyTimes()
+			},
+			expectedError: status.Error(codes.Internal, ""),
+		},
+		{
+			name: "Couldn't parse GUID",
+			setupMocks: func() {
+				//nolint:staticcheck
+				newCtx := context.WithValue(context.Background(), utils.USERNAMECONTEXTKEY, "user")
+				//nolint:staticcheck
+				newCtx = context.WithValue(newCtx, utils.USERIDCONTEXTKEY, 1)
+				mockStream.EXPECT().Context().Return(newCtx).AnyTimes()
+				mockSyncStatus.EXPECT().IsSyncExists(gomock.Any(), gomock.Any()).Return(true, nil).AnyTimes()
+				mockStream.EXPECT().Recv().Return(&pb.MultipartUploadFileRequest{Guid: "qwerty"}, nil).AnyTimes()
+				mockSecretUseCase.EXPECT().MultipartUploadFile(gomock.Any(),
+					gomock.Any(),
+					gomock.Any()).Return(true, nil).AnyTimes()
+			},
+			expectedError: status.Error(codes.Internal, ""),
+		},
+		{
+			name: "was some error in usecase",
+			setupMocks: func() {
+				//nolint:staticcheck
+				newCtx := context.WithValue(context.Background(), utils.USERNAMECONTEXTKEY, "user")
+				//nolint:staticcheck
+				newCtx = context.WithValue(newCtx, utils.USERIDCONTEXTKEY, 1)
+				mockStream.EXPECT().Context().Return(newCtx).AnyTimes()
+				mockSyncStatus.EXPECT().IsSyncExists(gomock.Any(), gomock.Any()).Return(true, nil).AnyTimes()
+				mockStream.EXPECT().Recv().Return(&pb.MultipartUploadFileRequest{}, nil).AnyTimes()
+				mockSecretUseCase.EXPECT().MultipartUploadFile(gomock.Any(),
+					gomock.Any(),
+					gomock.Any()).Return(false,
+					ErrEmpty).AnyTimes()
+			},
+			expectedError: status.Error(codes.Internal, ""),
+		},
 	}
 
 	for _, tc := range testCases {
@@ -165,18 +210,138 @@ func TestBlockStore(t *testing.T) {
 			},
 			wantErr: true,
 		},
-	}
+		{
+			name: "cannot get userID from context",
+			setup: func() {
+				//nolint:staticcheck
+				newCtx := context.WithValue(context.Background(), utils.USERNAMECONTEXTKEY, "user")
+				//nolint:staticcheck
+				newCtx = context.WithValue(newCtx, utils.USERIDCONTEXTKEY+"fake", 1)
+				bucketName, _ := utils.FromUser2BucketName(newCtx, "user", 1)
+				mockStream.EXPECT().Context().Return(newCtx).AnyTimes()
+				mockStream.EXPECT().Recv().Return(nil, models.NewUnionError("error")).Times(1)
+				mockSecretUseCase.EXPECT().DiscardChanges(gomock.Any(), bucketName).Return(true, nil).AnyTimes()
+				mockSyncStatus.EXPECT().RemoveClientSync(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+			},
+			wantErr: true,
+		},
+		{
+			name: "cannot get userName from context",
+			setup: func() {
+				//nolint:staticcheck
+				newCtx := context.WithValue(context.Background(), utils.USERNAMECONTEXTKEY+"fake", "user")
+				//nolint:staticcheck
+				newCtx = context.WithValue(newCtx, utils.USERIDCONTEXTKEY, 1)
+				bucketName, _ := utils.FromUser2BucketName(newCtx, "user", 1)
+				mockStream.EXPECT().Context().Return(newCtx).AnyTimes()
+				mockStream.EXPECT().Recv().Return(nil, models.NewUnionError("error")).Times(1)
+				mockSecretUseCase.EXPECT().DiscardChanges(gomock.Any(), bucketName).Return(true, nil).AnyTimes()
+				mockSyncStatus.EXPECT().RemoveClientSync(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+			},
+			wantErr: true,
+		},
+		{
+			name: "fail discard",
+			setup: func() {
+				//nolint:staticcheck
+				newCtx := context.WithValue(context.Background(), utils.USERNAMECONTEXTKEY, "user")
+				//nolint:staticcheck
+				newCtx = context.WithValue(newCtx, utils.USERIDCONTEXTKEY, 1)
+				bucketName, _ := utils.FromUser2BucketName(newCtx, "user", 1)
+				mockStream.EXPECT().Context().Return(newCtx).AnyTimes()
+				mockStream.EXPECT().Recv().Return(nil, ErrEmpty).Times(1)
+				mockSecretUseCase.EXPECT().DiscardChanges(gomock.Any(), bucketName).Return(false, ErrEmpty).AnyTimes()
+				mockSyncStatus.EXPECT().RemoveClientSync(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+			},
+			wantErr: true,
+		},
+		{
+			name: "fail remove sync",
+			setup: func() {
+				//nolint:staticcheck
+				newCtx := context.WithValue(context.Background(), utils.USERNAMECONTEXTKEY, "user")
+				//nolint:staticcheck
+				newCtx = context.WithValue(newCtx, utils.USERIDCONTEXTKEY, 1)
+				bucketName, _ := utils.FromUser2BucketName(newCtx, "user", 1)
+				mockStream.EXPECT().Context().Return(newCtx).AnyTimes()
+				mockStream.EXPECT().Recv().Return(nil, ErrEmpty).Times(1)
+				mockSecretUseCase.EXPECT().DiscardChanges(gomock.Any(), bucketName).Return(true, nil).AnyTimes()
+				mockSyncStatus.EXPECT().RemoveClientSync(gomock.Any(), gomock.Any()).Return(ErrEmpty).AnyTimes()
+			},
+			wantErr: true,
+		},
+		{
+			name: "no valid data",
+			setup: func() {
+				//nolint:staticcheck
+				newCtx := context.WithValue(context.Background(), utils.USERNAMECONTEXTKEY, "user")
+				//nolint:staticcheck
+				newCtx = context.WithValue(newCtx, utils.USERIDCONTEXTKEY, 1)
+				bucketName, _ := utils.FromUser2BucketName(newCtx, "user", 1)
+				mockStream.EXPECT().Context().Return(newCtx).AnyTimes()
+				gomock.InOrder(
+					mockStream.EXPECT().Recv().Return(&pb.BlockStoreRequest{Guid: "", IsFinish: false}, nil).AnyTimes(),
+					mockStream.EXPECT().Recv().Return(nil, io.EOF).AnyTimes(),
+				)
+				mockSecretUseCase.EXPECT().DiscardChanges(gomock.Any(), bucketName).Return(true, nil).AnyTimes()
+				mockSyncStatus.EXPECT().RemoveClientSync(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+			},
+			wantErr: true,
+		},
+		{
+			name: "StreamContextDone",
+			setup: func() {
+				guid := uuid.New().String()
+				//nolint:staticcheck
+				newCtx := context.WithValue(context.Background(), utils.USERNAMECONTEXTKEY, "user")
+				//nolint:staticcheck
+				newCtx = context.WithValue(newCtx, utils.USERIDCONTEXTKEY, 1)
+				newCtx, cancel := context.WithCancel(newCtx)
+				bucketName, _ := utils.FromUser2BucketName(newCtx, "user", 1)
+				cancel()
+				mockStream.EXPECT().Context().Return(newCtx).AnyTimes()
+				gomock.InOrder(
+					mockStream.EXPECT().Recv().Return(&pb.BlockStoreRequest{Guid: guid, IsFinish: false}, nil).AnyTimes(),
+					mockStream.EXPECT().Recv().Return(nil, io.EOF).AnyTimes(),
+				)
 
+				mockStream.EXPECT().Context().Return(newCtx).AnyTimes()
+				mockStream.EXPECT().Recv().Return(nil, io.EOF).AnyTimes()
+
+				mockSecretUseCase.EXPECT().DiscardChanges(gomock.Any(), bucketName).Return(true, nil).AnyTimes()
+				mockSyncStatus.EXPECT().RemoveClientSync(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+			},
+			wantErr: true,
+		},
+	}
+	//nolint:nestif
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setup()
-			err := grpcServer.BlockStore(mockStream)
-			fmt.Println(err)
-			fmt.Println(tt.wantErr)
-			if tt.wantErr {
-				require.Error(t, err)
+			if tt.name == "StreamContextDone" {
+				errCh := make(chan error)
+				// Запускаем BlockStore в отдельной горутине, чтобы не блокировать тест.
+				go func() {
+					errCh <- grpcServer.BlockStore(mockStream)
+				}()
+				select {
+				case err := <-errCh:
+					if tt.wantErr {
+						require.Error(t, err)
+					} else {
+						require.NoError(t, err)
+					}
+				case <-time.After(1 * time.Second):
+					// Если горутина не завершилась за 1 секунду, считаем это ошибкой.
+					require.Fail(t, "timeout waiting for BlockStore to complete")
+				}
 			} else {
-				require.NoError(t, err)
+				err := grpcServer.BlockStore(mockStream)
+				if tt.wantErr {
+					require.Error(t, err)
+				} else {
+					require.NoError(t, err)
+				}
 			}
 		})
 	}
