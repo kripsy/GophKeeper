@@ -15,7 +15,7 @@ const (
 	defaultServerAddress = "127.0.0.1:50051"
 )
 
-func GetConfig() Config {
+func GetConfig() (Config, error) {
 	var fileCfg Config
 
 	flags := parseFlags()
@@ -27,11 +27,11 @@ func GetConfig() Config {
 	if _, err := os.Stat(configPath); !os.IsNotExist(err) {
 		if err = parseConfig(configPath, &fileCfg); err != nil {
 			fmt.Print("failed read yaml config file: ", err.Error())
-			os.Exit(1)
+			return Config{}, err
 		}
 	}
 
-	return setConfig(fileCfg, flags)
+	return setConfig(fileCfg, flags), nil
 }
 
 func setConfig(fileCfg Config, flagCfg Flags) Config {

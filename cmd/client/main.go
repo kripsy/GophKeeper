@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/kripsy/GophKeeper/internal/client/app"
 	"github.com/kripsy/GophKeeper/internal/client/config"
@@ -10,7 +11,10 @@ import (
 
 func main() {
 	bi := getBuildInfo()
-	cfg := config.GetConfig()
+	cfg, err := config.GetConfig()
+	if err != nil {
+		os.Exit(1)
+	}
 	l := log.InitLogger(cfg.StoragePath)
 
 	a, err := app.NewApplication(cfg, bi, l)
