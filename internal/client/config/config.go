@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"gopkg.in/yaml.v3"
 )
@@ -15,21 +16,32 @@ const (
 	defaultServerAddress = "127.0.0.1:50051"
 )
 
+var flags Flags
+var once sync.Once
+
 func GetConfig() (Config, error) {
 	var fileCfg Config
+	once.Do(func() {
+		flags = parseFlags()
+	})
 
-	flags := parseFlags()
 	configPath := flags.ConfigPath
 	if configPath == "" {
 		configPath = defaultConfigPath
 	}
 
-	if _, err := os.Stat(configPath); !os.IsNotExist(err) {
-		if err = parseConfig(configPath, &fileCfg); err != nil {
-			fmt.Print("failed read yaml config file: ", err.Error())
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		// Возвращаем ошибку, если файл конфигурации не существует
+		return Config{}, fmt.Errorf("config file not found: %s", configPath)
+	} else if err != nil {
+		// Возвращаем ошибку, если есть другая ошибка при проверке файла
+		return Config{}, fmt.Errorf("failed to check config file: %w", err)
+	}
 
-			return Config{}, err
-		}
+	// Попытка парсинга файла конфигурации
+	if err := parseConfig(configPath, &fileCfg); err != nil {
+		fmt.Printf("failed to read yaml config file: %v\n", err)
+		return Config{}, err
 	}
 
 	return setConfig(fileCfg, flags), nil
