@@ -1,4 +1,4 @@
-//nolint:staticcheck
+//nolint:staticcheck,testpackage,nolintlint
 package usecase
 
 import (
@@ -22,8 +22,9 @@ func TestClientUsecaseInMenu(t *testing.T) {
 		userData    *models.UserData
 		grpc        grpc.Client
 		fileManager filemanager.FileStorage
-		ui          ui.UserInterface
-		log         zerolog.Logger
+		//nolint:unused
+		ui  ui.UserInterface
+		log zerolog.Logger
 	}
 	tests := []struct {
 		name          string
@@ -123,8 +124,6 @@ func TestClientUsecaseInMenu(t *testing.T) {
 					Hash:        "asd",
 					UpdatedAt:   time.Now(),
 				}, nil).AnyTimes()
-				//nc (c *CLI) AddMetaInfo() (models.DataInfo, error)
-				// mockUI.EXPECT().ChooseSecretType().Return(gomock.Any(), gomock.Any()).AnyTimes()
 
 				go c.InMenu()
 			}
@@ -139,5 +138,6 @@ func getPositionMenu(str string) (bool, int) {
 			return true, k
 		}
 	}
+
 	return false, 0
 }
