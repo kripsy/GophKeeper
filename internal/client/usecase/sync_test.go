@@ -278,6 +278,31 @@ func TestClientUsecaseDownloadServerMeta(t *testing.T) {
 			},
 			want: nil,
 		},
+
+		{
+			name: "failed unmarshall data",
+			args: args{
+				ctx:     context.Background(),
+				syncKey: syncKey,
+			},
+			setup: func() {
+				dataChan := make(chan []byte, 1)
+
+				encryptedData, err := utils.Encrypt([]byte("bar"), key)
+				assert.NoError(t, err)
+				dataChan <- encryptedData
+				close(dataChan)
+				mockClient.EXPECT().DownloadFile(gomock.Any(),
+					gomock.Any(), gomock.Any(),
+					syncKey).Return(dataChan, nil).Times(1)
+			},
+			wantErr: true,
+			fields: fields{
+				grpc:     mockClient,
+				userData: userData,
+			},
+			want: nil,
+		},
 	}
 
 	for _, tt := range tests {

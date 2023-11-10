@@ -51,3 +51,8 @@ lint-all:
 
 lint-one:
 	golangci-lint run --no-config --disable-all --enable goerr113 ./internal/utils/...
+
+
+cover:
+	go test -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out
