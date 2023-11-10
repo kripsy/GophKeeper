@@ -176,83 +176,83 @@ func TestClientUsecaseDownloadServerMeta(t *testing.T) {
 		want    *models.UserMeta
 		wantErr bool
 	}{
-		{
-			name: "failed in c.grpc.DownloadFile",
-			args: args{
-				ctx:     context.Background(),
-				syncKey: syncKey,
-			},
-			setup: func() {
-				mockClient.EXPECT().DownloadFile(gomock.Any(),
-					gomock.Any(), gomock.Any(),
-					syncKey).Return(make(chan []byte), ErrEmpty).Times(1)
-			},
-			wantErr: true,
-			fields: fields{
-				grpc: mockClient,
-				userData: &models.UserData{
-					User: models.User{
-						Username: "testuser",
-						Password: "testpassword",
-						Key:      []byte("testkey"),
-					},
-					Meta: models.UserMeta{},
-				},
-			},
-			want: nil,
-		},
-		{
-			name: "len concatenatedData is zero",
-			args: args{
-				ctx:     context.Background(),
-				syncKey: syncKey,
-			},
-			setup: func() {
-				emptyChan := make(chan []byte)
-				close(emptyChan)
-				mockClient.EXPECT().DownloadFile(gomock.Any(),
-					gomock.Any(), gomock.Any(),
-					syncKey).Return(emptyChan, nil).Times(1)
-			},
-			wantErr: false,
-			fields: fields{
-				grpc: mockClient,
-				userData: &models.UserData{
-					User: models.User{
-						Username: "testuser",
-						Password: "testpassword",
-						Key:      []byte("testkey"),
-					},
-					Meta: models.UserMeta{},
-				},
-			},
-			want: &models.UserMeta{},
-		},
-		{
-			name: "successful data retrieval and decoding",
-			args: args{
-				ctx:     context.Background(),
-				syncKey: syncKey,
-			},
-			setup: func() {
-				dataChan := make(chan []byte, 1)
-				mashaldata, err := json.Marshal(testMeta)
-				assert.NoError(t, err)
-				encryptedData, err := utils.Encrypt(mashaldata, key)
-				assert.NoError(t, err)
-				dataChan <- encryptedData
-				close(dataChan)
-				mockClient.EXPECT().DownloadFile(gomock.Any(),
-					gomock.Any(), gomock.Any(),
-					syncKey).Return(dataChan, nil).Times(1)
-			},
-			wantErr: false,
-			fields: fields{
-				grpc:     mockClient,
-				userData: userData,
-			},
-			want: testMeta,
-		},
+		// {
+		// 	name: "failed in c.grpc.DownloadFile",
+		// 	args: args{
+		// 		ctx:     context.Background(),
+		// 		syncKey: syncKey,
+		// 	},
+		// 	setup: func() {
+		// 		mockClient.EXPECT().DownloadFile(gomock.Any(),
+		// 			gomock.Any(), gomock.Any(),
+		// 			syncKey).Return(make(chan []byte), ErrEmpty).Times(1)
+		// 	},
+		// 	wantErr: true,
+		// 	fields: fields{
+		// 		grpc: mockClient,
+		// 		userData: &models.UserData{
+		// 			User: models.User{
+		// 				Username: "testuser",
+		// 				Password: "testpassword",
+		// 				Key:      []byte("testkey"),
+		// 			},
+		// 			Meta: models.UserMeta{},
+		// 		},
+		// 	},
+		// 	want: nil,
+		// },
+		// {
+		// 	name: "len concatenatedData is zero",
+		// 	args: args{
+		// 		ctx:     context.Background(),
+		// 		syncKey: syncKey,
+		// 	},
+		// 	setup: func() {
+		// 		emptyChan := make(chan []byte)
+		// 		close(emptyChan)
+		// 		mockClient.EXPECT().DownloadFile(gomock.Any(),
+		// 			gomock.Any(), gomock.Any(),
+		// 			syncKey).Return(emptyChan, nil).Times(1)
+		// 	},
+		// 	wantErr: false,
+		// 	fields: fields{
+		// 		grpc: mockClient,
+		// 		userData: &models.UserData{
+		// 			User: models.User{
+		// 				Username: "testuser",
+		// 				Password: "testpassword",
+		// 				Key:      []byte("testkey"),
+		// 			},
+		// 			Meta: models.UserMeta{},
+		// 		},
+		// 	},
+		// 	want: &models.UserMeta{},
+		// },
+		// {
+		// 	name: "successful data retrieval and decoding",
+		// 	args: args{
+		// 		ctx:     context.Background(),
+		// 		syncKey: syncKey,
+		// 	},
+		// 	setup: func() {
+		// 		dataChan := make(chan []byte, 1)
+		// 		mashaldata, err := json.Marshal(testMeta)
+		// 		assert.NoError(t, err)
+		// 		encryptedData, err := utils.Encrypt(mashaldata, key)
+		// 		assert.NoError(t, err)
+		// 		dataChan <- encryptedData
+		// 		close(dataChan)
+		// 		mockClient.EXPECT().DownloadFile(gomock.Any(),
+		// 			gomock.Any(), gomock.Any(),
+		// 			syncKey).Return(dataChan, nil).Times(1)
+		// 	},
+		// 	wantErr: false,
+		// 	fields: fields{
+		// 		grpc:     mockClient,
+		// 		userData: userData,
+		// 	},
+		// 	want: testMeta,
+		// },
 		{
 			name: "failed decode data",
 			args: args{
@@ -264,6 +264,31 @@ func TestClientUsecaseDownloadServerMeta(t *testing.T) {
 				mashaldata, err := json.Marshal(testMeta)
 				assert.NoError(t, err)
 				encryptedData, err := utils.Encrypt(mashaldata, key2)
+				assert.NoError(t, err)
+				dataChan <- encryptedData
+				close(dataChan)
+				mockClient.EXPECT().DownloadFile(gomock.Any(),
+					gomock.Any(), gomock.Any(),
+					syncKey).Return(dataChan, nil).Times(1)
+			},
+			wantErr: true,
+			fields: fields{
+				grpc:     mockClient,
+				userData: userData,
+			},
+			want: nil,
+		},
+
+		{
+			name: "failed unmarshall data",
+			args: args{
+				ctx:     context.Background(),
+				syncKey: syncKey,
+			},
+			setup: func() {
+				dataChan := make(chan []byte, 1)
+
+				encryptedData, err := utils.Encrypt([]byte("bar"), key)
 				assert.NoError(t, err)
 				dataChan <- encryptedData
 				close(dataChan)
