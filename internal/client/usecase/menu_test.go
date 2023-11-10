@@ -68,18 +68,24 @@ func TestClientUsecaseInMenu(t *testing.T) {
 			menuInput:     ui.SecretsKey,
 			expectedCalls: 1,
 		},
-		// {
-		// 	name: "Test ExitKey",
-		// 	fields: fields{
-		// 		userData: &models.UserData{
-		// 			Meta: models.UserMeta{
-		// 				IsSyncStorage: false,
-		// 			},
-		// 		},
-		// 	},
-		// 	menuInput:     ui.ExitKey,
-		// 	expectedCalls: 1,
-		// },
+		{
+			name: "Test UpdateSecretKey",
+			fields: fields{
+				userData: &models.UserData{
+					Meta: models.UserMeta{
+						IsSyncStorage: false,
+						Data: models.MetaData{
+							"a": models.DataInfo{
+								Name: "a",
+								Hash: "a",
+							},
+						},
+					},
+				},
+			},
+			menuInput:     ui.UpdateSecretKey,
+			expectedCalls: 1,
+		},
 		{
 			name: "Test About",
 			fields: fields{
@@ -90,6 +96,30 @@ func TestClientUsecaseInMenu(t *testing.T) {
 				},
 			},
 			menuInput:     ui.About,
+			expectedCalls: 1,
+		},
+		{
+			name: "Test DeleteSecretKey",
+			fields: fields{
+				userData: &models.UserData{
+					Meta: models.UserMeta{
+						IsSyncStorage: false,
+					},
+				},
+			},
+			menuInput:     ui.DeleteSecretKey,
+			expectedCalls: 1,
+		},
+		{
+			name: "Test ExitKey",
+			fields: fields{
+				userData: &models.UserData{
+					Meta: models.UserMeta{
+						IsSyncStorage: false,
+					},
+				},
+			},
+			menuInput:     ui.ExitKey,
 			expectedCalls: 1,
 		},
 	}
@@ -115,7 +145,9 @@ func TestClientUsecaseInMenu(t *testing.T) {
 				mockUI.EXPECT().Menu(gomock.Any()).Return(val).AnyTimes()
 				mockUI.EXPECT().ChooseSecretType().Return(1, false).AnyTimes()
 				mockUI.EXPECT().GetSecret(gomock.Any()).Return("a", false).AnyTimes()
-				mockUI.EXPECT().UpdateSecret(gomock.Any()).Return("a", 1, true).AnyTimes()
+				mockUI.EXPECT().UpdateSecret(gomock.Any()).Return("a", 1, false).AnyTimes()
+				mockUI.EXPECT().DeleteSecret(gomock.Any()).Return("a", false).AnyTimes()
+				mockUI.EXPECT().Exit().Return().AnyTimes()
 				mockUI.EXPECT().AddMetaInfo().Return(models.DataInfo{
 					Name:        "asd",
 					DataID:      "aaa",
