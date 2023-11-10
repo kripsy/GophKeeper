@@ -9,6 +9,7 @@ import (
 	"github.com/kripsy/GophKeeper/internal/models"
 )
 
+// updateSecret updates a secret based on the provided parameters.
 func (c *ClientUsecase) updateSecret(secretName string, updateType int, success bool) {
 	if !success {
 		return
@@ -16,6 +17,7 @@ func (c *ClientUsecase) updateSecret(secretName string, updateType int, success 
 
 	metaInfo := c.userData.Meta.Data[secretName]
 
+	// Choosing the type of upgrade
 	if ui.UpdateItems[updateType] == ui.Info {
 		if err := c.updateMetaInfo(secretName, metaInfo); err != nil {
 			c.ui.PrintErr(ui.UpdateErr)
@@ -39,6 +41,7 @@ func (c *ClientUsecase) updateSecret(secretName string, updateType int, success 
 	}
 }
 
+// updateMetaInfo updates metadata information for a secret.
 func (c *ClientUsecase) updateMetaInfo(secretName string, metaInfo models.DataInfo) error {
 	fmt.Printf("Before  「 Name: %s, Description: %s 」\n", metaInfo.Name, metaInfo.Description)
 	info, err := c.ui.AddMetaInfo()
@@ -53,11 +56,14 @@ func (c *ClientUsecase) updateMetaInfo(secretName string, metaInfo models.DataIn
 	return nil
 }
 
+// getUpdatedData retrieves updated data based on the secret's type.
+//
 //nolint:ireturn,nolintlint
 func (c *ClientUsecase) getUpdatedData(secretName string, dataType int) (filemanager.Data, error) {
 	var data filemanager.Data
 	var err error
 
+	// Handle different secret types.
 	switch dataType {
 	case filemanager.NoteType:
 		data, err = c.ui.AddNote()

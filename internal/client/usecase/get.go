@@ -13,11 +13,13 @@ import (
 	"github.com/manifoldco/promptui"
 )
 
+// getSecrets retrieves and displays information about a secret based on its name.
 func (c *ClientUsecase) getSecrets(secretName string, success bool) {
 	if !success {
 		return
 	}
 
+	// Retrieve data and information about the secret.
 	data, info, err := c.fileManager.GetByName(secretName)
 	if err != nil {
 		c.ui.PrintErr(ui.GetErr)
@@ -26,6 +28,7 @@ func (c *ClientUsecase) getSecrets(secretName string, success bool) {
 		return
 	}
 
+	// Choose the appropriate handling based on the data type of the secret.
 	switch info.DataType {
 	case filemanager.NoteType:
 		var dataStruct filemanager.Note
@@ -41,6 +44,7 @@ func (c *ClientUsecase) getSecrets(secretName string, success bool) {
 	}
 }
 
+// getSecret displays the information of a non-file type secret.
 func (c *ClientUsecase) getSecret(data []byte, info models.DataInfo, dataStruct filemanager.Data) {
 	err := json.Unmarshal(data, dataStruct)
 	if err != nil {
@@ -52,6 +56,7 @@ func (c *ClientUsecase) getSecret(data []byte, info models.DataInfo, dataStruct 
 	printSecret(info.Name, info.Description, dataStruct.String())
 }
 
+// getFileSecret prompts you to choose where to upload the file and displays a success message.
 func (c *ClientUsecase) getFileSecret(data []byte, info models.DataInfo) {
 	var dataStruct filemanager.File
 	newFilePath, ok := c.ui.UploadFileTo(c.uploadPath)
@@ -90,6 +95,7 @@ func (c *ClientUsecase) getFileSecret(data []byte, info models.DataInfo) {
 	printSecret(info.Name, info.Description, dataStruct.String())
 }
 
+// printSecret prints formatted information about a secret.
 func printSecret(name, description, secret string) {
 	fmt.Println(promptui.Styler(
 		promptui.FGBold,

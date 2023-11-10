@@ -13,6 +13,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
+// Define a custom error for password mismatch.
 var errPasswordMismatch = errors.New("password mismatch")
 
 type ClientUsecase struct {
@@ -26,6 +27,7 @@ type ClientUsecase struct {
 	log         zerolog.Logger
 }
 
+// NewUsecase creates a new instance of the GophKeeper client use case.
 func NewUsecase(
 	dataPath string,
 	uploadPath string,
@@ -45,6 +47,7 @@ func NewUsecase(
 	}
 }
 
+// SetUser handles the user registration or login process.
 func (c *ClientUsecase) SetUser() error {
 	var err error
 	userAuth, err := filemanager.NewUserAuth(c.dataPath)
@@ -60,26 +63,27 @@ func (c *ClientUsecase) SetUser() error {
 			continue
 		}
 
-		if userAuth.IsUserNotExisting(c.userData.User.GetDir(c.dataPath)) {
-			if c.grpc.TryToConnect() && c.checkUserOnServer(userAuth) {
-				return nil
-			}
-			if c.ui.TryAgain() {
+		if userAuth.IsUseExisting(c.userData.User.GetDir(c.dataPath)) {
+			if err = c.handleUserLogin(userAuth); err != nil {
+				c.log.Err(err).Msg("failed handle user login")
+
 				continue
 			}
 
-			return c.handleUserRegistration(userAuth)
+			return nil
 		}
-		if err = c.handleUserLogin(userAuth); err != nil {
-			c.log.Err(err).Msg("failed handle user login")
-
+		if c.grpc.TryToConnect() && c.checkUserOnServer(userAuth) {
+			return nil
+		}
+		if c.ui.TryAgain() {
 			continue
 		}
 
-		return nil
+		return c.handleUserRegistration(userAuth)
 	}
 }
 
+// checkUserOnServer checks if the user exists on the server and handles the registration process if needed.
 func (c *ClientUsecase) checkUserOnServer(userAuth filemanager.Auth) bool {
 	hash, err := c.userData.User.GetHashedPass()
 	if err != nil {
@@ -129,6 +133,7 @@ func (c *ClientUsecase) checkUserOnServer(userAuth filemanager.Auth) bool {
 	return true
 }
 
+// handleUserRegistration handles the user registration process.
 func (c *ClientUsecase) handleUserRegistration(userAuth filemanager.Auth) error {
 	if c.grpc.IsNotAvailable() {
 		c.ui.PrintErr("Could not connect to the server, only local registration is available")
@@ -176,6 +181,7 @@ func (c *ClientUsecase) handleUserRegistration(userAuth filemanager.Auth) error 
 	return nil
 }
 
+// handleUserLogin handles the user login process.
 func (c *ClientUsecase) handleUserLogin(userAuth filemanager.Auth) error {
 	var err error
 	switch c.grpc.TryToConnect() {
@@ -208,6 +214,7 @@ func (c *ClientUsecase) handleUserLogin(userAuth filemanager.Auth) error {
 	return nil
 }
 
+// SetFileManager sets up the users file manager for the client use case.
 func (c *ClientUsecase) SetFileManager() error {
 	fileManager, err := filemanager.NewFileManager(
 		c.dataPath,

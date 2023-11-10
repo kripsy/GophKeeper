@@ -16,6 +16,7 @@ const (
 	FileType
 )
 
+// Constants representing names for each data type.
 const (
 	NameNoteType      = "Note"
 	NameBasicAuthType = "Login&Password"
@@ -23,14 +24,20 @@ const (
 	NameFileType      = "File"
 )
 
+// Data is an interface implemented by various data types to support encryption, hashing, and displaying.
 type Data interface {
+	// EncryptedData methods for perform encryption using a provided key.
 	EncryptedData(key []byte) ([]byte, error)
+	// GetHash methods for calculate a SHA-256 hash.
 	GetHash() (string, error)
+	// String methods for to provide a human-readable representation.
 	String() string
 }
 
+// DataTypeTable is a slice containing the names of each data type for display purposes.
 var DataTypeTable = []string{NameNoteType, NameBasicAuthType, NameCardDataType, NameFileType}
 
+// GetTypeName returns the name of a data type based on its identifier.
 func GetTypeName(dataType int) string {
 	if dataType < len(DataTypeTable) {
 		return DataTypeTable[dataType]
@@ -39,21 +46,25 @@ func GetTypeName(dataType int) string {
 	return "unknown"
 }
 
+// CardData represents data related to a bank card.
 type CardData struct {
 	Number string `json:"number"`
 	Date   string `json:"date"`
 	CVV    string `json:"cvv"`
 }
 
+// BasicAuth represents data related to login credentials.
 type BasicAuth struct {
 	Login    string `json:"login"`
 	Password string `json:"password"`
 }
 
+// Note represents textual notes.
 type Note struct {
 	Text string `json:"text"`
 }
 
+// File represents binary data.
 type File struct {
 	Data []byte `json:"Data"`
 }

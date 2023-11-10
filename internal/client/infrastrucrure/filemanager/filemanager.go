@@ -1,3 +1,4 @@
+// Package filemanager provides the ability to work with secret files regardless of their type
 package filemanager
 
 import (
@@ -14,8 +15,10 @@ import (
 	"github.com/kripsy/GophKeeper/internal/utils"
 )
 
+// chunkSize defines the size of chunks when reading encrypted files.
 const chunkSize = 4 * 1000 * 1000 // 4 МБ
 
+// FileManager struct represents a manager for secret files, providing methods for file operations.
 type FileManager struct {
 	storageDir string
 	uploadDir  string
@@ -24,17 +27,27 @@ type FileManager struct {
 	Meta       models.UserMeta
 }
 
+// FileStorage interface defines methods for file operations.
 type FileStorage interface {
+	// AddToStorage adds data to storage and updates metadata.
 	AddToStorage(name string, data Data, info models.DataInfo) error
+	// AddEncryptedToStorage adds encrypted data to storage and updates metadata.
 	AddEncryptedToStorage(name string, data chan []byte, info models.DataInfo) error
+	// GetByName retrieves decrypted data and metadata by name.
 	GetByName(name string) ([]byte, models.DataInfo, error)
+	// ReadEncryptedByName retrieves encrypted data by data ID.
 	ReadEncryptedByName(name string) (chan []byte, error)
+	// UpdateDataByName updates encrypted data in storage.
 	UpdateDataByName(name string, data Data) error
+	// UpdateInfoByName updates metadata by name.
 	UpdateInfoByName(name string, info models.DataInfo) error
+	// DeleteByIDs deletes data and metadata by ids.
 	DeleteByIDs(ids []string) error
+	// DeleteByName deletes data and metadata by name.
 	DeleteByName(name string) error
 }
 
+// NewFileManager creates a new FileManager instance with the provided parameters.
 func NewFileManager(storageDir, uploadDir, userDir string, meta models.UserMeta, key []byte) (*FileManager, error) {
 	if _, err := os.Stat(storageDir); os.IsNotExist(err) {
 		if err = os.MkdirAll(storageDir, permissions.DirMode); err != nil {
@@ -91,6 +104,7 @@ func (fm *FileManager) AddEncryptedToStorage(name string, data chan []byte, info
 
 	defer outFile.Close()
 
+	// Write encrypted data to the file in chunks.
 	for chunk := range data {
 		if _, writeErr := outFile.Write(chunk); writeErr != nil {
 			return fmt.Errorf("%w", err)
@@ -130,6 +144,7 @@ func (fm *FileManager) ReadEncryptedByName(dataID string) (chan []byte, error) {
 	data := make(chan []byte, 1)
 	buffer := make([]byte, chunkSize)
 
+	// Start a goroutine to read the file in chunks.
 	go func(data chan []byte) {
 		defer file.Close()
 		defer close(data)

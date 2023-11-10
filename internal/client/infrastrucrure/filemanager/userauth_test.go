@@ -138,7 +138,7 @@ func Test_userAuth_CreateUser(t *testing.T) {
 	}
 }
 
-func Test_userAuth_IsUserNotExisting(t *testing.T) {
+func Test_userAuth_IsUserExisting(t *testing.T) {
 	user := "user"
 	defer os.RemoveAll(storageDir)
 	auth, err := filemanager.NewUserAuth(storageDir)
@@ -158,18 +158,18 @@ func Test_userAuth_IsUserNotExisting(t *testing.T) {
 			name:    "user existing",
 			auth:    auth,
 			userDit: storageDir + user,
-			want:    false,
+			want:    true,
 		},
 		{
 			name:    "user not existing",
 			auth:    auth,
 			userDit: storageDir + "test",
-			want:    true,
+			want:    false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.auth.IsUserNotExisting(tt.userDit); got != tt.want {
+			if got := tt.auth.IsUseExisting(tt.userDit); got != tt.want {
 				t.Errorf("IsUserNotExisting() = %v, want %v", got, tt.want)
 			}
 		})

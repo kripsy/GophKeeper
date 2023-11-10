@@ -13,6 +13,7 @@ import (
 	"github.com/kripsy/GophKeeper/internal/utils"
 )
 
+// sync initiates the synchronization process with the server.
 func (c *ClientUsecase) sync() {
 	defer c.InMenu()
 	if c.grpc.IsNotAvailable() || !c.grpc.TryToConnect() {
@@ -59,6 +60,7 @@ func (c *ClientUsecase) sync() {
 	}
 }
 
+// synchronizeWithServer synchronizes local and server data.
 func (c *ClientUsecase) synchronizeWithServer(ctx context.Context, syncKey string, serverMeta *models.UserMeta) error {
 	if nil == serverMeta {
 		return nil
@@ -88,6 +90,7 @@ func (c *ClientUsecase) synchronizeWithServer(ctx context.Context, syncKey strin
 	return nil
 }
 
+// uploadMeta uploads the user's meta information to the server.
 func (c *ClientUsecase) uploadMeta(ctx context.Context, syncKey string) error {
 	data, err := c.fileManager.ReadEncryptedByName(c.userData.User.GetMetaFileName())
 	if err != nil {
@@ -102,6 +105,7 @@ func (c *ClientUsecase) uploadMeta(ctx context.Context, syncKey string) error {
 	return nil
 }
 
+// syncDeletedSecret handles synchronization of deleted secrets.
 func (c *ClientUsecase) syncDeletedSecret(deleted models.Deleted) {
 	var needDeleted []string
 	for dataID := range deleted {
@@ -120,6 +124,7 @@ func (c *ClientUsecase) syncDeletedSecret(deleted models.Deleted) {
 	}
 }
 
+// uploadSecrets uploads secrets to the server.
 func (c *ClientUsecase) uploadSecrets(ctx context.Context, syncKey string, toUpload models.MetaData) error {
 	var wg sync.WaitGroup
 
@@ -144,6 +149,7 @@ func (c *ClientUsecase) uploadSecrets(ctx context.Context, syncKey string, toUpl
 	return nil
 }
 
+// downloadSecrets downloads secrets from the server.
 func (c *ClientUsecase) downloadSecrets(ctx context.Context, syncKey string, toDownload models.MetaData) error {
 	var wg sync.WaitGroup
 	errors := make(chan error, 1)
@@ -180,6 +186,7 @@ func (c *ClientUsecase) downloadSecrets(ctx context.Context, syncKey string, toD
 	return nil
 }
 
+// downloadServerMeta downloads the server's metadata.
 func (c *ClientUsecase) downloadServerMeta(ctx context.Context, syncKey string) (*models.UserMeta, error) {
 	data, err := c.grpc.DownloadFile(ctx, c.userData.User.GetMetaFileName(), c.userData.Meta.HashData, syncKey)
 	if err != nil {
@@ -219,6 +226,7 @@ func (c *ClientUsecase) downloadServerMeta(ctx context.Context, syncKey string) 
 	return &serverData, nil
 }
 
+// blockSync blocks synchronization until a signal is received from the server.
 func (c *ClientUsecase) blockSync(ctx context.Context, syncKey string) error {
 	guidChan := make(chan string, 1)
 	errChan := make(chan error, 1)
@@ -249,6 +257,8 @@ func (c *ClientUsecase) blockSync(ctx context.Context, syncKey string) error {
 	return nil
 }
 
+// findDifferences identifies differences between local and server data.
+//
 //nolint:cyclop
 func findDifferences(local, server models.UserMeta) (needDownload, needUpload models.MetaData) {
 	needDownload = make(models.MetaData)
@@ -264,8 +274,8 @@ func findDifferences(local, server models.UserMeta) (needDownload, needUpload mo
 		serverData[data.DataID] = data
 	}
 
-	// проверяем данные сервера, пропускаем удаленные локально.
-	// если данные не обнаружены или устарели добавляем в список на скачивание
+	// Check the server data, skip the remote ones locally.
+	// If the data is not detected or outdated, add it to the list for download.
 	for dataID, sData := range serverData {
 		if local.DeletedData.IsDeleted(dataID) {
 			continue
@@ -276,8 +286,8 @@ func findDifferences(local, server models.UserMeta) (needDownload, needUpload mo
 		}
 	}
 
-	// проверяем локальные данные, пропускаем удаленные на сервере.
-	// если данные не обнаружены или устарели добавляем в список на выгрузку
+	// 	We check the local data, skip the remote data on the server.
+	//	If the data is not detected or outdated, add it to the list for uploading
 	for dataID, lData := range localData {
 		if server.DeletedData.IsDeleted(dataID) {
 			continue

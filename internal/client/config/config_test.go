@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/kripsy/GophKeeper/internal/client/config"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetConfig(t *testing.T) {
@@ -93,10 +93,10 @@ server_address: "127.0.0.1:8080"
 			got, err := config.GetConfig()
 
 			if !tt.wantErr {
-				assert.Equal(t, true, reflect.DeepEqual(tt.want, got))
-				assert.NoError(t, err)
+				require.Equal(t, true, reflect.DeepEqual(tt.want, got))
+				require.NoError(t, err)
 			} else {
-				assert.Error(t, err)
+				require.Error(t, err)
 			}
 
 			// Очищаем файл конфигурации после каждого теста

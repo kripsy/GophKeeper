@@ -10,12 +10,14 @@ import (
 	"github.com/kripsy/GophKeeper/internal/utils"
 )
 
+// Auth interface defines methods for user local authentication.
 type Auth interface {
-	IsUserNotExisting(userDit string) bool
+	IsUseExisting(userDit string) bool
 	CreateUser(user *models.User, isSyncStorage bool) (models.UserMeta, error)
 	GetUser(user *models.User) (models.UserMeta, error)
 }
 
+// userAuth struct represents an authentication implementation using file storage.
 type userAuth struct {
 	userFilePath string
 }
@@ -33,14 +35,16 @@ func NewUserAuth(userPath string) (*userAuth, error) {
 	}, nil
 }
 
-func (a *userAuth) IsUserNotExisting(userDit string) bool {
+// IsUserExisting checks if a user directory does not exist.
+func (a *userAuth) IsUseExisting(userDit string) bool {
 	if _, err := os.Stat(userDit); os.IsNotExist(err) {
-		return true
+		return false
 	}
 
-	return false
+	return true
 }
 
+// CreateUser creates a new user and stores their metadata in encrypted form.
 func (a *userAuth) CreateUser(user *models.User, isSyncStorage bool) (models.UserMeta, error) {
 	meta := models.UserMeta{
 		Username:      user.Username,
@@ -73,6 +77,7 @@ func (a *userAuth) CreateUser(user *models.User, isSyncStorage bool) (models.Use
 	return meta, nil
 }
 
+// GetUser retrieves user metadata by decrypting it from the user's file.
 func (a *userAuth) GetUser(user *models.User) (models.UserMeta, error) {
 	fileData, err := os.ReadFile(user.GetDir(a.userFilePath))
 	if err != nil {
