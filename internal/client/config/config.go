@@ -31,7 +31,9 @@ var once sync.Once
 func GetConfig() (Config, error) {
 	var fileCfg Config
 
-	flags = parseFlags()
+	once.Do(func() {
+		flags = parseFlags()
+	})
 
 	// Use flag config path or the default if not provided.
 	configPath := flags.ConfigPath

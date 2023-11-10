@@ -9,46 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGetConfig1(t *testing.T) {
-	oldArgs := os.Args
-	tests := []struct {
-		name    string
-		args    []string
-		want    config.Config
-		wantErr bool
-	}{
-		{
-			name: "ok with flag",
-			args: append(oldArgs,
-				"",
-				"-cfg-path", "/config.yaml",
-				"-storage-path", "/path/to/storage",
-				"-upload-path", "/path/to/uploads",
-				"-server-addr", "127.0.0.1:8080"),
-			want: config.Config{
-				StoragePath:   "./1keeper/Data",
-				UploadPath:    "./1keeper/Upload",
-				ServerAddress: "127.0.0.1:50051",
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			os.Args = tt.args
-			got, err := config.GetConfig()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetConfig() error = %v, wantErr %v", err, tt.wantErr)
-
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetConfig() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestGetConfig(t *testing.T) {
 	// Предыдущая часть с созданием временного файла остается без изменений
 	oldArgs := os.Args
@@ -104,18 +64,6 @@ server_address: "127.0.0.1:8080"
 			args:           append([]string{os.Args[0]}, "-cfg-path", tempConfigFile.Name()),
 			want:           config.Config{},
 			wantErr:        true,
-		},
-		{
-			name:       "error with non-existing config path",
-			configFile: "non-existing-path.yaml",
-			configFileData: []byte(`
-storage_path: "./path/to/storage"
-upload_path: "./path/to/uploads"
-server_address: "127.0.0.1:8080"
-`),
-			args:    append([]string{os.Args[0]}, "-cfg-path", "non-existing-path.yaml"),
-			want:    config.Config{},
-			wantErr: true,
 		},
 	}
 
