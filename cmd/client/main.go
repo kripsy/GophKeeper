@@ -13,8 +13,11 @@ func main() {
 	bi := getBuildInfo()
 	cfg, err := config.GetConfig()
 	if err != nil {
+		fmt.Print(err)
 		os.Exit(1)
 	}
+
+	fmt.Println("Start with config:", cfg)
 	l := log.InitLogger(cfg.StoragePath)
 
 	a, err := app.NewApplication(cfg, bi, l)

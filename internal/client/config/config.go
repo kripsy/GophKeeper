@@ -30,9 +30,8 @@ var once sync.Once
 // GetConfig returns the configuration based on the provided flags or defaults.
 func GetConfig() (Config, error) {
 	var fileCfg Config
-	once.Do(func() {
-		flags = parseFlags()
-	})
+
+	flags = parseFlags()
 
 	// Use flag config path or the default if not provided.
 	configPath := flags.ConfigPath
@@ -41,20 +40,13 @@ func GetConfig() (Config, error) {
 	}
 
 	// Check if the specified config file exists.
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		// Возвращаем ошибку, если файл конфигурации не существует
-		//nolint:goerr113
-		return Config{}, fmt.Errorf("config file not found: %s", configPath)
-	} else if err != nil {
-		// Возвращаем ошибку, если есть другая ошибка при проверке файла
-		return Config{}, fmt.Errorf("failed to check config file: %w", err)
-	}
+	if _, err := os.Stat(configPath); !os.IsNotExist(err) {
+		// Attempt to parse the configuration file.
+		if err = parseConfig(configPath, &fileCfg); err != nil {
+			fmt.Print("failed read yaml config file: ", err.Error())
 
-	// Attempt to parse the configuration file.
-	if err := parseConfig(configPath, &fileCfg); err != nil {
-		fmt.Printf("failed to read yaml config file: %v\n", err)
-
-		return Config{}, err
+			return Config{}, err
+		}
 	}
 
 	return setConfig(fileCfg, flags), nil
