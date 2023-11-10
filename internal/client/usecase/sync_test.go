@@ -545,14 +545,13 @@ func TestClientUsecaseUploadSecrets(t *testing.T) {
 				toDownload: testMetaData,
 			},
 			setup: func(mfm *mock_filemanager.MockFileStorage, mc *mock_grpc.MockClient) {
+				//nolint:gofmt,revive,gosimple
 				for _, _ = range testMetaData {
 					dataChan := make(chan []byte, 1)
 					data, err := json.Marshal(testMetaData)
 					assert.NoError(t, err)
 					dataChan <- data
 					close(dataChan)
-					// mockClient.EXPECT().DownloadFile(gomock.Any(), info.DataID, gomock.Any(), syncKey).Return(dataChan, nil).Times(1)
-					// mockFileManager.EXPECT().AddEncryptedToStorage(info.Name, gomock.Any(), info).Return(ErrEmpty).Times(1)
 					mfm.EXPECT().ReadEncryptedByName(gomock.Any()).Return(nil, ErrEmpty).AnyTimes()
 				}
 			},
@@ -569,9 +568,8 @@ func TestClientUsecaseUploadSecrets(t *testing.T) {
 				syncKey:    syncKey,
 				toDownload: testMetaData,
 			},
-			//mfm *mock_filemanager.MockFileStorage,
-			//mc *mock_grpc.MockClient
 			setup: func(mfm *mock_filemanager.MockFileStorage, mc *mock_grpc.MockClient) {
+				//nolint:gofmt,revive,gosimple
 				for _, _ = range testMetaData {
 					dataChan := make(chan []byte, 1)
 					data, err := json.Marshal(testMetaData)
@@ -579,7 +577,9 @@ func TestClientUsecaseUploadSecrets(t *testing.T) {
 					dataChan <- data
 					close(dataChan)
 					mfm.EXPECT().ReadEncryptedByName(gomock.Any()).Return(dataChan, nil).AnyTimes()
-					mc.EXPECT().UploadFile(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), dataChan).Return(ErrEmpty).MinTimes(1)
+					mc.EXPECT().UploadFile(gomock.Any(),
+						gomock.Any(), gomock.Any(),
+						gomock.Any(), dataChan).Return(ErrEmpty).MinTimes(1)
 				}
 			},
 			fields: fields{
@@ -595,9 +595,8 @@ func TestClientUsecaseUploadSecrets(t *testing.T) {
 				syncKey:    syncKey,
 				toDownload: testMetaData,
 			},
-			//mfm *mock_filemanager.MockFileStorage,
-			//mc *mock_grpc.MockClient
 			setup: func(mfm *mock_filemanager.MockFileStorage, mc *mock_grpc.MockClient) {
+				//nolint:gofmt,revive,gosimple
 				for _, _ = range testMetaData {
 					dataChan := make(chan []byte, 1)
 					data, err := json.Marshal(testMetaData)
