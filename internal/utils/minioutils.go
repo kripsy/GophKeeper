@@ -24,10 +24,6 @@ func FromUser2BucketName(_ context.Context, username string, userID int) (string
 	if username == "" {
 		return "", fmt.Errorf("%w", ErrIncorrectUserName)
 	}
-	bucketName := username + str
-	if bucketName == "" {
-		return "", fmt.Errorf("%w", ErrIncorrectBucket)
-	}
 
 	return (prefix + username + str), nil
 }

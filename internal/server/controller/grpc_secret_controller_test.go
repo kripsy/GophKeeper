@@ -126,6 +126,19 @@ func TestGrpcServerMultipartUploadFile(t *testing.T) {
 			expectedError: status.Error(codes.Internal, ""),
 		},
 		{
+			name: "Error get bucket",
+			setupMocks: func(mockStream *mocks.MockGophKeeperService_MultipartUploadFileServer,
+				mockSecretUseCase *mocks.MockSecretUseCase,
+				mockSyncStatus *mocks.MockSyncStatus) {
+				//nolint:staticcheck
+				newCtx := context.WithValue(context.Background(), utils.USERNAMECONTEXTKEY, "")
+				//nolint:staticcheck
+				newCtx = context.WithValue(newCtx, utils.USERIDCONTEXTKEY, 1)
+				mockStream.EXPECT().Context().Return(newCtx).AnyTimes()
+			},
+			expectedError: status.Error(codes.Internal, ""),
+		},
+		{
 			name: "Couldn't parse GUID",
 			setupMocks: func(mockStream *mocks.MockGophKeeperService_MultipartUploadFileServer,
 				mockSecretUseCase *mocks.MockSecretUseCase,
@@ -466,6 +479,48 @@ func TestApplyChanges(t *testing.T) {
 			ctx: context.WithValue(context.WithValue(context.Background(),
 				//nolint:staticcheck
 				utils.USERNAMECONTEXTKEY, "user"), utils.USERIDCONTEXTKEY, 1),
+			errCode: codes.InvalidArgument,
+		},
+		{
+			name: "Cannot get userID",
+			req: &pb.ApplyChangesRequest{
+				Guid: "",
+			},
+			setup: func(ctx context.Context) {
+
+			},
+			wantErr: true,
+			ctx: context.WithValue(context.WithValue(context.Background(),
+				//nolint:staticcheck
+				utils.USERNAMECONTEXTKEY, "user"), utils.USERIDCONTEXTKEY+"fake", 1),
+			errCode: codes.InvalidArgument,
+		},
+		{
+			name: "Cannot get userName",
+			req: &pb.ApplyChangesRequest{
+				Guid: "",
+			},
+			setup: func(ctx context.Context) {
+
+			},
+			wantErr: true,
+			ctx: context.WithValue(context.WithValue(context.Background(),
+				//nolint:staticcheck
+				utils.USERNAMECONTEXTKEY+"fake", "user"), utils.USERIDCONTEXTKEY, 1),
+			errCode: codes.InvalidArgument,
+		},
+		{
+			name: "Cannot get bucketname",
+			req: &pb.ApplyChangesRequest{
+				Guid: "",
+			},
+			setup: func(ctx context.Context) {
+
+			},
+			wantErr: true,
+			ctx: context.WithValue(context.WithValue(context.Background(),
+				//nolint:staticcheck
+				utils.USERNAMECONTEXTKEY, ""), utils.USERIDCONTEXTKEY, 1),
 			errCode: codes.InvalidArgument,
 		},
 	}
