@@ -530,6 +530,7 @@ func TestClientUsecaseUploadSecrets(t *testing.T) {
 		syncKey    string
 		toDownload models.MetaData
 	}
+	//nolint:dupl
 	tests := []struct {
 		name    string
 		fields  fields
@@ -632,6 +633,251 @@ func TestClientUsecaseUploadSecrets(t *testing.T) {
 			c.fileManager = mockFileManager
 			tt.setup(mockFileManager, mockClient)
 			err := c.uploadSecrets(tt.args.ctx, tt.args.syncKey, tt.args.toDownload)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ClientUsecase.downloadSecrets() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestClientUsecaseSyncDeleted(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	userDeletedTest := make(map[string]struct{})
+	userDeletedTest["1"] = struct{}{}
+	userDeletedTest["2"] = struct{}{}
+
+	type fields struct {
+		grpc        grpc.Client
+		fileManager filemanager.FileStorage
+	}
+	type args struct {
+		//nolint:containedctx,unused
+		ctx context.Context
+		//nolint:unused
+		syncKey string
+		//nolint:unused
+		toDownload models.MetaData
+		deleted    models.Deleted
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		setup   func(mfm *mock_filemanager.MockFileStorage, mc *mock_grpc.MockClient)
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "len deleted 0",
+			args: args{
+				deleted: models.Deleted{},
+			},
+			setup: func(mfm *mock_filemanager.MockFileStorage, mc *mock_grpc.MockClient) {
+
+			},
+			fields:  fields{},
+			wantErr: false,
+		},
+		{
+			name: "len deleted not 0",
+			args: args{
+				//nolint:gofmt
+				deleted: map[string]struct{}{
+					"1": struct{}{},
+					"2": struct{}{},
+				},
+			},
+			setup: func(mfm *mock_filemanager.MockFileStorage, mc *mock_grpc.MockClient) {
+
+			},
+			fields:  fields{},
+			wantErr: false,
+		},
+		{
+			name: "len deleted not 0 and more than in user and success delete",
+			args: args{
+				deleted: map[string]struct{}{
+					//nolint:gofmt
+					"1": struct{}{},
+					"2": struct{}{},
+					"3": struct{}{},
+				},
+			},
+			setup: func(mfm *mock_filemanager.MockFileStorage, mc *mock_grpc.MockClient) {
+				mfm.EXPECT().DeleteByIOs(gomock.Any()).Return(nil).MinTimes(1)
+			},
+			fields:  fields{},
+			wantErr: false,
+		},
+		{
+			name: "len deleted not 0 and more than in user and failed delete",
+			args: args{
+				deleted: map[string]struct{}{
+					//nolint:gofmt
+					"1": struct{}{},
+					"2": struct{}{},
+					"3": struct{}{},
+				},
+			},
+			setup: func(mfm *mock_filemanager.MockFileStorage, mc *mock_grpc.MockClient) {
+				mfm.EXPECT().DeleteByIOs(gomock.Any()).Return(ErrEmpty).MinTimes(1)
+			},
+			fields:  fields{},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &ClientUsecase{
+				grpc:        tt.fields.grpc,
+				fileManager: tt.fields.fileManager,
+				userData: &models.UserData{
+					Meta: models.UserMeta{
+						HashData: "testhash",
+						DeletedData: map[string]struct{}{
+							//nolint:gofmt
+							"1": struct{}{},
+							"2": struct{}{},
+						},
+					},
+				},
+			}
+			mockClient := mock_grpc.NewMockClient(ctrl)
+			mockFileManager := mock_filemanager.NewMockFileStorage(ctrl)
+			c.grpc = mockClient
+			c.fileManager = mockFileManager
+			tt.setup(mockFileManager, mockClient)
+			c.syncDeletedSecret(tt.args.deleted)
+		})
+	}
+}
+
+func TestClientUsecaseUploadMeta(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	ctx := context.Background()
+	syncKey := "syncKey"
+	testTime := time.Now()
+	testMetaData := models.MetaData{
+		"data2": models.DataInfo{DataID: "data2", UpdatedAt: testTime.Add(-1 * time.Hour)},
+	}
+	type fields struct {
+		grpc        grpc.Client
+		fileManager filemanager.FileStorage
+		// other fields
+	}
+	type args struct {
+		//nolint:containedctx
+		ctx        context.Context
+		syncKey    string
+		toDownload models.MetaData
+	}
+	//nolint:dupl
+	tests := []struct {
+		name    string
+		fields  fields
+		setup   func(mfm *mock_filemanager.MockFileStorage, mc *mock_grpc.MockClient)
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "error in c.fileManager.ReadEncryptedByName",
+			args: args{
+				ctx:        ctx,
+				syncKey:    syncKey,
+				toDownload: testMetaData,
+			},
+			setup: func(mfm *mock_filemanager.MockFileStorage, mc *mock_grpc.MockClient) {
+				//nolint:gofmt,revive,gosimple
+				for _, _ = range testMetaData {
+					dataChan := make(chan []byte, 1)
+					data, err := json.Marshal(testMetaData)
+					assert.NoError(t, err)
+					dataChan <- data
+					close(dataChan)
+					mfm.EXPECT().ReadEncryptedByName(gomock.Any()).Return(nil, ErrEmpty).AnyTimes()
+				}
+			},
+			fields: fields{
+				// grpc:        mockClient,
+				// fileManager: mockFileManager,
+			},
+			wantErr: true,
+		},
+		{
+			name: "error in c.grpc.UploadFile",
+			args: args{
+				ctx:        ctx,
+				syncKey:    syncKey,
+				toDownload: testMetaData,
+			},
+			setup: func(mfm *mock_filemanager.MockFileStorage, mc *mock_grpc.MockClient) {
+				//nolint:gofmt,revive,gosimple
+				for _, _ = range testMetaData {
+					dataChan := make(chan []byte, 1)
+					data, err := json.Marshal(testMetaData)
+					assert.NoError(t, err)
+					dataChan <- data
+					close(dataChan)
+					mfm.EXPECT().ReadEncryptedByName(gomock.Any()).Return(dataChan, nil).AnyTimes()
+					mc.EXPECT().UploadFile(gomock.Any(),
+						gomock.Any(), gomock.Any(),
+						gomock.Any(), dataChan).Return(ErrEmpty).MinTimes(1)
+				}
+			},
+			fields: fields{
+				// grpc:        mockClient,
+				// fileManager: mockFileManager,
+			},
+			wantErr: true,
+		},
+		{
+			name: "success",
+			args: args{
+				ctx:        ctx,
+				syncKey:    syncKey,
+				toDownload: testMetaData,
+			},
+			setup: func(mfm *mock_filemanager.MockFileStorage, mc *mock_grpc.MockClient) {
+				//nolint:gofmt,revive,gosimple
+				for _, _ = range testMetaData {
+					dataChan := make(chan []byte, 1)
+					data, err := json.Marshal(testMetaData)
+					assert.NoError(t, err)
+					dataChan <- data
+					close(dataChan)
+					mfm.EXPECT().ReadEncryptedByName(gomock.Any()).Return(dataChan, nil).AnyTimes()
+					mc.EXPECT().UploadFile(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), dataChan).Return(nil).MinTimes(1)
+				}
+			},
+			fields: fields{
+				// grpc:        mockClient,
+				// fileManager: mockFileManager,
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &ClientUsecase{
+				grpc:        tt.fields.grpc,
+				fileManager: tt.fields.fileManager,
+				userData: &models.UserData{
+					Meta: models.UserMeta{
+						HashData: "testhash",
+					},
+				},
+			}
+			mockClient := mock_grpc.NewMockClient(ctrl)
+			mockFileManager := mock_filemanager.NewMockFileStorage(ctrl)
+			c.grpc = mockClient
+			c.fileManager = mockFileManager
+			tt.setup(mockFileManager, mockClient)
+			err := c.uploadMeta(tt.args.ctx, tt.args.syncKey)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ClientUsecase.downloadSecrets() error = %v, wantErr %v", err, tt.wantErr)
 			}
