@@ -565,7 +565,7 @@ func TestClientUsecaseUploadSecrets(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "error in c.fileManager.ReadEncryptedByName",
+			name: "error in c.fileManager.ReadEncryptedByID",
 			args: args{
 				ctx:        ctx,
 				syncKey:    syncKey,
@@ -579,7 +579,7 @@ func TestClientUsecaseUploadSecrets(t *testing.T) {
 					assert.NoError(t, err)
 					dataChan <- data
 					close(dataChan)
-					mfm.EXPECT().ReadEncryptedByName(gomock.Any()).Return(nil, ErrEmpty).AnyTimes()
+					mfm.EXPECT().ReadEncryptedByID(gomock.Any()).Return(nil, ErrEmpty).AnyTimes()
 				}
 			},
 			fields: fields{
@@ -603,7 +603,7 @@ func TestClientUsecaseUploadSecrets(t *testing.T) {
 					assert.NoError(t, err)
 					dataChan <- data
 					close(dataChan)
-					mfm.EXPECT().ReadEncryptedByName(gomock.Any()).Return(dataChan, nil).AnyTimes()
+					mfm.EXPECT().ReadEncryptedByID(gomock.Any()).Return(dataChan, nil).AnyTimes()
 					mc.EXPECT().UploadFile(gomock.Any(),
 						gomock.Any(), gomock.Any(),
 						gomock.Any(), dataChan).Return(ErrEmpty).MinTimes(1)
@@ -630,7 +630,7 @@ func TestClientUsecaseUploadSecrets(t *testing.T) {
 					assert.NoError(t, err)
 					dataChan <- data
 					close(dataChan)
-					mfm.EXPECT().ReadEncryptedByName(gomock.Any()).Return(dataChan, nil).AnyTimes()
+					mfm.EXPECT().ReadEncryptedByID(gomock.Any()).Return(dataChan, nil).AnyTimes()
 					mc.EXPECT().UploadFile(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), dataChan).Return(nil).MinTimes(1)
 				}
 			},
@@ -731,7 +731,7 @@ func TestClientUsecaseSyncDeleted(t *testing.T) {
 				},
 			},
 			setup: func(mfm *mock_filemanager.MockFileStorage, mc *mock_grpc.MockClient) {
-				mfm.EXPECT().DeleteByIOs(gomock.Any()).Return(nil).MinTimes(1)
+				mfm.EXPECT().DeleteByIDs(gomock.Any()).Return(nil).MinTimes(1)
 			},
 			fields:  fields{},
 			wantErr: false,
@@ -747,7 +747,7 @@ func TestClientUsecaseSyncDeleted(t *testing.T) {
 				},
 			},
 			setup: func(mfm *mock_filemanager.MockFileStorage, mc *mock_grpc.MockClient) {
-				mfm.EXPECT().DeleteByIOs(gomock.Any()).Return(ErrEmpty).MinTimes(1)
+				mfm.EXPECT().DeleteByIDs(gomock.Any()).Return(ErrEmpty).MinTimes(1)
 			},
 			fields:  fields{},
 			wantErr: false,
@@ -810,7 +810,7 @@ func TestClientUsecaseUploadMeta(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "error in c.fileManager.ReadEncryptedByName",
+			name: "error in c.fileManager.ReadEncryptedByID",
 			args: args{
 				ctx:        ctx,
 				syncKey:    syncKey,
@@ -824,7 +824,7 @@ func TestClientUsecaseUploadMeta(t *testing.T) {
 					assert.NoError(t, err)
 					dataChan <- data
 					close(dataChan)
-					mfm.EXPECT().ReadEncryptedByName(gomock.Any()).Return(nil, ErrEmpty).AnyTimes()
+					mfm.EXPECT().ReadEncryptedByID(gomock.Any()).Return(nil, ErrEmpty).AnyTimes()
 				}
 			},
 			fields: fields{
@@ -848,7 +848,7 @@ func TestClientUsecaseUploadMeta(t *testing.T) {
 					assert.NoError(t, err)
 					dataChan <- data
 					close(dataChan)
-					mfm.EXPECT().ReadEncryptedByName(gomock.Any()).Return(dataChan, nil).AnyTimes()
+					mfm.EXPECT().ReadEncryptedByID(gomock.Any()).Return(dataChan, nil).AnyTimes()
 					mc.EXPECT().UploadFile(gomock.Any(),
 						gomock.Any(), gomock.Any(),
 						gomock.Any(), dataChan).Return(ErrEmpty).MinTimes(1)
@@ -875,7 +875,7 @@ func TestClientUsecaseUploadMeta(t *testing.T) {
 					assert.NoError(t, err)
 					dataChan <- data
 					close(dataChan)
-					mfm.EXPECT().ReadEncryptedByName(gomock.Any()).Return(dataChan, nil).AnyTimes()
+					mfm.EXPECT().ReadEncryptedByID(gomock.Any()).Return(dataChan, nil).AnyTimes()
 					mc.EXPECT().UploadFile(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), dataChan).Return(nil).MinTimes(1)
 				}
 			},
@@ -1066,7 +1066,7 @@ func TestClientUsecaseSynchronizeWithServer(t *testing.T) {
 					gomock.Any(),
 					gomock.Any()).Return(dataChan, nil).AnyTimes()
 				mui.EXPECT().PrintErr(gomock.Any()).AnyTimes()
-				mockFileManager.EXPECT().ReadEncryptedByName(gomock.Any()).Return(dataChan,
+				mockFileManager.EXPECT().ReadEncryptedByID(gomock.Any()).Return(dataChan,
 					ErrEmpty).AnyTimes()
 			},
 			wantErr: true,
@@ -1106,7 +1106,7 @@ func TestClientUsecaseSynchronizeWithServer(t *testing.T) {
 					gomock.Any(),
 					gomock.Any()).Return(dataChan, nil).AnyTimes()
 				mui.EXPECT().PrintErr(gomock.Any()).AnyTimes()
-				mockFileManager.EXPECT().ReadEncryptedByName(gomock.Any()).Return(dataChan,
+				mockFileManager.EXPECT().ReadEncryptedByID(gomock.Any()).Return(dataChan,
 					nil).AnyTimes()
 				grpc.EXPECT().UploadFile(gomock.Any(), gomock.Any(),
 					gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).MinTimes(1)

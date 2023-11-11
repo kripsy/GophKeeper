@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/filemanager"
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui"
@@ -19,15 +18,28 @@ func (c *ClientUsecase) getSecrets(secretName string, success bool) {
 		return
 	}
 
+	info, ok := c.userData.Meta.Data[secretName]
+	if !ok {
+		c.ui.PrintErr(ui.GetErr)
+		c.log.Error().Msg("err get secret from meta")
+
+		return
+	}
+
+	if info.DataType == filemanager.FileType {
+		c.getFileSecret(info)
+
+		return
+	}
+
 	// Retrieve data and information about the secret.
-	data, info, err := c.fileManager.GetByName(secretName)
+	data, info, err := c.fileManager.GetByInfo(info)
 	if err != nil {
 		c.ui.PrintErr(ui.GetErr)
 		c.log.Err(err).Msg("err get secret from meta")
 
 		return
 	}
-
 	// Choose the appropriate handling based on the data type of the secret.
 	switch info.DataType {
 	case filemanager.NoteType:
@@ -39,8 +51,6 @@ func (c *ClientUsecase) getSecrets(secretName string, success bool) {
 	case filemanager.CardDataType:
 		var dataStruct filemanager.CardData
 		c.getSecret(data, info, &dataStruct)
-	case filemanager.FileType:
-		c.getFileSecret(data, info)
 	}
 }
 
@@ -57,23 +67,15 @@ func (c *ClientUsecase) getSecret(data []byte, info models.DataInfo, dataStruct 
 }
 
 // getFileSecret prompts you to choose where to upload the file and displays a success message.
-func (c *ClientUsecase) getFileSecret(data []byte, info models.DataInfo) {
-	var dataStruct filemanager.File
+func (c *ClientUsecase) getFileSecret(info models.DataInfo) {
 	newFilePath, ok := c.ui.UploadFileTo(c.uploadPath)
 	if !ok {
 		c.ui.PrintErr(ui.GetErr)
 
 		return
 	}
-	err := json.Unmarshal(data, &dataStruct)
-	if err != nil {
-		c.ui.PrintErr(ui.GetErr)
 
-		c.log.Err(err).Msg("failed unmarshal data")
-
-		return
-	}
-	if _, err = os.Stat(newFilePath); os.IsNotExist(err) {
+	if _, err := os.Stat(newFilePath); os.IsNotExist(err) {
 		if err = os.MkdirAll(newFilePath, permissions.DirMode); err != nil {
 			c.ui.PrintErr(ui.GetErr)
 
@@ -82,7 +84,8 @@ func (c *ClientUsecase) getFileSecret(data []byte, info models.DataInfo) {
 			return
 		}
 	}
-	err = os.WriteFile(filepath.Join(newFilePath, *info.FileName), dataStruct.Data, permissions.FileMode)
+
+	err := c.fileManager.ReadFileFromStorage(newFilePath, info)
 	if err != nil {
 		c.ui.PrintErr(ui.GetErr)
 
@@ -91,8 +94,7 @@ func (c *ClientUsecase) getFileSecret(data []byte, info models.DataInfo) {
 		return
 	}
 
-	fmt.Println(newFilePath)
-	printSecret(info.Name, info.Description, dataStruct.String())
+	printSecret(info.Name, info.Description, newFilePath)
 }
 
 // printSecret prints formatted information about a secret.
