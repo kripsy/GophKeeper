@@ -122,6 +122,14 @@ func TestAuthInterceptor(t *testing.T) {
 			wantErr:     false,
 			isProtected: false,
 		},
+		{
+			name:        "Empty token 2",
+			fullMethod:  "/pkg.api.gophkeeper.v1.GophKeeperService/ValidMethod",
+			token:       "Bearer ",
+			secret:      secret,
+			wantErr:     true,
+			isProtected: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -152,6 +160,11 @@ func TestAuthInterceptor(t *testing.T) {
 			case "EmptyToken":
 				md := metadata.New(map[string]string{
 					utils.AUTHORIZATIONHEADER: "Bearer ",
+				})
+				ctx = metadata.NewIncomingContext(context.Background(), md)
+			case "Empty token 2":
+				md := metadata.New(map[string]string{
+					utils.AUTHORIZATIONHEADER: "",
 				})
 				ctx = metadata.NewIncomingContext(context.Background(), md)
 			}
@@ -237,6 +250,20 @@ func TestStreamAuthInterceptor(t *testing.T) {
 				mockStream.EXPECT().Context().Return(ctx).AnyTimes()
 			},
 			wantCode: codes.Unauthenticated,
+		},
+		{
+			name:       "Empty token",
+			fullMethod: "/package.Service/StreamMethod",
+			token:      "",
+			wantErr:    true,
+			wantCode:   codes.Unauthenticated,
+			setup: func(mockStream *mocks.MockServerStream) {
+				md := metadata.New(map[string]string{
+					utils.AUTHORIZATIONHEADER: "",
+				})
+				ctx := metadata.NewIncomingContext(context.Background(), md)
+				mockStream.EXPECT().Context().Return(ctx).AnyTimes()
+			},
 		},
 	}
 
