@@ -21,6 +21,18 @@ func TestCreateCertificate(t *testing.T) {
 			privateKeyPath: "/tmp/server.key",
 			wantErr:        false,
 		},
+		{
+			name:           "InValid path 1",
+			serverCertPath: "/tmp/server.crt",
+			privateKeyPath: " ",
+			wantErr:        true,
+		},
+		{
+			name:           "InValid path 2",
+			serverCertPath: " ",
+			privateKeyPath: "/tmp/server.key",
+			wantErr:        true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -28,9 +40,17 @@ func TestCreateCertificate(t *testing.T) {
 			tempDir, err := os.MkdirTemp("", "cert_test")
 			require.NoError(t, err)
 			defer os.RemoveAll(tempDir)
-
-			tt.serverCertPath = tempDir + "/server.crt"
-			tt.privateKeyPath = tempDir + "/server.key"
+			switch tt.name {
+			case "Valid paths":
+				tt.serverCertPath = tempDir + "/server.crt"
+				tt.privateKeyPath = tempDir + "/server.key"
+			case "InValid path 1":
+				tt.serverCertPath = tempDir //+ "/server.crt"
+				tt.privateKeyPath = tempDir + "/server.key"
+			case "InValid path 2":
+				tt.serverCertPath = tempDir + "/server.crt"
+				tt.privateKeyPath = tempDir //+ "/server.key"
+			}
 
 			err = utils.CreateCertificate(tt.serverCertPath, tt.privateKeyPath)
 			if tt.wantErr {
