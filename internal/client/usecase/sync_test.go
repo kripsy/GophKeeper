@@ -915,16 +915,20 @@ func TestClientUsecaseSynchronizeWithServer(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	type fields struct {
-		dataPath    string
-		uploadPath  string
-		aboutMsg    string
-		userData    *models.UserData
-		grpc        grpc.Client
+		dataPath   string
+		uploadPath string
+		aboutMsg   string
+		userData   *models.UserData
+		//nolint:unused
+		grpc grpc.Client
+		//nolint:unused
 		fileManager filemanager.FileStorage
-		ui          ui.UserInterface
-		log         zerolog.Logger
+		//nolint:unused
+		ui  ui.UserInterface
+		log zerolog.Logger
 	}
 	type args struct {
+		//nolint:containedctx
 		ctx        context.Context
 		syncKey    string
 		serverMeta *models.UserMeta
