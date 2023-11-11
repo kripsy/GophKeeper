@@ -15,6 +15,7 @@ import (
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/filemanager"
 	mock_filemanager "github.com/kripsy/GophKeeper/internal/client/infrastrucrure/filemanager/mocks"
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui"
+	mock_ui "github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui/mocks"
 	"github.com/kripsy/GophKeeper/internal/models"
 	"github.com/kripsy/GophKeeper/internal/utils"
 	"github.com/rs/zerolog"
@@ -905,6 +906,235 @@ func TestClientUsecaseUploadMeta(t *testing.T) {
 			err := c.uploadMeta(tt.args.ctx, tt.args.syncKey)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ClientUsecase.downloadSecrets() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestClientUsecaseSynchronizeWithServer(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	type fields struct {
+		dataPath   string
+		uploadPath string
+		aboutMsg   string
+		userData   *models.UserData
+		//nolint:unused
+		grpc grpc.Client
+		//nolint:unused
+		fileManager filemanager.FileStorage
+		//nolint:unused
+		ui  ui.UserInterface
+		log zerolog.Logger
+	}
+	type args struct {
+		//nolint:containedctx
+		ctx        context.Context
+		syncKey    string
+		serverMeta *models.UserMeta
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+		setup   func(mui *mock_ui.MockUserInterface,
+			grpc *mock_grpc.MockClient,
+			mockFileManager *mock_filemanager.MockFileStorage)
+	}{
+		{
+			name: "Empty server Meta",
+			args: args{
+				serverMeta: nil,
+			},
+			wantErr: false,
+			setup: func(mui *mock_ui.MockUserInterface,
+				grpc *mock_grpc.MockClient,
+				mockFileManager *mock_filemanager.MockFileStorage) {
+			},
+		},
+		{
+			name: "Zero different",
+			args: args{
+				serverMeta: &models.UserMeta{
+					DeletedData: models.Deleted{},
+					Data:        models.MetaData{},
+				},
+			},
+			fields: fields{
+				userData: &models.UserData{
+					User: models.User{
+						Username: "testuser",
+					},
+					Meta: models.UserMeta{
+						DeletedData: models.Deleted{},
+						Data:        models.MetaData{},
+					},
+				},
+			},
+			setup: func(mui *mock_ui.MockUserInterface,
+				grpc *mock_grpc.MockClient,
+				mockFileManager *mock_filemanager.MockFileStorage) {
+			},
+			wantErr: false,
+		},
+		{
+			name: "Error downloadSecrets from server",
+			args: args{
+				serverMeta: &models.UserMeta{
+					DeletedData: models.Deleted{},
+					Data: models.MetaData{
+						"b": models.DataInfo{
+							Name:   "file2",
+							DataID: "fileID2",
+							Hash:   "hash2",
+						},
+					},
+				},
+			},
+			fields: fields{
+				userData: &models.UserData{
+					User: models.User{
+						Username: "testuser",
+					},
+					Meta: models.UserMeta{
+						DeletedData: models.Deleted{},
+						Data: models.MetaData{
+							"a": models.DataInfo{
+								Name:   "file",
+								DataID: "fileID",
+								Hash:   "hash",
+							},
+						},
+					},
+				},
+			},
+			setup: func(mui *mock_ui.MockUserInterface,
+				grpc *mock_grpc.MockClient,
+				mockFileManager *mock_filemanager.MockFileStorage) {
+				grpc.EXPECT().DownloadFile(gomock.Any(),
+					gomock.Any(),
+					gomock.Any(),
+					gomock.Any()).Return(nil, ErrEmpty).Times(1)
+				mui.EXPECT().PrintErr(gomock.Any()).Times(1)
+			},
+			wantErr: true,
+		},
+		{
+			name: "Error uploadSecrets from server",
+			args: args{
+				serverMeta: &models.UserMeta{
+					DeletedData: models.Deleted{},
+					Data:        models.MetaData{
+						// "b": models.DataInfo{
+						// 	Name:   "file2",
+						// 	DataID: "fileID2",
+						// 	Hash:   "hash2",
+						// },
+					},
+				},
+			},
+			fields: fields{
+				userData: &models.UserData{
+					User: models.User{
+						Username: "testuser",
+					},
+					Meta: models.UserMeta{
+						DeletedData: models.Deleted{},
+						Data: models.MetaData{
+							"a": models.DataInfo{
+								Name:   "file",
+								DataID: "fileID",
+								Hash:   "hash",
+							},
+							// "b": models.DataInfo{
+							// 	Name:   "file2",
+							// 	DataID: "fileID2",
+							// 	Hash:   "hash2",
+							// },
+						},
+					},
+				},
+			},
+			setup: func(mui *mock_ui.MockUserInterface,
+				grpc *mock_grpc.MockClient,
+				mockFileManager *mock_filemanager.MockFileStorage) {
+				dataChan := make(chan []byte, 1)
+				close(dataChan)
+				grpc.EXPECT().DownloadFile(gomock.Any(),
+					gomock.Any(),
+					gomock.Any(),
+					gomock.Any()).Return(dataChan, nil).AnyTimes()
+				mui.EXPECT().PrintErr(gomock.Any()).AnyTimes()
+				mockFileManager.EXPECT().ReadEncryptedByName(gomock.Any()).Return(dataChan,
+					ErrEmpty).AnyTimes()
+			},
+			wantErr: true,
+		},
+		{
+			name: "Success",
+			args: args{
+				serverMeta: &models.UserMeta{
+					DeletedData: models.Deleted{},
+					Data:        models.MetaData{},
+				},
+			},
+			fields: fields{
+				userData: &models.UserData{
+					User: models.User{
+						Username: "testuser",
+					},
+					Meta: models.UserMeta{
+						DeletedData: models.Deleted{},
+						Data: models.MetaData{
+							"a": models.DataInfo{
+								Name:   "file",
+								DataID: "fileID",
+								Hash:   "hash",
+							},
+						},
+					},
+				},
+			},
+			setup: func(mui *mock_ui.MockUserInterface,
+				grpc *mock_grpc.MockClient,
+				mockFileManager *mock_filemanager.MockFileStorage) {
+				dataChan := make(chan []byte, 1)
+				close(dataChan)
+				grpc.EXPECT().DownloadFile(gomock.Any(),
+					gomock.Any(),
+					gomock.Any(),
+					gomock.Any()).Return(dataChan, nil).AnyTimes()
+				mui.EXPECT().PrintErr(gomock.Any()).AnyTimes()
+				mockFileManager.EXPECT().ReadEncryptedByName(gomock.Any()).Return(dataChan,
+					nil).AnyTimes()
+				grpc.EXPECT().UploadFile(gomock.Any(), gomock.Any(),
+					gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).MinTimes(1)
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockUI := mock_ui.NewMockUserInterface(mockCtrl)
+			grpc := mock_grpc.NewMockClient(mockCtrl)
+			mockFileManager := mock_filemanager.NewMockFileStorage(mockCtrl)
+			tt.setup(mockUI, grpc, mockFileManager)
+			c := &ClientUsecase{
+				dataPath:    tt.fields.dataPath,
+				uploadPath:  tt.fields.uploadPath,
+				aboutMsg:    tt.fields.aboutMsg,
+				userData:    tt.fields.userData,
+				grpc:        grpc,
+				fileManager: mockFileManager,
+				ui:          mockUI,
+				log:         tt.fields.log,
+			}
+
+			if err := c.synchronizeWithServer(tt.args.ctx,
+				tt.args.syncKey,
+				tt.args.serverMeta); (err != nil) != tt.wantErr {
+				t.Errorf("ClientUsecase.synchronizeWithServer() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
