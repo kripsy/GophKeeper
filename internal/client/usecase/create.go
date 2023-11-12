@@ -3,6 +3,7 @@ package usecase
 import (
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/filemanager"
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui"
 )
@@ -71,8 +72,9 @@ func (c *ClientUsecase) addFileToStorage(filePath string) error {
 
 	info.SetFileName(filePath)
 	info.DataType = filemanager.FileType
+	info.DataID = uuid.New().String()
 
-	err = c.fileManager.AddFileToStorage(info.Name, filePath, info)
+	err = c.fileManager.AddFileToStorage(true, info.Name, filePath, info)
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}

@@ -50,17 +50,17 @@ func (mr *MockFileStorageMockRecorder) AddEncryptedToStorage(name, data, info in
 }
 
 // AddFileToStorage mocks base method.
-func (m *MockFileStorage) AddFileToStorage(name, filePath string, info models.DataInfo) error {
+func (m *MockFileStorage) AddFileToStorage(newFile bool, name, filePath string, info models.DataInfo) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddFileToStorage", name, filePath, info)
+	ret := m.ctrl.Call(m, "AddFileToStorage", newFile, name, filePath, info)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddFileToStorage indicates an expected call of AddFileToStorage.
-func (mr *MockFileStorageMockRecorder) AddFileToStorage(name, filePath, info interface{}) *gomock.Call {
+func (mr *MockFileStorageMockRecorder) AddFileToStorage(newFile, name, filePath, info interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddFileToStorage", reflect.TypeOf((*MockFileStorage)(nil).AddFileToStorage), name, filePath, info)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddFileToStorage", reflect.TypeOf((*MockFileStorage)(nil).AddFileToStorage), newFile, name, filePath, info)
 }
 
 // AddToStorage mocks base method.

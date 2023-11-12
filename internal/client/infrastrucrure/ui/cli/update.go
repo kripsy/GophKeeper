@@ -1,3 +1,4 @@
+//nolint:gocritic
 package cli
 
 import (
@@ -7,9 +8,7 @@ import (
 )
 
 func (c *CLI) UpdateSecret(metaData models.MetaData) (string, int, bool) {
-	var items []string
-	copy(items, ui.UpdateItems)
-	items = append(items, ui.ExitKey)
+	items := append(ui.UpdateItems, ui.ExitKey)
 
 	name, ok := c.chooseSecret(metaData, ui.UpdateSecretKey, updateSecretTemplate)
 	if !ok {

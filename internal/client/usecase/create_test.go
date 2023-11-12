@@ -119,7 +119,7 @@ func TestClientUsecase_createSecret(t *testing.T) {
 				testDataInfo := dataInfo
 				testDataInfo.DataType = filemanager.FileType
 				testDataInfo.FileName = &file
-				fm.EXPECT().AddFileToStorage(dataInfo.Name, file, testDataInfo).Return(nil)
+				fm.EXPECT().AddFileToStorage(true, dataInfo.Name, file, gomock.Any()).Return(nil)
 				usecase := ClientUsecase{
 					userData:    &models.UserData{},
 					fileManager: fm,
@@ -172,7 +172,7 @@ func TestClientUsecase_createSecret(t *testing.T) {
 				testDataInfo := dataInfo
 				testDataInfo.DataType = filemanager.FileType
 				testDataInfo.FileName = &file
-				fm.EXPECT().AddFileToStorage(dataInfo.Name, file, testDataInfo).Return(testErr)
+				fm.EXPECT().AddFileToStorage(true, dataInfo.Name, file, gomock.Any()).Return(testErr)
 				usecase := ClientUsecase{
 					userData:    &models.UserData{},
 					fileManager: fm,

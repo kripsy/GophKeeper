@@ -64,15 +64,6 @@ type Note struct {
 	Text string `json:"text"`
 }
 
-// File represents binary data.
-type File struct {
-	Data []byte `json:"Data"`
-}
-
-func (f File) String() string {
-	return "Successfully upload file"
-}
-
 func (c CardData) String() string {
 	return fmt.Sprintf("Number: %q, Date: %q, CVV: %q", c.Number, c.Date, c.CVV)
 }
@@ -83,20 +74,6 @@ func (n Note) String() string {
 
 func (a BasicAuth) String() string {
 	return fmt.Sprintf("Login: %q, Password: %q", a.Login, a.Password)
-}
-
-func (f File) EncryptedData(key []byte) ([]byte, error) {
-	data, err := json.Marshal(f)
-	if err != nil {
-		return nil, fmt.Errorf("%w", err)
-	}
-
-	data, err = utils.Encrypt(data, key)
-	if err != nil {
-		return nil, fmt.Errorf("%w", err)
-	}
-
-	return data, nil
 }
 
 func (c CardData) EncryptedData(key []byte) ([]byte, error) {
@@ -139,15 +116,6 @@ func (a BasicAuth) EncryptedData(key []byte) ([]byte, error) {
 	}
 
 	return data, nil
-}
-
-func (f File) GetHash() (string, error) {
-	data, err := json.Marshal(f)
-	if err != nil {
-		return "", fmt.Errorf("%w", err)
-	}
-
-	return fmt.Sprintf("%x", sha256.Sum256(data)), nil
 }
 
 func (c CardData) GetHash() (string, error) {

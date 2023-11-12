@@ -71,11 +71,6 @@ func TestFile_String(t *testing.T) {
 			data: filemanager.CardData{Number: "123123123", Date: "02/22", CVV: "123"},
 			want: `Number: "123123123", Date: "02/22", CVV: "123"`,
 		},
-		{
-			name: "File",
-			data: filemanager.File{Data: []byte("test")},
-			want: `Successfully upload file`,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -113,12 +108,6 @@ func TestFile_EncryptedData(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "File",
-			data:    filemanager.File{Data: []byte("test")},
-			key:     key,
-			wantErr: false,
-		},
-		{
 			name:    "Note key err",
 			data:    filemanager.Note{Text: "test"},
 			key:     []byte(""),
@@ -133,12 +122,6 @@ func TestFile_EncryptedData(t *testing.T) {
 		{
 			name:    "CardData key err",
 			data:    filemanager.CardData{Number: "123123123", Date: "02/22", CVV: "123"},
-			key:     []byte(""),
-			wantErr: true,
-		},
-		{
-			name:    "File key err",
-			data:    filemanager.File{Data: []byte("test")},
 			key:     []byte(""),
 			wantErr: true,
 		},

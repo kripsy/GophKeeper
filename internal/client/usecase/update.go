@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/filemanager"
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/ui"
@@ -27,7 +26,29 @@ func (c *ClientUsecase) updateSecret(secretName string, updateType int, success 
 		return
 	}
 
-	data, err := c.getUpdatedData(secretName, metaInfo.DataType)
+	if metaInfo.DataType == filemanager.FileType {
+		path := c.ui.GetFilePath()
+		newInfo := metaInfo
+		newInfo.SetFileName(path)
+		err := c.fileManager.AddFileToStorage(false, newInfo.Name, path, newInfo)
+		if err != nil {
+			c.ui.PrintErr(ui.UpdateErr)
+			c.log.Err(err).Msg(ui.UpdateErr)
+
+			return
+		}
+		err = c.fileManager.UpdateInfoByName(secretName, newInfo)
+		if err != nil {
+			c.ui.PrintErr(ui.UpdateErr)
+			c.log.Err(err).Msg(ui.UpdateErr)
+
+			return
+		}
+
+		return
+	}
+
+	data, err := c.getUpdatedData(metaInfo.DataType)
 	if err != nil {
 		c.ui.PrintErr(ui.UpdateErr)
 		c.log.Err(err).Msg(ui.UpdateErr)
@@ -59,7 +80,7 @@ func (c *ClientUsecase) updateMetaInfo(secretName string, metaInfo models.DataIn
 // getUpdatedData retrieves updated data based on the secret's type.
 //
 //nolint:ireturn,nolintlint
-func (c *ClientUsecase) getUpdatedData(secretName string, dataType int) (filemanager.Data, error) {
+func (c *ClientUsecase) getUpdatedData(dataType int) (filemanager.Data, error) {
 	var data filemanager.Data
 	var err error
 
@@ -71,18 +92,6 @@ func (c *ClientUsecase) getUpdatedData(secretName string, dataType int) (fileman
 		data, err = c.ui.AddBasicAuth()
 	case filemanager.CardDataType:
 		data, err = c.ui.AddCard()
-	case filemanager.FileType:
-		path := c.ui.GetFilePath()
-		newInfo := models.DataInfo{}
-		newInfo.SetFileName(path)
-		var body []byte
-		body, err = os.ReadFile(path)
-		if err != nil {
-			return nil, fmt.Errorf("%w", err)
-		}
-		data = filemanager.File{Data: body}
-
-		err = c.fileManager.UpdateInfoByName(secretName, newInfo)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)

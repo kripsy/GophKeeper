@@ -37,15 +37,15 @@ type FileManager struct {
 type FileStorage interface {
 	// AddToStorage adds data to storage and updates metadata.
 	AddToStorage(name string, data Data, info models.DataInfo) error
-	//
-	AddFileToStorage(name string, filePath string, info models.DataInfo) error
+	// AddFileToStorage adds file data to storage and updates metadata.
+	AddFileToStorage(newFile bool, name string, filePath string, info models.DataInfo) error
 	// AddEncryptedToStorage adds encrypted data to storage and updates metadata.
 	AddEncryptedToStorage(name string, data chan []byte, info models.DataInfo) error
-	// GetByName retrieves decrypted data and metadata by name.
+	// GetByInfo retrieves decrypted data and metadata by info.
 	GetByInfo(info models.DataInfo) ([]byte, models.DataInfo, error)
-	// ReadEncryptedByName retrieves encrypted data by data ID.
+	// ReadEncryptedByID retrieves encrypted data by data ID.
 	ReadEncryptedByID(name string) (chan []byte, error)
-	//
+	// ReadFileFromStorage decrypts and moves the file to the specified path.
 	ReadFileFromStorage(filePath string, info models.DataInfo) error
 	// UpdateDataByName updates encrypted data in storage.
 	UpdateDataByName(name string, data Data) error
@@ -101,13 +101,12 @@ func (fm *FileManager) AddToStorage(name string, data Data, info models.DataInfo
 	return fm.saveMetaData()
 }
 
-func (fm *FileManager) AddFileToStorage(name string, filePath string, info models.DataInfo) error {
+func (fm *FileManager) AddFileToStorage(newFile bool, name string, filePath string, info models.DataInfo) error {
 	_, ok := fm.Meta.Data[name]
-	if ok {
-		return fm.AddFileToStorage(fm.getUniqueName(name), filePath, info)
+	if ok && newFile {
+		return fm.AddFileToStorage(newFile, fm.getUniqueName(name), filePath, info)
 	}
 
-	info.DataID = uuid.New().String()
 	info.UpdatedAt = time.Now()
 
 	dataChan := make(chan []byte)

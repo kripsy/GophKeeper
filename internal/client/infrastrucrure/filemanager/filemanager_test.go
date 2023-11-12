@@ -9,6 +9,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/kripsy/GophKeeper/internal/client/infrastrucrure/filemanager"
 	"github.com/kripsy/GophKeeper/internal/client/permissions"
 	"github.com/kripsy/GophKeeper/internal/models"
@@ -90,27 +91,6 @@ func TestFileManager_AddToStorage(t *testing.T) {
 			}(),
 			data:    filemanager.BasicAuth{Login: "test", Password: "test"},
 			info:    info,
-			wantErr: false,
-		},
-		{
-			name: "ok File",
-			storage: func() filemanager.FileStorage {
-				fs, err := filemanager.NewFileManager(
-					storageDir,
-					userDir,
-					userDir,
-					models.UserMeta{Data: make(models.MetaData)}, testKey)
-				if err != nil {
-					t.Fatalf("Failed to create FileManager: %v", err)
-				}
-
-				return fs
-			}(),
-			data: filemanager.File{Data: []byte("test")},
-			info: models.DataInfo{
-				Name:     "file",
-				FileName: &filename,
-			},
 			wantErr: false,
 		},
 		{
@@ -198,10 +178,10 @@ func TestFileManager_AddFileToStorage(t *testing.T) {
 
 				return fs
 			}(),
-			data: filemanager.File{Data: []byte("test")},
 			info: models.DataInfo{
 				Name:     "file",
 				FileName: &filename,
+				DataID:   uuid.New().String(),
 			},
 			wantErr: false,
 		},
@@ -226,17 +206,17 @@ func TestFileManager_AddFileToStorage(t *testing.T) {
 
 				return fs
 			}(),
-			data: filemanager.File{Data: []byte("test")},
 			info: models.DataInfo{
 				Name:     "file",
 				FileName: &filename,
+				DataID:   uuid.New().String(),
 			},
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.storage.AddFileToStorage(tt.info.Name, tt.filePath, tt.info); (err != nil) != tt.wantErr {
+			if err := tt.storage.AddFileToStorage(true, tt.info.Name, tt.filePath, tt.info); (err != nil) != tt.wantErr {
 				t.Errorf("AddFileToStorage() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -843,7 +823,6 @@ func TestFileManager_ReadFileFromStorage(t *testing.T) {
 		name      string
 		uploadDir string
 		storage   filemanager.FileStorage
-		data      filemanager.Data
 		info      models.DataInfo
 		wantErr   bool
 	}{
@@ -872,7 +851,6 @@ func TestFileManager_ReadFileFromStorage(t *testing.T) {
 
 				return fs
 			}(),
-			data: filemanager.File{Data: []byte("test")},
 			info: models.DataInfo{
 				Name:     "file",
 				DataID:   filename,
@@ -905,7 +883,6 @@ func TestFileManager_ReadFileFromStorage(t *testing.T) {
 
 				return fs
 			}(),
-			data: filemanager.File{Data: []byte("test")},
 			info: models.DataInfo{
 				Name:     "file",
 				DataID:   "",
