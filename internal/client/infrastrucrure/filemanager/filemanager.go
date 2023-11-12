@@ -115,6 +115,7 @@ func (fm *FileManager) AddFileToStorage(name string, filePath string, info model
 	g, gctx := errgroup.WithContext(context.Background())
 
 	g.Go(func() error {
+		//nolint:revive
 		if err := fm.readFile(gctx, filePath, chunkSize, utils.Encrypt, dataChan); err != nil {
 			return err
 		}
@@ -123,6 +124,7 @@ func (fm *FileManager) AddFileToStorage(name string, filePath string, info model
 	})
 
 	g.Go(func() error {
+		//nolint:revive
 		if err := fm.writeFile(gctx, filepath.Join(fm.storageDir, info.DataID), dataChan); err != nil {
 			return err
 		}
@@ -145,6 +147,7 @@ func (fm *FileManager) ReadFileFromStorage(uploadDir string, info models.DataInf
 	g, gctx := errgroup.WithContext(context.Background())
 
 	g.Go(func() error {
+		//nolint:revive
 		if err := fm.readFile(
 			gctx,
 			filepath.Join(fm.storageDir, info.DataID),
@@ -159,6 +162,7 @@ func (fm *FileManager) ReadFileFromStorage(uploadDir string, info models.DataInf
 	})
 
 	g.Go(func() error {
+		//nolint:revive
 		if err := fm.writeFile(gctx, filepath.Join(uploadDir, *info.FileName), dataChan); err != nil {
 			return err
 		}
