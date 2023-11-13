@@ -9,8 +9,18 @@ import (
 	"io"
 )
 
+// ErrCipherTextShort is an error returned when the provided ciphertext for decryption is shorter than expected.
 var ErrCipherTextShort = errors.New("ciphertext too short")
 
+// Encrypt encrypts the provided data using AES-GCM with the given cipher key.
+//
+// Parameters:
+// - data: The byte slice of data to be encrypted.
+// - cipherKey: The byte slice representing the key used for encryption.
+//
+// Returns:
+// - A byte slice of the encrypted data.
+// - An error if any issues occur during encryption.
 func Encrypt(data []byte, cipherKey []byte) ([]byte, error) {
 	block, err := aes.NewCipher(cipherKey)
 	if err != nil {
@@ -32,6 +42,15 @@ func Encrypt(data []byte, cipherKey []byte) ([]byte, error) {
 	return ciphertext, nil
 }
 
+// Decrypt decrypts the provided data using AES-GCM with the given cipher key.
+//
+// Parameters:
+// - data: The byte slice of data to be decrypted.
+// - cipherKey: The byte slice representing the key used for decryption.
+//
+// Returns:
+// - A byte slice of the decrypted data.
+// - An error if any issues occur during decryption, including if the ciphertext is too short.
 func Decrypt(data []byte, cipherKey []byte) ([]byte, error) {
 	block, err := aes.NewCipher(cipherKey)
 	if err != nil {

@@ -7,62 +7,77 @@ import "buf/validate/validate.proto";
 
 option go_package = "github.com/kripsy/GophKeeper/pkg/api/GophKeeper";
 
-// GophKeeperService provides secure store.
+// GophKeeperService defines a service that provides secure storage
+// functionalities.
 service GophKeeperService {
+  // Register creates a new user account.
   rpc Register(AuthRequest) returns (AuthResponse);
+  // Login authenticates a user and returns a token.
   rpc Login(AuthRequest) returns (AuthResponse);
+  // MultipartUploadFile handles the uploading of a file in multiple parts.
   rpc MultipartUploadFile(stream MultipartUploadFileRequest)
       returns (MultipartUploadFileResponse);
+  // BlockStore manages the storage of file blocks.
   rpc BlockStore(stream BlockStoreRequest) returns (stream BlockStoreResponse);
+  // Ping checks the service availability.
   rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty);
+  // MultipartDownloadFile handles the downloading of a file in multiple parts.
   rpc MultipartDownloadFile(MultipartDownloadFileRequest)
       returns (stream MultipartDownloadFileResponse);
+  // ApplyChanges applies changes made during a block store operation.
   rpc ApplyChanges(ApplyChangesRequest) returns (ApplyChangesResponse);
 }
 
+// AuthRequest represents a request for authentication.
 message AuthRequest {
   string username = 1 [ (buf.validate.field).string.min_len = 1 ];
   string password = 2 [ (buf.validate.field).string.min_len = 1 ];
 }
+// AuthResponse represents a response for an authentication request.
 message AuthResponse {
   string token = 1 [ (buf.validate.field).string.min_len = 1 ];
 }
 
+// MultipartUploadFileRequest represents a request for uploading a file part.
 message MultipartUploadFileRequest {
   bytes content = 1;
   string file_name = 2 [ (buf.validate.field).string.min_len = 1 ];
   string guid = 3 [ (buf.validate.field).string.min_len = 1 ];
   string hash = 4 [ (buf.validate.field).string.min_len = 1 ];
 }
-
+// MultipartUploadFileResponse represents a response for a file upload request.
 message MultipartUploadFileResponse { string fileId = 1; }
 
+// MultipartDownloadFileRequest represents a request for downloading a file
+// part.
 message MultipartDownloadFileRequest {
   string file_name = 1 [ (buf.validate.field).string.min_len = 1 ];
   string hash = 2 [ (buf.validate.field).string.min_len = 1 ];
   string guid = 3 [ (buf.validate.field).string.min_len = 1 ];
 }
-
+// MultipartDownloadFileResponse represents a response for a file download
+// request.
 message MultipartDownloadFileResponse {
   bytes content = 1;
   string file_name = 2 [ (buf.validate.field).string.min_len = 1 ];
   string hash = 3 [ (buf.validate.field).string.min_len = 1 ];
   string guid = 4 [ (buf.validate.field).string.min_len = 1 ];
 }
-
+// BlockStoreRequest represents a request for storing a file block.
 message BlockStoreRequest {
   string guid = 1 [ (buf.validate.field).string.min_len = 1 ];
   bool is_finish = 2;
 }
-
+// BlockStoreResponse represents a response for a block store request.
 message BlockStoreResponse {
   string guid = 1 [ (buf.validate.field).string.min_len = 1 ];
 }
-
+// ApplyChangesRequest represents a request to apply changes made in a block
+// store operation.
 message ApplyChangesRequest {
   string guid = 1 [ (buf.validate.field).string.min_len = 1 ];
 }
-
+// ApplyChangesResponse represents a response to an apply changes request.
 message ApplyChangesResponse {
   string guid = 1 [ (buf.validate.field).string.min_len = 1 ];
 }
