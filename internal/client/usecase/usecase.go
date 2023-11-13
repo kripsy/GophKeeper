@@ -16,6 +16,7 @@ import (
 // Define a custom error for password mismatch.
 var errPasswordMismatch = errors.New("password mismatch")
 
+// ClientUsecase structure encapsulates the business logic for the GophKeeper client.
 type ClientUsecase struct {
 	dataPath    string
 	uploadPath  string

@@ -1,3 +1,6 @@
+// Package main is the entry point for the GophKeeper server application.
+// It sets up and starts the server, managing configurations, logging,
+// database connections, and server lifecycle.
 package main
 
 import (
@@ -21,6 +24,11 @@ import (
 	"go.uber.org/zap"
 )
 
+// main is the entry point of the GophKeeper server application.
+// It initializes the server configuration, logging, database repositories,
+// use cases, and gRPC server. It handles the application's lifecycle,
+// including graceful shutdown and resource cleanup.
+//
 //nolint:cyclop
 func main() {
 	grcpPort := ":50051"

@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// MyMiddleware structure contains the middleware logic for the gRPC server.
 type MyMiddleware struct {
 	myLogger *zap.Logger
 	secret   string
@@ -33,6 +34,7 @@ const (
 	pingMethod     = "/pkg.api.gophkeeper.v1.GophKeeperService/Ping"
 )
 
+// InitMyMiddleware initializes a MyMiddleware instance with provided logger and secret.
 func InitMyMiddleware(myLogger *zap.Logger, secret string) *MyMiddleware {
 	once.Do(func() {
 		instance = &MyMiddleware{
@@ -44,6 +46,7 @@ func InitMyMiddleware(myLogger *zap.Logger, secret string) *MyMiddleware {
 	return instance
 }
 
+// AuthInterceptor provides a gRPC unary interceptor for authentication.
 func (m MyMiddleware) AuthInterceptor(ctx context.Context,
 	req interface{},
 	info *grpc.UnaryServerInfo,
@@ -107,6 +110,7 @@ func (m MyMiddleware) AuthInterceptor(ctx context.Context,
 	return handler(newCtx, req)
 }
 
+// StreamAuthInterceptor provides a gRPC stream interceptor for authentication.
 func (m MyMiddleware) StreamAuthInterceptor(srv interface{},
 	ss grpc.ServerStream,
 	info *grpc.StreamServerInfo,

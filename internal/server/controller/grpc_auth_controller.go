@@ -1,3 +1,5 @@
+// Package controller handles gRPC server functionalities for the GophKeeper application.
+// It defines the GrpcServer structure with methods for user registration, login, and server health checks.
 package controller
 
 import (
@@ -15,6 +17,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// Register handles the user registration process via gRPC.
+// It validates the request, initializes a new user, registers the user, and returns an authentication token.
 func (s *GrpcServer) Register(ctx context.Context, req *pb.AuthRequest) (*pb.AuthResponse, error) {
 	s.logger.Debug("start Register")
 	v, err := protovalidate.New()
@@ -58,6 +62,8 @@ func (s *GrpcServer) Register(ctx context.Context, req *pb.AuthRequest) (*pb.Aut
 	}, nil
 }
 
+// Login handles the user login process via gRPC.
+// It validates the request, authenticates the user, and returns an authentication token.
 func (s *GrpcServer) Login(ctx context.Context, req *pb.AuthRequest) (*pb.AuthResponse, error) {
 	s.logger.Debug("start Login")
 	v, err := protovalidate.New()
@@ -95,6 +101,8 @@ func (s *GrpcServer) Login(ctx context.Context, req *pb.AuthRequest) (*pb.AuthRe
 	}, nil
 }
 
+// Ping is a health check method that responds to gRPC ping requests.
+// It simply returns an empty response indicating that the server is operational.
 func (s *GrpcServer) Ping(_ context.Context, _ *empty.Empty) (*empty.Empty, error) {
 	s.logger.Debug("start Ping")
 

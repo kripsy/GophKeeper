@@ -7,6 +7,10 @@ import (
 	"github.com/manifoldco/promptui"
 )
 
+// UpdateSecret allows the user to select a secret and choose whether to update its data or metadata.
+// It first presents a list of secrets to choose from, then offers the choice to update data or metadata.
+// Returns the name of the selected secret, the index of the chosen update option,
+// and a boolean indicating if a valid selection was made.
 func (c *CLI) UpdateSecret(metaData models.MetaData) (string, int, bool) {
 	items := append(ui.UpdateItems, ui.ExitKey)
 

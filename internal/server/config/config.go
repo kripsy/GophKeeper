@@ -1,3 +1,6 @@
+// Package config handles the initialization and management of configuration settings for the GophKeeper application.
+// It includes functionality to parse command-line arguments
+// and environment variables to set up the application configuration.
 package config
 
 import (
@@ -7,43 +10,47 @@ import (
 	"time"
 )
 
+// TOKENEXP defines the default expiration duration for tokens.
 const TOKENEXP = time.Hour * 8766
 
+// Config struct holds the configuration settings for the application.
 type Config struct {
-	// it's address for exec server
+	// URLServer specifies the address for the execution server.
 	URLServer string
 
-	// it's logger level
+	// LoggerLevel defines the level of logging.
 	LoggerLevel string
 
-	// it's database conn string
+	// DatabaseDsn is the connection string for the database.
 	DatabaseDsn string
 
 	// Secret is a string of secret to create tokens
 	Secret string
 
-	// period of expired token
+	// TokenExp specifies the period after which a token expires.
 	TokenExp time.Duration
 
-	// IsSecure if grpc server should be secure (tls)
+	// IsSecure indicates if the gRPC server should be secure (TLS).
 	IsSecure bool
 
-	// EndpointMinio is an address minio storage
+	// EndpointMinio is the address for Minio storage.
 	EndpointMinio string
 
-	// AccessKeyIDMinio is an username for minio storage
+	// AccessKeyIDMinio is the username for Minio storage.
 	AccessKeyIDMinio string
 
-	// SecretAccessKeyMinio is an password for minio storage
+	// SecretAccessKeyMinio is the password for Minio storage.
 	SecretAccessKeyMinio string
 
-	// BucketNameMinio is an default bucket for minio storage
+	// BucketNameMinio is the default bucket for Minio storage.
 	BucketNameMinio string
 
-	// isUseSSL is an ssl mode for minio storage
+	// IsUseSSLMinio indicates if SSL mode is enabled for Minio storage.
 	IsUseSSLMinio bool
 }
 
+// Flag variables for command-line arguments.
+//
 //nolint:gochecknoglobals
 var (
 	URLServer   *string
@@ -105,6 +112,9 @@ func init() {
 		"enable ssl for Minio? Set true/false... Or use ISUSESSLMINIO env")
 }
 
+// InitConfig parses the command-line flags and environment variables to initialize the application configuration.
+// It returns a configured Config struct or an error if the configuration setup fails.
+//
 //nolint:cyclop
 func InitConfig() (*Config, error) {
 	flag.Parse()

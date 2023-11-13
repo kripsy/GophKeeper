@@ -1,3 +1,5 @@
+// Package cli provides command-line interface functionalities for the GophKeeper application.
+// It includes methods for displaying and selecting secrets based on user input.
 package cli
 
 import (
@@ -12,10 +14,15 @@ import (
 
 const secretMenuSize = 6
 
+// GetSecret displays a list of secrets and allows the user to select one.
+// Returns the selected secret's name and a boolean indicating a valid selection.
 func (c *CLI) GetSecret(metaData models.MetaData) (string, bool) {
 	return c.chooseSecret(metaData, ui.SecretsKey, chooseSecretTemplate)
 }
 
+// chooseSecret displays a selectable list of secrets to the user using the provided template.
+// It supports searching within the list.
+// Returns the chosen secret's name and a boolean indicating if a selection was made.
 func (c *CLI) chooseSecret(metaData models.MetaData, label string, template *promptui.SelectTemplates) (string, bool) {
 	dataInfos := getForTemplate(metaData)
 
@@ -51,6 +58,8 @@ func (c *CLI) chooseSecret(metaData models.MetaData, label string, template *pro
 	return dataInfos[i].Name, true
 }
 
+// getForTemplate converts metadata into a slice of TemplateInfo for display.
+// The data is sorted by name and includes an exit option.
 func getForTemplate(md models.MetaData) []TemplateInfo {
 	dataInfo := make([]TemplateInfo, 0, len(md))
 	for name, info := range md {
@@ -71,10 +80,11 @@ func getForTemplate(md models.MetaData) []TemplateInfo {
 	return dataInfo
 }
 
+// TemplateInfo struct defines the information to be displayed for each secret in the selection menu.
 type TemplateInfo struct {
-	Name        string
-	DataType    string
-	Description string
-	FileName    *string
-	UpdatedAt   string
+	Name        string  // Name of the secret.
+	DataType    string  // Type of the secret (e.g., Note, Login&Password).
+	Description string  // Description of the secret.
+	FileName    *string // File name associated with the secret.
+	UpdatedAt   string  // Last update date of the secret.
 }

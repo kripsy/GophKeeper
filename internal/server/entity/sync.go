@@ -8,11 +8,13 @@ import (
 	"github.com/kripsy/GophKeeper/internal/models"
 )
 
+// SyncStatus manages the synchronization status of users and their operations.
 type SyncStatus struct {
 	syncClients map[int]uuid.UUID
 	rwMutex     *sync.RWMutex
 }
 
+// NewSyncStatus initializes a new SyncStatus instance.
 func NewSyncStatus() *SyncStatus {
 	instance := &SyncStatus{
 		syncClients: make(map[int]uuid.UUID),
@@ -22,6 +24,7 @@ func NewSyncStatus() *SyncStatus {
 	return instance
 }
 
+// AddSync adds a synchronization session for a user.
 func (ss *SyncStatus) AddSync(userID int, syncID uuid.UUID) (bool, error) {
 	ss.rwMutex.RLock()
 	// fmt.Println("start lock r")
@@ -51,6 +54,7 @@ func (ss *SyncStatus) AddSync(userID int, syncID uuid.UUID) (bool, error) {
 	return true, nil
 }
 
+// RemoveClientSync removes a synchronization session for a user.
 func (ss *SyncStatus) RemoveClientSync(userID int, syncID uuid.UUID) error {
 	ss.rwMutex.RLock()
 	// fmt.Println("start lock r RemoveClientSync")
@@ -74,6 +78,7 @@ func (ss *SyncStatus) RemoveClientSync(userID int, syncID uuid.UUID) error {
 	return nil
 }
 
+// IsSyncExists checks if a synchronization session exists for a user.
 func (ss *SyncStatus) IsSyncExists(userID int, syncID uuid.UUID) (bool, error) {
 	ss.rwMutex.RLock()
 	// fmt.Println("start lock r IsSyncExists")

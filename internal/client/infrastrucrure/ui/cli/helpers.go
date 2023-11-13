@@ -1,3 +1,7 @@
+// Package cli provides functionalities for the command-line interface of the GophKeeper application.
+// It includes methods for handling terminal interactions such as clearing the screen,
+// handling interruptions, and exiting the application.
+//
 //nolint:gochecknoinits, gochecknoglobals
 package cli
 
@@ -11,6 +15,7 @@ import (
 	"github.com/manifoldco/promptui"
 )
 
+// DateFormat is the standard format used for displaying dates in the CLI.
 const (
 	dateFormat = "[2006/01/02 15:01]"
 )
@@ -29,6 +34,7 @@ func init() {
 	clearMapByOS["default"] = clearFunc("clear")
 }
 
+// Clear clears the terminal screen based on the user's operating system.
 func (c *CLI) Clear() {
 	value, ok := clearMapByOS[runtime.GOOS] // runtime.GOOS -> linux, windows etc.
 	var err error
@@ -62,11 +68,13 @@ func clearFunc(name string, args ...string) func() error {
 	}
 }
 
+// Exit clears the terminal screen and exits the application.
 func (c *CLI) Exit() {
 	c.Clear()
 	os.Exit(1)
 }
 
+// PrintErr displays an error message in a styled format.
 func (c *CLI) PrintErr(err string) {
 	fmt.Println(promptui.Styler(
 		promptui.FGRed,

@@ -1,5 +1,5 @@
-// This is package of business logic level.
-// Here realized logic for register, login user.
+// Package usecase contains the business logic for the GophKeeper application.
+// It primarily handles operations related to file upload, download, and managing secret data.
 package usecase
 
 import (
@@ -15,6 +15,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// MinioRepository interface defines the set of methods required to interact with Minio storage.
 type MinioRepository interface {
 	MultipartUploadFile(ctx context.Context,
 		data *models.MultipartUploadFileData,
@@ -36,6 +37,9 @@ type secretUseCase struct {
 	logger     *zap.Logger
 }
 
+// InitSecretUseCases initializes a new secretUseCase instance.
+// It prepares the use case with necessary repositories and a logger.
+//
 //nolint:revive,nolintlint
 func InitSecretUseCases(ctx context.Context,
 	userRepo UserRepository,
@@ -51,6 +55,8 @@ func InitSecretUseCases(ctx context.Context,
 	return uc, nil
 }
 
+// MultipartUploadFile handles the uploading of a file in multiple parts.
+// It processes data from a channel and uploads each part to Minio storage.
 func (uc *secretUseCase) MultipartUploadFile(ctx context.Context,
 	dataChan <-chan *models.MultipartUploadFileData,
 	bucketName string) (bool, error) {
@@ -101,11 +107,15 @@ loop:
 	return true, nil
 }
 
+// CreateBucketSecret creates a new bucket in Minio storage.
+// It is used during the user registration process to allocate storage for the user's secrets.
 func (uc *secretUseCase) CreateBucketSecret(ctx context.Context, username string, userID int) (bool, error) {
 	//nolint:wrapcheck
 	return uc.secretRepo.CreateBucketSecret(ctx, username, userID)
 }
 
+// MultipartDownloadFile manages the downloading of a file in multiple parts.
+// It retrieves file parts from Minio storage and sends them through a channel.
 func (uc *secretUseCase) MultipartDownloadFile(ctx context.Context, req *models.MultipartDownloadFileRequest,
 	bucketName string) (chan *models.MultipartDownloadFileResponse, chan error) {
 	dataChan := make(chan *models.MultipartDownloadFileResponse)
@@ -176,6 +186,8 @@ func (uc *secretUseCase) MultipartDownloadFile(ctx context.Context, req *models.
 	return dataChan, errChan
 }
 
+// ApplyChanges commits the changes made in a Minio bucket.
+// It finalizes the upload process by merging temporary files into a single file.
 func (uc *secretUseCase) ApplyChanges(ctx context.Context, bucketName string) (bool, error) {
 	uc.logger.Debug("Start ApplyChanges in usecase")
 	err := uc.secretRepo.ApplyChanges(ctx, bucketName)
@@ -189,6 +201,8 @@ func (uc *secretUseCase) ApplyChanges(ctx context.Context, bucketName string) (b
 	return true, nil
 }
 
+// DiscardChanges rolls back any changes made in a Minio bucket.
+// It is used to cancel an ongoing upload process and remove temporary files.
 func (uc *secretUseCase) DiscardChanges(ctx context.Context, bucketName string) (bool, error) {
 	err := uc.secretRepo.DiscardChanges(ctx, bucketName)
 	if err != nil {

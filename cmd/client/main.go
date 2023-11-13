@@ -1,3 +1,6 @@
+// Package main is the entry point for the GophKeeper client application.
+// It initializes and starts the client-side application,
+// handling configuration, logging, and application setup.
 package main
 
 import (
@@ -9,6 +12,10 @@ import (
 	"github.com/kripsy/GophKeeper/internal/client/log"
 )
 
+// main is the entry point of the application. It initializes the
+// necessary configurations, logger, and the application context.
+// It handles the startup sequence including error handling and
+// initiates the application's run process.
 func main() {
 	bi := getBuildInfo()
 	cfg, err := config.GetConfig()

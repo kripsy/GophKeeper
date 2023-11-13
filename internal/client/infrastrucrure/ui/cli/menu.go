@@ -1,3 +1,5 @@
+// Package cli provides command-line interface functionalities for the GophKeeper application.
+// It includes methods for displaying the main menu and handling user selections.
 package cli
 
 import (
@@ -5,6 +7,9 @@ import (
 	"github.com/manifoldco/promptui"
 )
 
+// Menu displays the main application menu and handles the user's selection.
+// The menu items are determined based on whether sync storage is available.
+// It returns the ID of the selected menu item.
 func (c *CLI) Menu(isSyncStorage bool) int {
 	defer c.Clear()
 
