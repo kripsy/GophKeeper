@@ -49,6 +49,20 @@ func (mr *MockFileStorageMockRecorder) AddEncryptedToStorage(name, data, info in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddEncryptedToStorage", reflect.TypeOf((*MockFileStorage)(nil).AddEncryptedToStorage), name, data, info)
 }
 
+// AddFileToStorage mocks base method.
+func (m *MockFileStorage) AddFileToStorage(newFile bool, name, filePath string, info models.DataInfo) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddFileToStorage", newFile, name, filePath, info)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddFileToStorage indicates an expected call of AddFileToStorage.
+func (mr *MockFileStorageMockRecorder) AddFileToStorage(newFile, name, filePath, info interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddFileToStorage", reflect.TypeOf((*MockFileStorage)(nil).AddFileToStorage), newFile, name, filePath, info)
+}
+
 // AddToStorage mocks base method.
 func (m *MockFileStorage) AddToStorage(name string, data filemanager.Data, info models.DataInfo) error {
 	m.ctrl.T.Helper()
@@ -63,7 +77,7 @@ func (mr *MockFileStorageMockRecorder) AddToStorage(name, data, info interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddToStorage", reflect.TypeOf((*MockFileStorage)(nil).AddToStorage), name, data, info)
 }
 
-// DeleteByIOs mocks base method.
+// DeleteByIDs mocks base method.
 func (m *MockFileStorage) DeleteByIDs(ids []string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteByIDs", ids)
@@ -71,8 +85,8 @@ func (m *MockFileStorage) DeleteByIDs(ids []string) error {
 	return ret0
 }
 
-// DeleteByIOs indicates an expected call of DeleteByIOs.
-func (mr *MockFileStorageMockRecorder) DeleteByIOs(ids interface{}) *gomock.Call {
+// DeleteByIDs indicates an expected call of DeleteByIDs.
+func (mr *MockFileStorageMockRecorder) DeleteByIDs(ids interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteByIDs", reflect.TypeOf((*MockFileStorage)(nil).DeleteByIDs), ids)
 }
@@ -91,35 +105,49 @@ func (mr *MockFileStorageMockRecorder) DeleteByName(name interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteByName", reflect.TypeOf((*MockFileStorage)(nil).DeleteByName), name)
 }
 
-// GetByName mocks base method.
-func (m *MockFileStorage) GetByName(name string) ([]byte, models.DataInfo, error) {
+// GetByInfo mocks base method.
+func (m *MockFileStorage) GetByInfo(info models.DataInfo) ([]byte, models.DataInfo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByName", name)
+	ret := m.ctrl.Call(m, "GetByInfo", info)
 	ret0, _ := ret[0].([]byte)
 	ret1, _ := ret[1].(models.DataInfo)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
 
-// GetByName indicates an expected call of GetByName.
-func (mr *MockFileStorageMockRecorder) GetByName(name interface{}) *gomock.Call {
+// GetByInfo indicates an expected call of GetByInfo.
+func (mr *MockFileStorageMockRecorder) GetByInfo(info interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByName", reflect.TypeOf((*MockFileStorage)(nil).GetByName), name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByInfo", reflect.TypeOf((*MockFileStorage)(nil).GetByInfo), info)
 }
 
-// ReadEncryptedByName mocks base method.
-func (m *MockFileStorage) ReadEncryptedByName(name string) (chan []byte, error) {
+// ReadEncryptedByID mocks base method.
+func (m *MockFileStorage) ReadEncryptedByID(name string) (chan []byte, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ReadEncryptedByName", name)
+	ret := m.ctrl.Call(m, "ReadEncryptedByID", name)
 	ret0, _ := ret[0].(chan []byte)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ReadEncryptedByName indicates an expected call of ReadEncryptedByName.
-func (mr *MockFileStorageMockRecorder) ReadEncryptedByName(name interface{}) *gomock.Call {
+// ReadEncryptedByID indicates an expected call of ReadEncryptedByID.
+func (mr *MockFileStorageMockRecorder) ReadEncryptedByID(name interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadEncryptedByName", reflect.TypeOf((*MockFileStorage)(nil).ReadEncryptedByName), name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadEncryptedByID", reflect.TypeOf((*MockFileStorage)(nil).ReadEncryptedByID), name)
+}
+
+// ReadFileFromStorage mocks base method.
+func (m *MockFileStorage) ReadFileFromStorage(filePath string, info models.DataInfo) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReadFileFromStorage", filePath, info)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ReadFileFromStorage indicates an expected call of ReadFileFromStorage.
+func (mr *MockFileStorageMockRecorder) ReadFileFromStorage(filePath, info interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadFileFromStorage", reflect.TypeOf((*MockFileStorage)(nil).ReadFileFromStorage), filePath, info)
 }
 
 // UpdateDataByName mocks base method.

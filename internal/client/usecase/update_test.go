@@ -116,12 +116,11 @@ func TestClientUsecase_updateSecret(t *testing.T) {
 					t.Fatalf("write file err: %v", err)
 				}
 
-				data := filemanager.File{Data: []byte("test")}
 				cli := mock_ui.NewMockUserInterface(mockCtrl)
 				cli.EXPECT().GetFilePath().Return(file)
 				fm := mock_filemanager.NewMockFileStorage(mockCtrl)
 
-				fm.EXPECT().UpdateDataByName(secretName, data).Return(nil)
+				fm.EXPECT().AddFileToStorage(false, secretName, gomock.Any(), gomock.Any()).Return(nil)
 				fm.EXPECT().UpdateInfoByName(secretName, gomock.Any()).Return(nil)
 				usecase := ClientUsecase{
 					userData:    &models.UserData{Meta: models.UserMeta{Data: meta}},
@@ -143,6 +142,7 @@ func TestClientUsecase_updateSecret(t *testing.T) {
 				cli.EXPECT().GetFilePath().Return("test")
 				cli.EXPECT().PrintErr(ui.UpdateErr)
 				fm := mock_filemanager.NewMockFileStorage(mockCtrl)
+				fm.EXPECT().AddFileToStorage(false, gomock.Any(), gomock.Any(), gomock.Any()).Return(testErr)
 
 				usecase := ClientUsecase{
 					userData:    &models.UserData{Meta: models.UserMeta{Data: meta}},
@@ -169,8 +169,8 @@ func TestClientUsecase_updateSecret(t *testing.T) {
 				cli.EXPECT().GetFilePath().Return(file)
 				cli.EXPECT().PrintErr(ui.UpdateErr)
 				fm := mock_filemanager.NewMockFileStorage(mockCtrl)
+				fm.EXPECT().AddFileToStorage(false, gomock.Any(), gomock.Any(), gomock.Any()).Return(testErr)
 
-				fm.EXPECT().UpdateInfoByName(secretName, gomock.Any()).Return(testErr)
 				usecase := ClientUsecase{
 					userData:    &models.UserData{Meta: models.UserMeta{Data: meta}},
 					fileManager: fm,
@@ -275,6 +275,29 @@ func TestClientUsecase_updateSecret(t *testing.T) {
 				return usecase
 			}(),
 			args: args{secretName: secretName, updateType: 1, success: true},
+		},
+		{
+			name: "update note data ui err",
+			usecase: func() ClientUsecase {
+				meta := make(models.MetaData)
+				meta[secretName] = models.DataInfo{Name: secretName, DataType: filemanager.NoteType}
+
+				cli := mock_ui.NewMockUserInterface(mockCtrl)
+				cli.EXPECT().AddNote().Return(filemanager.Note{}, testErr)
+				cli.EXPECT().PrintErr(ui.UpdateErr)
+
+				fm := mock_filemanager.NewMockFileStorage(mockCtrl)
+
+				usecase := ClientUsecase{
+					userData:    &models.UserData{Meta: models.UserMeta{Data: meta}},
+					fileManager: fm,
+					ui:          cli,
+					log:         log,
+				}
+
+				return usecase
+			}(),
+			args: args{secretName: secretName, updateType: 0, success: true},
 		},
 		{
 			name: "update exit",

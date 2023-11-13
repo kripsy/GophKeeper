@@ -1,4 +1,4 @@
-//nolint:testpackage,goerr113
+//nolint:testpackage,goerr113,maintidx
 package usecase
 
 import (
@@ -109,7 +109,7 @@ func TestClientUsecase_createSecret(t *testing.T) {
 				if err != nil {
 					t.Fatalf("write file err: %v", err)
 				}
-				data := filemanager.File{Data: []byte("test")}
+
 				cli := mock_ui.NewMockUserInterface(mockCtrl)
 				cli.EXPECT().GetFilePath().Return(file)
 				cli.EXPECT().AddMetaInfo().Return(dataInfo, nil)
@@ -119,7 +119,7 @@ func TestClientUsecase_createSecret(t *testing.T) {
 				testDataInfo := dataInfo
 				testDataInfo.DataType = filemanager.FileType
 				testDataInfo.FileName = &file
-				fm.EXPECT().AddToStorage(dataInfo.Name, data, testDataInfo).Return(nil)
+				fm.EXPECT().AddFileToStorage(true, dataInfo.Name, file, gomock.Any()).Return(nil)
 				usecase := ClientUsecase{
 					userData:    &models.UserData{},
 					fileManager: fm,
@@ -132,16 +132,47 @@ func TestClientUsecase_createSecret(t *testing.T) {
 			args: args{secretType: filemanager.FileType, success: true},
 		},
 		{
-			name: "create file wrong path",
+			name: "failed get meta info",
 			usecase: func() ClientUsecase {
 				cli := mock_ui.NewMockUserInterface(mockCtrl)
 				cli.EXPECT().GetFilePath().Return("test")
+				cli.EXPECT().AddMetaInfo().Return(models.DataInfo{}, testErr)
 				cli.EXPECT().PrintErr(ui.CreateErr)
 
 				fm := mock_filemanager.NewMockFileStorage(mockCtrl)
 
 				testDataInfo := dataInfo
 				testDataInfo.DataType = filemanager.FileType
+				usecase := ClientUsecase{
+					userData:    &models.UserData{},
+					fileManager: fm,
+					ui:          cli,
+					log:         log,
+				}
+
+				return usecase
+			}(),
+			args: args{secretType: filemanager.FileType, success: true},
+		},
+		{
+			name: "failed add file to storage",
+			usecase: func() ClientUsecase {
+				err := os.WriteFile(file, []byte("test"), permissions.FileMode)
+				if err != nil {
+					t.Fatalf("write file err: %v", err)
+				}
+
+				cli := mock_ui.NewMockUserInterface(mockCtrl)
+				cli.EXPECT().GetFilePath().Return(file)
+				cli.EXPECT().AddMetaInfo().Return(dataInfo, nil)
+				cli.EXPECT().PrintErr(ui.CreateErr)
+
+				fm := mock_filemanager.NewMockFileStorage(mockCtrl)
+
+				testDataInfo := dataInfo
+				testDataInfo.DataType = filemanager.FileType
+				testDataInfo.FileName = &file
+				fm.EXPECT().AddFileToStorage(true, dataInfo.Name, file, gomock.Any()).Return(testErr)
 				usecase := ClientUsecase{
 					userData:    &models.UserData{},
 					fileManager: fm,

@@ -92,7 +92,7 @@ func (c *ClientUsecase) synchronizeWithServer(ctx context.Context, syncKey strin
 
 // uploadMeta uploads the user's meta information to the server.
 func (c *ClientUsecase) uploadMeta(ctx context.Context, syncKey string) error {
-	data, err := c.fileManager.ReadEncryptedByName(c.userData.User.GetMetaFileName())
+	data, err := c.fileManager.ReadEncryptedByID(c.userData.User.GetMetaFileName())
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
@@ -131,7 +131,7 @@ func (c *ClientUsecase) uploadSecrets(ctx context.Context, syncKey string, toUpl
 	for dataID, info := range toUpload {
 		wg.Add(1)
 
-		data, err := c.fileManager.ReadEncryptedByName(dataID)
+		data, err := c.fileManager.ReadEncryptedByID(dataID)
 		if err != nil {
 			return fmt.Errorf("%w", err)
 		}

@@ -49,12 +49,12 @@ func TestClientUsecase_getSecrets(t *testing.T) {
 				}
 
 				fm := mock_filemanager.NewMockFileStorage(mockCtrl)
-				fm.EXPECT().GetByName(secretName).Return(body, testDataInfo, nil)
+				fm.EXPECT().GetByInfo(dataInfo).Return(body, testDataInfo, nil)
 
 				cli := mock_ui.NewMockUserInterface(mockCtrl)
 
 				usecase := ClientUsecase{
-					userData:    &models.UserData{},
+					userData:    &models.UserData{Meta: models.UserMeta{Data: models.MetaData{"test": dataInfo}}},
 					fileManager: fm,
 					ui:          cli,
 					log:         log,
@@ -76,12 +76,12 @@ func TestClientUsecase_getSecrets(t *testing.T) {
 				}
 
 				fm := mock_filemanager.NewMockFileStorage(mockCtrl)
-				fm.EXPECT().GetByName(secretName).Return(body, testDataInfo, nil)
+				fm.EXPECT().GetByInfo(dataInfo).Return(body, testDataInfo, nil)
 
 				cli := mock_ui.NewMockUserInterface(mockCtrl)
 
 				usecase := ClientUsecase{
-					userData:    &models.UserData{},
+					userData:    &models.UserData{Meta: models.UserMeta{Data: models.MetaData{"test": dataInfo}}},
 					fileManager: fm,
 					ui:          cli,
 					log:         log,
@@ -103,12 +103,12 @@ func TestClientUsecase_getSecrets(t *testing.T) {
 				}
 
 				fm := mock_filemanager.NewMockFileStorage(mockCtrl)
-				fm.EXPECT().GetByName(secretName).Return(body, testDataInfo, nil)
+				fm.EXPECT().GetByInfo(dataInfo).Return(body, testDataInfo, nil)
 
 				cli := mock_ui.NewMockUserInterface(mockCtrl)
 
 				usecase := ClientUsecase{
-					userData:    &models.UserData{},
+					userData:    &models.UserData{Meta: models.UserMeta{Data: models.MetaData{"test": dataInfo}}},
 					fileManager: fm,
 					ui:          cli,
 					log:         log,
@@ -124,20 +124,21 @@ func TestClientUsecase_getSecrets(t *testing.T) {
 				testDataInfo := dataInfo
 				testDataInfo.DataType = filemanager.FileType
 				testDataInfo.FileName = &file
-				data := filemanager.File{Data: []byte("test")}
-				body, err := json.Marshal(data)
-				if err != nil {
-					t.Fatalf("marshal data err: %v", err)
-				}
 
 				fm := mock_filemanager.NewMockFileStorage(mockCtrl)
-				fm.EXPECT().GetByName(secretName).Return(body, testDataInfo, nil)
+				fm.EXPECT().ReadFileFromStorage(gomock.Any(), gomock.Any()).Return(nil)
 
 				cli := mock_ui.NewMockUserInterface(mockCtrl)
 				cli.EXPECT().UploadFileTo("").Return(file, true)
 
 				usecase := ClientUsecase{
-					userData:    &models.UserData{},
+					userData: &models.UserData{Meta: models.UserMeta{
+						Data: models.MetaData{
+							"test": models.DataInfo{
+								Name:     "test",
+								DataType: filemanager.FileType,
+							},
+						}}},
 					fileManager: fm,
 					ui:          cli,
 					log:         log,
@@ -148,26 +149,23 @@ func TestClientUsecase_getSecrets(t *testing.T) {
 			args: args{secretName: secretName, success: true},
 		},
 		{
-			name: "get file",
+			name: "get file invalid dir",
 			usecase: func() ClientUsecase {
 				testDataInfo := dataInfo
 				testDataInfo.DataType = filemanager.FileType
 				testDataInfo.FileName = &file
-				data := filemanager.File{Data: []byte("test")}
-				body, err := json.Marshal(data)
-				if err != nil {
-					t.Fatalf("marshal data err: %v", err)
-				}
 
 				fm := mock_filemanager.NewMockFileStorage(mockCtrl)
-				fm.EXPECT().GetByName(secretName).Return(body, testDataInfo, nil)
 
 				cli := mock_ui.NewMockUserInterface(mockCtrl)
 				cli.EXPECT().UploadFileTo("").Return("./../../../../../../../../..//../../../../../..test/../../..//", true)
 				cli.EXPECT().PrintErr(ui.GetErr)
 
 				usecase := ClientUsecase{
-					userData:    &models.UserData{},
+					userData: &models.UserData{Meta: models.UserMeta{
+						Data: models.MetaData{
+							"test": testDataInfo,
+						}}},
 					fileManager: fm,
 					ui:          cli,
 					log:         log,
@@ -184,21 +182,22 @@ func TestClientUsecase_getSecrets(t *testing.T) {
 				testDataInfo.DataType = filemanager.FileType
 				wrongPath := file + "/wrong"
 				testDataInfo.FileName = &wrongPath
-				data := filemanager.File{Data: []byte("test")}
-				body, err := json.Marshal(data)
-				if err != nil {
-					t.Fatalf("marshal data err: %v", err)
-				}
 
 				fm := mock_filemanager.NewMockFileStorage(mockCtrl)
-				fm.EXPECT().GetByName(secretName).Return(body, testDataInfo, nil)
+				fm.EXPECT().ReadFileFromStorage(gomock.Any(), gomock.Any()).Return(testErr)
 
 				cli := mock_ui.NewMockUserInterface(mockCtrl)
 				cli.EXPECT().UploadFileTo("").Return(file, true)
 				cli.EXPECT().PrintErr(ui.GetErr)
 
 				usecase := ClientUsecase{
-					userData:    &models.UserData{},
+					userData: &models.UserData{Meta: models.UserMeta{
+						Data: models.MetaData{
+							"test": models.DataInfo{
+								Name:     "test",
+								DataType: filemanager.FileType,
+							},
+						}}},
 					fileManager: fm,
 					ui:          cli,
 					log:         log,
@@ -216,39 +215,19 @@ func TestClientUsecase_getSecrets(t *testing.T) {
 				testDataInfo.FileName = &file
 
 				fm := mock_filemanager.NewMockFileStorage(mockCtrl)
-				fm.EXPECT().GetByName(secretName).Return([]byte("invalid body"), testDataInfo, nil)
-
-				cli := mock_ui.NewMockUserInterface(mockCtrl)
-				cli.EXPECT().UploadFileTo("").Return(file, true)
-				cli.EXPECT().PrintErr(ui.GetErr)
-
-				usecase := ClientUsecase{
-					userData:    &models.UserData{},
-					fileManager: fm,
-					ui:          cli,
-					log:         log,
-				}
-
-				return usecase
-			}(),
-			args: args{secretName: secretName, success: true},
-		},
-		{
-			name: "get file invalid body err",
-			usecase: func() ClientUsecase {
-				testDataInfo := dataInfo
-				testDataInfo.DataType = filemanager.FileType
-				testDataInfo.FileName = &file
-
-				fm := mock_filemanager.NewMockFileStorage(mockCtrl)
-				fm.EXPECT().GetByName(secretName).Return([]byte(""), testDataInfo, nil)
 
 				cli := mock_ui.NewMockUserInterface(mockCtrl)
 				cli.EXPECT().UploadFileTo("").Return(file, false)
 				cli.EXPECT().PrintErr(ui.GetErr)
 
 				usecase := ClientUsecase{
-					userData:    &models.UserData{},
+					userData: &models.UserData{Meta: models.UserMeta{
+						Data: models.MetaData{
+							"test": models.DataInfo{
+								Name:     "test",
+								DataType: filemanager.FileType,
+							},
+						}}},
 					fileManager: fm,
 					ui:          cli,
 					log:         log,
@@ -265,13 +244,13 @@ func TestClientUsecase_getSecrets(t *testing.T) {
 				testDataInfo.DataType = filemanager.NoteType
 
 				fm := mock_filemanager.NewMockFileStorage(mockCtrl)
-				fm.EXPECT().GetByName(secretName).Return([]byte("invalid body"), testDataInfo, nil)
+				fm.EXPECT().GetByInfo(gomock.Any()).Return([]byte("invalid body"), testDataInfo, nil)
 
 				cli := mock_ui.NewMockUserInterface(mockCtrl)
 				cli.EXPECT().PrintErr(ui.GetErr)
 
 				usecase := ClientUsecase{
-					userData:    &models.UserData{},
+					userData:    &models.UserData{Meta: models.UserMeta{Data: models.MetaData{"test": dataInfo}}},
 					fileManager: fm,
 					ui:          cli,
 					log:         log,
@@ -280,18 +259,17 @@ func TestClientUsecase_getSecrets(t *testing.T) {
 				return usecase
 			}(),
 			args: args{secretName: secretName, success: true},
-		},
-		{
+		}, {
 			name: "get note with filemanager err",
 			usecase: func() ClientUsecase {
 				fm := mock_filemanager.NewMockFileStorage(mockCtrl)
-				fm.EXPECT().GetByName(secretName).Return(nil, models.DataInfo{}, testErr)
+				fm.EXPECT().GetByInfo(gomock.Any()).Return(nil, models.DataInfo{}, testErr)
 
 				cli := mock_ui.NewMockUserInterface(mockCtrl)
 				cli.EXPECT().PrintErr(ui.GetErr)
 
 				usecase := ClientUsecase{
-					userData:    &models.UserData{},
+					userData:    &models.UserData{Meta: models.UserMeta{Data: models.MetaData{"test": dataInfo}}},
 					fileManager: fm,
 					ui:          cli,
 					log:         log,
@@ -317,6 +295,34 @@ func TestClientUsecase_getSecrets(t *testing.T) {
 				return usecase
 			}(),
 			args: args{secretName: secretName, success: false},
+		},
+		{
+			name: "failed get file info",
+			usecase: func() ClientUsecase {
+				testDataInfo := dataInfo
+				testDataInfo.DataType = filemanager.FileType
+				testDataInfo.FileName = &file
+
+				fm := mock_filemanager.NewMockFileStorage(mockCtrl)
+				cli := mock_ui.NewMockUserInterface(mockCtrl)
+				cli.EXPECT().PrintErr(ui.GetErr)
+
+				usecase := ClientUsecase{
+					userData: &models.UserData{Meta: models.UserMeta{
+						Data: models.MetaData{
+							"test": models.DataInfo{
+								Name:     "work",
+								DataType: filemanager.FileType,
+							},
+						}}},
+					fileManager: fm,
+					ui:          cli,
+					log:         log,
+				}
+
+				return usecase
+			}(),
+			args: args{secretName: "secretName", success: true},
 		},
 	}
 	for _, tt := range tests {
