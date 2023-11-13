@@ -20,12 +20,19 @@ import (
 	"go.uber.org/zap"
 )
 
+// Maximum number of open connections to the database.
 const MAXOPENCONN = 25
+
+// Maximum number of idle connections in the pool.
 const MAXIDLECONNS = 10
+
+// Maximum lifetime of a connection.
 const CONNMAXLIFETIME = time.Minute * 30
 
+// Repository interface defines the standard contract for database operations.
+// It includes a method to close the database connection.
 type Repository interface {
-	// Close close connection with repo or return error.
+	// Close terminates the connection with the database and returns an error if unsuccessful.
 	Close() error
 }
 
@@ -35,6 +42,12 @@ type repository struct {
 	logger *zap.Logger
 }
 
+// InitNewRepository initializes a new repository with the given database connection string.
+// It runs necessary database migrations and sets up the database connection.
+// connString: Database connection string.
+// logger: Logger for logging purposes.
+// Returns a pointer to the repository or an error if initialization fails.
+//
 //nolint:revive,nolintlint
 func InitNewRepository(connString string, logger *zap.Logger) (*repository, error) {
 	err := RunMigrations(context.Background(), connString, logger)
@@ -78,6 +91,13 @@ func InitNewRepository(connString string, logger *zap.Logger) (*repository, erro
 //go:embed migrations/*.sql
 var fs embed.FS
 
+// RunMigrations applies database migrations using embedded SQL files.
+// It ensures the database schema is up to date.
+// ctx: Context for execution.
+// connString: Database connection string.
+// logger: Logger for logging migration process.
+// Returns an error if migration fails.
+//
 //nolint:revive,nolintlint
 func RunMigrations(ctx context.Context, connString string, logger *zap.Logger) error {
 	d, err := iofs.New(fs, "migrations")
@@ -106,6 +126,8 @@ func RunMigrations(ctx context.Context, connString string, logger *zap.Logger) e
 	return nil
 }
 
+// Close gracefully terminates the database connection.
+// Returns an error if closing the connection fails.
 func (r *repository) Close() error {
 	//nolint:wrapcheck
 	return r.db.Close()

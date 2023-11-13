@@ -1,4 +1,6 @@
-// Package filemanager provides the ability to work with secret files regardless of their type
+// Package filemanager provides the functionality to manage secret files in the GophKeeper application,
+// regardless of their type. It includes capabilities for adding, reading, updating, and deleting
+// both regular and encrypted files, as well as managing metadata associated with these files.
 package filemanager
 
 import (
@@ -74,6 +76,7 @@ func NewFileManager(storageDir, uploadDir, userDir string, meta models.UserMeta,
 	}, nil
 }
 
+// AddToStorage adds data to storage and updates metadata.
 func (fm *FileManager) AddToStorage(name string, data Data, info models.DataInfo) error {
 	_, ok := fm.Meta.Data[name]
 	if ok {
@@ -101,6 +104,7 @@ func (fm *FileManager) AddToStorage(name string, data Data, info models.DataInfo
 	return fm.saveMetaData()
 }
 
+// AddFileToStorage adds file data to storage and updates metadata.
 func (fm *FileManager) AddFileToStorage(newFile bool, name string, filePath string, info models.DataInfo) error {
 	_, ok := fm.Meta.Data[name]
 	if ok && newFile {
@@ -141,6 +145,7 @@ func (fm *FileManager) AddFileToStorage(newFile bool, name string, filePath stri
 	return fm.saveMetaData()
 }
 
+// ReadFileFromStorage decrypts and moves the file to the specified path.
 func (fm *FileManager) ReadFileFromStorage(uploadDir string, info models.DataInfo) error {
 	dataChan := make(chan []byte)
 	g, gctx := errgroup.WithContext(context.Background())
@@ -177,6 +182,7 @@ func (fm *FileManager) ReadFileFromStorage(uploadDir string, info models.DataInf
 	return nil
 }
 
+// AddEncryptedToStorage adds encrypted data to storage and updates metadata.
 func (fm *FileManager) AddEncryptedToStorage(name string, data chan []byte, info models.DataInfo) error {
 	_, ok := fm.Meta.Data[name]
 	if ok {
@@ -202,6 +208,7 @@ func (fm *FileManager) AddEncryptedToStorage(name string, data chan []byte, info
 	return fm.saveMetaData()
 }
 
+// GetByInfo retrieves decrypted data and metadata by info.
 func (fm *FileManager) GetByInfo(info models.DataInfo) ([]byte, models.DataInfo, error) {
 	data, err := os.ReadFile(filepath.Join(fm.storageDir, info.DataID))
 	if err != nil {
@@ -216,6 +223,7 @@ func (fm *FileManager) GetByInfo(info models.DataInfo) ([]byte, models.DataInfo,
 	return decryptedData, info, nil
 }
 
+// ReadEncryptedByID retrieves encrypted data by data ID.
 func (fm *FileManager) ReadEncryptedByID(dataID string) (chan []byte, error) {
 	file, err := os.Open(filepath.Join(fm.storageDir, dataID))
 	if err != nil {
@@ -246,6 +254,7 @@ func (fm *FileManager) ReadEncryptedByID(dataID string) (chan []byte, error) {
 	return data, nil
 }
 
+// UpdateDataByName updates encrypted data in storage.
 func (fm *FileManager) UpdateDataByName(name string, data Data) error {
 	savedInfo, ok := fm.Meta.Data[name]
 	if !ok {
@@ -268,6 +277,7 @@ func (fm *FileManager) UpdateDataByName(name string, data Data) error {
 	return fm.saveMetaData()
 }
 
+// UpdateInfoByName updates metadata by name.
 func (fm *FileManager) UpdateInfoByName(name string, info models.DataInfo) error {
 	savedInfo, ok := fm.Meta.Data[name]
 	if !ok {
@@ -293,6 +303,7 @@ func (fm *FileManager) UpdateInfoByName(name string, info models.DataInfo) error
 	return fm.saveMetaData()
 }
 
+// DeleteByName deletes data and metadata by name.
 func (fm *FileManager) DeleteByName(name string) error {
 	info, ok := fm.Meta.Data[name]
 	if !ok {
@@ -310,6 +321,7 @@ func (fm *FileManager) DeleteByName(name string) error {
 	return fm.saveMetaData()
 }
 
+// DeleteByIDs deletes data and metadata by ids.
 func (fm *FileManager) DeleteByIDs(ids []string) error {
 	var delErr error
 	for _, id := range ids {
@@ -339,6 +351,8 @@ func (fm *FileManager) DeleteByIDs(ids []string) error {
 	return nil
 }
 
+// Additional private methods like saveMetaData, getUniqueName, readFile, writeFile
+// are also implemented in FileManager for internal file and metadata handling.
 func (fm *FileManager) saveMetaData() error {
 	data, err := json.Marshal(fm.Meta)
 	if err != nil {

@@ -1,3 +1,7 @@
+// Package grpc provides the implementation of the gRPC client for the GophKeeper application.
+// It includes methods for user registration, login, file uploading and downloading, and other
+// client-server interactions over gRPC.
+//
 //nolint:gosec
 package grpc
 
@@ -16,6 +20,8 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
+// Client interface defines the set of methods that the gRPC client must implement.
+// It includes functionalities for user authentication, file operations, and server availability checks.
 type Client interface {
 	Register(login, password string) error
 	Login(login, password string) error
@@ -31,6 +37,8 @@ type Client interface {
 	TryToConnect() bool
 }
 
+// Grpc struct implements the Client interface and provides methods to interact with the gRPC server.
+// It manages server communication for user authentication, file operations, and maintaining the connection state.
 type Grpc struct {
 	client        pb.GophKeeperServiceClient
 	token         string
@@ -40,6 +48,8 @@ type Grpc struct {
 	isAvailable   bool
 }
 
+// NewClient creates a new Grpc client instance.
+// It initializes the gRPC client with the given server address and logger.
 func NewClient(serverAddress string, log zerolog.Logger) *Grpc {
 	return &Grpc{
 		serverAddress: serverAddress,
@@ -47,6 +57,8 @@ func NewClient(serverAddress string, log zerolog.Logger) *Grpc {
 	}
 }
 
+// Register handles user registration through the gRPC server.
+// It sends a registration request and stores the returned token.
 func (c *Grpc) Register(login, password string) error {
 	resp, err := c.client.Register(context.Background(), &pb.AuthRequest{
 		Username: login,
@@ -60,6 +72,8 @@ func (c *Grpc) Register(login, password string) error {
 	return nil
 }
 
+// Login handles user login through the gRPC server.
+// It sends a login request and stores the returned token.
 func (c *Grpc) Login(login, password string) error {
 	resp, err := c.client.Login(context.Background(), &pb.AuthRequest{
 		Username: login,
@@ -73,6 +87,8 @@ func (c *Grpc) Login(login, password string) error {
 	return nil
 }
 
+// BlockStore initiates a block store operation on the server.
+// It sends the sync key and receives a GUID in response.
 func (c *Grpc) BlockStore(ctx context.Context, syncKey string, guidChan chan string) error {
 	stream, err := c.client.BlockStore(c.getCtx(ctx, c.token))
 	if err != nil {
@@ -96,6 +112,8 @@ func (c *Grpc) BlockStore(ctx context.Context, syncKey string, guidChan chan str
 	return nil
 }
 
+// DownloadFile handles the file download process from the server.
+// It sends a request and streams the file content back to the client.
 func (c *Grpc) DownloadFile(ctx context.Context,
 	fileName string,
 	fileHash string,
@@ -132,6 +150,8 @@ func (c *Grpc) DownloadFile(ctx context.Context,
 	return data, nil
 }
 
+// UploadFile handles the file upload process to the server.
+// It streams the file content from the client to the server.
 func (c *Grpc) UploadFile(ctx context.Context, fileName string, hash string, syncKey string, data chan []byte) error {
 	stream, err := c.client.MultipartUploadFile(c.getCtx(ctx, c.token))
 	if err != nil {
@@ -161,6 +181,7 @@ func (c *Grpc) UploadFile(ctx context.Context, fileName string, hash string, syn
 	return nil
 }
 
+// ApplyChanges sends a request to apply changes on the server for the given ID.
 func (c *Grpc) ApplyChanges(ctx context.Context, id string) error {
 	_, err := c.client.ApplyChanges(c.getCtx(ctx, c.token), &pb.ApplyChangesRequest{Guid: id})
 	if err != nil {
@@ -170,14 +191,18 @@ func (c *Grpc) ApplyChanges(ctx context.Context, id string) error {
 	return nil
 }
 
+// IsNotAvailable checks if the server is not available.
 func (c *Grpc) IsNotAvailable() bool {
 	return !c.isAvailable
 }
 
+// IsAvailable checks if the server is available.
 func (c *Grpc) IsAvailable() bool {
 	return c.isAvailable
 }
 
+// TryToConnect attempts to establish a connection with the gRPC server.
+// It sets up the connection and checks the server's availability.
 func (c *Grpc) TryToConnect() bool {
 	conn, err := grpc.Dial(c.serverAddress,
 		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})))
@@ -202,6 +227,7 @@ func (c *Grpc) TryToConnect() bool {
 	return true
 }
 
+// getCtx generates a new context with metadata containing the JWT for authorization.
 func (c *Grpc) getCtx(ctx context.Context, jwt string) context.Context {
 	md := metadata.New(map[string]string{
 		"authorization": jwt,

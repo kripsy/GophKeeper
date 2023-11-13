@@ -1,3 +1,5 @@
+// Package logger provides logging functionalities for the GophKeeper application using zap logger.
+// It includes methods to initialize the logger with various configurations.
 package logger
 
 import (
@@ -6,6 +8,9 @@ import (
 	"go.uber.org/zap"
 )
 
+// InitLog initializes a zap logger with the specified log level.
+// It parses the log level, sets the configuration, and returns the configured logger.
+// Returns an error if the log level parsing or logger configuration fails.
 func InitLog(level string) (*zap.Logger, error) {
 	lvl, err := zap.ParseAtomicLevel(level)
 
@@ -30,6 +35,9 @@ func InitLog(level string) (*zap.Logger, error) {
 	return log, nil
 }
 
+// InitLogWithFilePath initializes a zap logger with the specified log level and output file path.
+// It parses the log level, sets the output path for logging, and returns the configured logger.
+// Returns an error if the log level parsing or logger configuration fails.
 func InitLogWithFilePath(level string, logFilePath string) (*zap.Logger, error) {
 	lvl, err := zap.ParseAtomicLevel(level)
 

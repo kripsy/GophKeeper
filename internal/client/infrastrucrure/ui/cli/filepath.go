@@ -1,3 +1,5 @@
+// Package cli provides command-line interface functionalities for the GophKeeper application.
+// It includes methods for handling file upload paths and interactively selecting file or directory paths.
 package cli
 
 import (
@@ -16,11 +18,14 @@ const (
 	kilobyte = 10_000.0
 )
 
+// Constants for predefined directory options.
 const (
 	CfgDir    = "Into the directory specified in the configuration file"
 	CustomDir = "I will specify the directory myself"
 )
 
+// UploadFileTo prompts the user to choose a directory for file upload.
+// Returns the chosen directory's path and a boolean indicating if a valid selection was made.
 func (c *CLI) UploadFileTo(cfgDir string) (string, bool) {
 	chooseUpload := promptui.Select{
 		Label:        "Where do you want to move the file to?",
@@ -49,6 +54,8 @@ func (c *CLI) UploadFileTo(cfgDir string) (string, bool) {
 	return "", false
 }
 
+// GetFilePath prompts the user to enter a file path using an interactive auto-complete interface.
+// Returns the entered file path.
 func (c *CLI) GetFilePath() string {
 	defer c.Clear()
 
@@ -72,6 +79,8 @@ func (c *CLI) GetFilePath() string {
 	return filePath
 }
 
+// GetNewFilePath prompts the user to enter a directory path using an interactive auto-complete interface.
+// Modifies the provided string pointer with the entered path.
 func (c *CLI) GetNewFilePath(filePath *string) {
 	defer c.Clear()
 	fmt.Println("Use Tab:")

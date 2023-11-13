@@ -1,3 +1,5 @@
+// Package infrastructure provides the necessary infrastructure components for the GophKeeper application.
+// It includes repository implementations for working with Minio object storage and PostgreSQL databases.
 package infrastructure
 
 import (
@@ -20,6 +22,9 @@ type minioRepository struct {
 	logger *zap.Logger
 }
 
+// NewMinioRepository initializes a new minioRepository instance.
+// It sets up the Minio client and ensures the existence of a specified bucket.
+//
 //nolint:revive,nolintlint
 func NewMinioRepository(ctx context.Context,
 	endpoint,
@@ -83,6 +88,9 @@ func initBucket(ctx context.Context, bucketName string, client *minio.Client) er
 	return nil
 }
 
+// MultipartUploadFile Handles the multipart file upload to Minio.
+// It constructs an object name based on the file name and part number,
+// and then uploads the data to the specified bucket.
 func (m *minioRepository) MultipartUploadFile(ctx context.Context,
 	data *models.MultipartUploadFileData,
 	partNum int,
@@ -109,6 +117,8 @@ func (m *minioRepository) MultipartUploadFile(ctx context.Context,
 	}, nil
 }
 
+// CreateBucketSecret Metho Ensures the existence of a user-specific bucket in Minio.
+// If the bucket does not exist, it creates a new one.
 func (m *minioRepository) CreateBucketSecret(ctx context.Context, username string, userID int) (bool, error) {
 	bucketName, err := utils.FromUser2BucketName(ctx, username, userID)
 	if err != nil {
@@ -136,6 +146,8 @@ func (m *minioRepository) CreateBucketSecret(ctx context.Context, username strin
 	return false, nil
 }
 
+// ListObjects Method lists objects in a specified bucket with an optional prefix.
+// It returns a slice of object names or an error.
 func (m *minioRepository) ListObjects(ctx context.Context, bucketName, prefix string) (*[]string, error) {
 	opts := minio.ListObjectsOptions{
 		Prefix:    prefix,
@@ -158,6 +170,8 @@ func (m *minioRepository) ListObjects(ctx context.Context, bucketName, prefix st
 	return &objectNames, nil
 }
 
+// GetObject Method Retrieves an object from Minio by bucket and file name.
+// Returns the object's content, hash metadata, and any error encountered.
 func (m *minioRepository) GetObject(ctx context.Context,
 	bucketName, filename string) (*[]byte, string, error) {
 	object, err := m.client.GetObject(ctx, bucketName, filename, minio.GetObjectOptions{})
@@ -188,6 +202,7 @@ func (m *minioRepository) GetObject(ctx context.Context,
 	return &content, hash, nil
 }
 
+// ListFilesWithPostfix Method Generates a list of files in a bucket that end with a specified postfix.
 func (m *minioRepository) ListFilesWithPostfix(bucketName, postfix string) ([]string, error) {
 	var fileList []string
 
@@ -210,6 +225,10 @@ func (m *minioRepository) ListFilesWithPostfix(bucketName, postfix string) ([]st
 	return fileList, nil
 }
 
+// ApplyChanges Method: Applies changes to objects in a bucket.
+// It handles the logic of updating files based on a ".rc" postfix,
+// including removing old files and renaming updated ones.
+//
 //nolint:cyclop
 func (m *minioRepository) ApplyChanges(ctx context.Context, bucketName string) error {
 	postfix := ".rc"
@@ -290,6 +309,8 @@ func (m *minioRepository) ApplyChanges(ctx context.Context, bucketName string) e
 	return nil
 }
 
+// DiscardChanges Method: Discards any changes made to files with a ".rc" postfix
+// in a specified bucket by removing those files.
 func (m *minioRepository) DiscardChanges(ctx context.Context, bucketName string) error {
 	postfix := ".rc"
 	//nolint:contextcheck

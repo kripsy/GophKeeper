@@ -35,6 +35,7 @@ const (
 	ErrSyncUnexpectedEnum                      // Unexpected error
 )
 
+// Predefined errors for users failure scenarios.
 var (
 	ErrUserSyncExists = errors.New("this sync for this user already exists")
 	ErrSyncExists     = errors.New("sync for this user already exists")

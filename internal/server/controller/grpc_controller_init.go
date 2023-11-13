@@ -13,6 +13,7 @@ import (
 
 const maxStreams = 20
 
+// GrpcServer struct encapsulates the gRPC service implementations for the GophKeeper application.
 type GrpcServer struct {
 	pb.UnimplementedGophKeeperServiceServer
 	logger        *zap.Logger
@@ -22,6 +23,7 @@ type GrpcServer struct {
 	syncStatus    SyncStatus
 }
 
+// InitGrpcServiceServer initializes a new GrpcServer with the provided dependencies.
 func InitGrpcServiceServer(userUseCase UserUseCase,
 	secretUseCase SecretUseCase,
 	secret string,
@@ -35,6 +37,9 @@ func InitGrpcServiceServer(userUseCase UserUseCase,
 	}
 }
 
+// InitGrpcServer initializes and returns a new gRPC server.
+// It configures the server with TLS credentials
+// if isSecure is true, and sets up middleware and service implementations.
 func InitGrpcServer(userUseCase UserUseCase,
 	secretUseCase SecretUseCase,
 	secret string,

@@ -9,6 +9,8 @@ import (
 	"github.com/manifoldco/promptui"
 )
 
+// GetUser prompts the user to enter their username and password.
+// It validates the input and returns a User object or an error if the input is invalid.
 func (c *CLI) GetUser() (models.User, error) {
 	username := promptui.Prompt{
 		Label:       "Username",
@@ -41,6 +43,8 @@ func (c *CLI) GetUser() (models.User, error) {
 	}, nil
 }
 
+// GetRepeatedPassword prompts the user to repeat their password for confirmation.
+// It validates the input and returns the confirmed password or an error if the input is invalid.
 func (c *CLI) GetRepeatedPassword() (string, error) {
 	pass := promptui.Prompt{
 		Label:       "Repeat Password",
@@ -59,6 +63,8 @@ func (c *CLI) GetRepeatedPassword() (string, error) {
 	return password, nil
 }
 
+// TryAgain offers the user options to try logging in again, register, or exit the application.
+// It handles the user's choice and returns a boolean indicating whether to retry the login.
 func (c *CLI) TryAgain() bool {
 	defer c.Clear()
 	action := promptui.Select{
@@ -83,6 +89,8 @@ func (c *CLI) TryAgain() bool {
 	return false
 }
 
+// IsSyncStorage prompts the user to choose whether to synchronize their secrets across devices.
+// It returns a boolean indicating the user's preference for syncing.
 func (c *CLI) IsSyncStorage() bool {
 	isLocal := promptui.Prompt{
 		Label:       "Do you want to synchronize your secrets across devices?",

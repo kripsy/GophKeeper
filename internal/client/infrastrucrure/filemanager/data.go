@@ -1,3 +1,7 @@
+// Package filemanager provides structures and functionality to manage different types
+// of data in the GophKeeper application, including notes, basic authentication data,
+// card data, and files. It supports encryption, hashing, and conversion to string formats.
+//
 //nolint:gochecknoglobals
 package filemanager
 
@@ -9,6 +13,7 @@ import (
 	"github.com/kripsy/GophKeeper/internal/utils"
 )
 
+// Data type identifiers.
 const (
 	NoteType = iota
 	BasicAuthType
@@ -24,7 +29,8 @@ const (
 	NameFileType      = "File"
 )
 
-// Data is an interface implemented by various data types to support encryption, hashing, and displaying.
+// Data is an interface that defines methods for encryption, hashing, and string representation.
+// It is implemented by various data types (Note, BasicAuth, CardData).
 type Data interface {
 	// EncryptedData methods for perform encryption using a provided key.
 	EncryptedData(key []byte) ([]byte, error)
@@ -64,6 +70,8 @@ type Note struct {
 	Text string `json:"text"`
 }
 
+// Implementation of String(), EncryptedData(), and GetHash() for each data type.
+// These methods provide string representation, encryption, and hashing functionalities.
 func (c CardData) String() string {
 	return fmt.Sprintf("Number: %q, Date: %q, CVV: %q", c.Number, c.Date, c.CVV)
 }

@@ -1,3 +1,6 @@
+// Package cli provides command-line interface functionalities for the GophKeeper application.
+// It includes methods for interacting with the user, such as choosing secret types, adding notes,
+// basic authentication data, card data, and metadata.
 package cli
 
 import (
@@ -10,6 +13,8 @@ import (
 	"github.com/manifoldco/promptui"
 )
 
+// ChooseSecretType prompts the user to choose a type of secret from a predefined list.
+// Returns the chosen secret type's ID and a boolean indicating if a valid selection was made.
 func (c *CLI) ChooseSecretType() (int, bool) {
 	defer c.Clear()
 	items := filemanager.DataTypeTable
@@ -35,6 +40,8 @@ func (c *CLI) ChooseSecretType() (int, bool) {
 	return id, true
 }
 
+// AddNote prompts the user to enter a note.
+// Returns a Note object containing the entered text or an error if the operation fails.
 func (c *CLI) AddNote() (filemanager.Note, error) {
 	note := promptui.Prompt{
 		Label:       "Note",
@@ -53,6 +60,8 @@ func (c *CLI) AddNote() (filemanager.Note, error) {
 	}, nil
 }
 
+// AddBasicAuth prompts the user to enter login and password credentials.
+// Returns a BasicAuth object containing the entered credentials or an error if the operation fails.
 func (c *CLI) AddBasicAuth() (filemanager.BasicAuth, error) {
 	log := promptui.Prompt{
 		Label:       "Login",
@@ -81,6 +90,8 @@ func (c *CLI) AddBasicAuth() (filemanager.BasicAuth, error) {
 	}, nil
 }
 
+// AddCard prompts the user to enter card details (number, date, and CVV).
+// Returns a CardData object containing the entered details or an error if the operation fails.
 func (c *CLI) AddCard() (filemanager.CardData, error) {
 	cardNum := promptui.Prompt{
 		Label:       "Card Number",
@@ -122,6 +133,8 @@ func (c *CLI) AddCard() (filemanager.CardData, error) {
 	}, nil
 }
 
+// AddMetaInfo prompts the user to enter metadata for a secret (name and description).
+// Returns a DataInfo object containing the entered metadata or an error if the operation fails.
 func (c *CLI) AddMetaInfo() (models.DataInfo, error) {
 	dataName := promptui.Prompt{
 		Label:       "Secret name",

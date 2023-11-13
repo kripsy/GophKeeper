@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// UserRepository interface defines the required methods for user data operations.
 type UserRepository interface {
 	RegisterUser(ctx context.Context, user entity.User) (int, error)
 	LoginUser(ctx context.Context, user entity.User) (int, error)
@@ -26,6 +27,9 @@ type userUseCase struct {
 	tokenExp time.Duration
 }
 
+// InitUseCases initializes a new userUseCase instance.
+// It prepares the use case with the user repository, JWT secret, token expiration, and a logger.
+//
 //nolint:revive,nolintlint
 func InitUseCases(ctx context.Context,
 	db UserRepository,
@@ -43,10 +47,8 @@ func InitUseCases(ctx context.Context,
 	return uc, nil
 }
 
-// RegisterUser get context, user and return token, expired time, error.
-// At the first step we check is user exists. If exists - return error conflict.
-// If user not exists we get new user ID.
-// After register new user we generate new jwt token.
+// RegisterUser handles the registration of a new user.
+// It checks if the user exists, registers them if not, and then generates a JWT token.
 func (uc *userUseCase) RegisterUser(ctx context.Context, user entity.User) (string, int, error) {
 	userID, err := uc.db.RegisterUser(ctx, user)
 	if err != nil {
@@ -62,24 +64,7 @@ func (uc *userUseCase) RegisterUser(ctx context.Context, user entity.User) (stri
 }
 
 // LoginUser authenticates a user based on the provided credentials.
-// Upon successful authentication, the function generates a JWT token for the user.
-//
-// Parameters:
-// - ctx: The context for the operation, which can be used for cancellation or timeout.
-// - user: The User structure containing the user's credentials for authentication.
-//
-// Returns:
-// - string: The generated JWT token that can be used for subsequent authorization.
-// - error: An error that might occur during authentication or token generation.
-//
-// Usage example:
-// token, err := uc.LoginUser(ctx, user)
-//
-//	if err != nil {
-//	    log.Fatalf("Failed to login user: %v", err)
-//	}
-//
-// fmt.Println("Generated JWT token:", token).
+// It verifies the user's existence and, upon successful authentication, generates a JWT token.
 func (uc *userUseCase) LoginUser(ctx context.Context, user entity.User) (string, int, error) {
 	userID, err := uc.db.LoginUser(ctx, user)
 	if err != nil {

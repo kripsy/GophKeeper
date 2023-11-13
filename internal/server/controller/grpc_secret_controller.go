@@ -17,6 +17,9 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// MultipartUploadFile handles multipart file uploads.
+// It processes each part of the file from the client stream and coordinates with the SecretUseCase for storage.
+//
 //nolint:cyclop,gocognit
 func (s *GrpcServer) MultipartUploadFile(stream pb.GophKeeperService_MultipartUploadFileServer) error {
 	s.logger.Debug("Start MultipartUploadFile")
@@ -157,6 +160,9 @@ loop:
 	return nil
 }
 
+// BlockStore handles the initiation of a storage session for multipart file uploads or downloads.
+// It coordinates with the SecretUseCase for managing upload or download sessions.
+//
 //nolint:cyclop,gocognit
 func (s *GrpcServer) BlockStore(stream pb.GophKeeperService_BlockStoreServer) error {
 	s.logger.Debug("start Register")
@@ -313,6 +319,9 @@ loop:
 	return nil
 }
 
+// MultipartDownloadFile handles multipart file downloads.
+// It streams each part of the file to the client, coordinating with the SecretUseCase for data retrieval.
+//
 //nolint:cyclop
 func (s *GrpcServer) MultipartDownloadFile(req *pb.MultipartDownloadFileRequest,
 	stream pb.GophKeeperService_MultipartDownloadFileServer) error {
@@ -411,6 +420,9 @@ loop:
 	return nil
 }
 
+// ApplyChanges applies changes to the user's stored secrets.
+// It finalizes any pending changes related to file uploads or modifications.
+//
 //nolint:cyclop
 func (s *GrpcServer) ApplyChanges(ctx context.Context,
 	req *pb.ApplyChangesRequest) (*pb.ApplyChangesResponse, error) {

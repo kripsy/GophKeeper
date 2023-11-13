@@ -27,6 +27,11 @@ type userRepository struct {
 	logger *zap.Logger
 }
 
+// RegisterUser handles the registration of a new user in the system.
+// It checks if the user exists, generates a hashed password, and stores the user information.
+// ctx: Context for the function execution.
+// user: User entity containing the username and password.
+// Returns the user ID on successful registration or an error if the operation fails.
 func (r *userRepository) RegisterUser(ctx context.Context, user entity.User) (int, error) {
 	userExist, err := r.isUserExists(ctx, user.Username)
 	if err != nil {
@@ -91,6 +96,11 @@ func (r *userRepository) RegisterUser(ctx context.Context, user entity.User) (in
 	return id, nil
 }
 
+// LoginUser verifies user credentials for login.
+// It checks if the user exists and compares the provided password with the stored hash.
+// ctx: Context for the function execution.
+// user: User entity containing the username and password.
+// Returns the user ID on successful login or an error if authentication fails.
 func (r *userRepository) LoginUser(ctx context.Context, user entity.User) (int, error) {
 	userExist, err := r.isUserExists(ctx, user.Username)
 	if err != nil {
@@ -301,6 +311,11 @@ func (r *userRepository) getUserHashPassword(ctx context.Context, username strin
 	return userID, hashPassword, nil
 }
 
+// NewUserRepository creates a new instance of the userRepository.
+// This function is called to initiate a user repository with a shared database connection and logger.
+// repo: Repository instance containing the database connection and logger.
+// Returns a new instance of userRepository or an error if the initiation fails.
+//
 //nolint:revive,nolintlint
 func NewUserRepository(repo *repository) (*userRepository, error) {
 	return &userRepository{

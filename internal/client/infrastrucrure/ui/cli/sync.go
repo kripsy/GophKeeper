@@ -10,6 +10,7 @@ const syncDisplayDelay = 700
 
 var syncProgress = []string{"", ".", "..", "...", "..."}
 
+// Sync displays sync status.
 func (c *CLI) Sync(stop <-chan struct{}) {
 	var counter int
 	syncDisplayTicker := time.NewTicker(time.Millisecond * syncDisplayDelay)
