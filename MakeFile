@@ -1,0 +1,58 @@
+
+	CLIENT_VERSION=v1.0.0
+
+ci:
+	golangci-lint run -v -c .golangci.yml
+
+run/server:
+	go run ./cmd/server/main.go
+
+run/client:
+	go run ./cmd/client/
+
+build/client/linux:
+	go build -o ./cmd/client/client \
+	-ldflags "-X main.buildVersion=$(CLIENT_VERSION) \
+		  -X main.buildDate=$(shell date '+%Y/%m/%d[%H:%M:%S]')" \
+	./cmd/client/*.go
+
+build/client/windows:
+	GOOS=windows GOARCH=amd64 go build -o ./cmd/client/client$(shell go env GOEXE)  \
+	-ldflags "-X main.buildVersion=$(CLIENT_VERSION) \
+		  -X main.buildDate=$(shell date '+%Y/%m/%d[%H:%M:%S]')" \
+	./cmd/client/*.go
+
+build/client/mac:
+	GOOS=darwin go build -o ./cmd/client/client \
+	-ldflags "-X main.buildVersion=$(CLIENT_VERSION) \
+		  -X main.buildDate=$(shell date '+%Y/%m/%d[%H:%M:%S]')" \
+	./cmd/client/*.go
+
+
+genmocks:
+# generate SecretUseCase for controller
+	mockgen -destination=internal/server/controller/mocks/mock_secretusecase.go -package=mocks github.com/kripsy/GophKeeper/internal/server/controller SecretUseCase;
+# generate UserUseCase for controller	
+	mockgen -destination=internal/server/controller/mocks/mock_userusecase.go -package=mocks github.com/kripsy/GophKeeper/internal/server/controller UserUseCase;
+# generate GophKeeperService_MultipartUploadFileServer for controller	
+	mockgen -destination=internal/server/controller/mocks/mock_gophkeeperservice_multipartuploadfileserver.go -package=mocks github.com/kripsy/GophKeeper/gen/pkg/api/GophKeeper/v1 GophKeeperService_MultipartUploadFileServer;
+# generate GophKeeperService_BlockStoreServer for controller	
+	mockgen -destination=internal/server/controller/mocks/mock_gophkeeperservice_blockstoreserver.go -package=mocks github.com/kripsy/GophKeeper/gen/pkg/api/GophKeeper/v1 GophKeeperService_BlockStoreServer;
+# generate GophKeeperService_MultipartDownloadFileServer for controller	
+	mockgen -destination=internal/server/controller/mocks/mock_gophkeeperservice_multipartdownloadfileserver.go -package=mocks github.com/kripsy/GophKeeper/gen/pkg/api/GophKeeper/v1 GophKeeperService_MultipartDownloadFileServer;
+# generate SyncStatus for controller	
+	mockgen -destination=internal/server/controller/mocks/mock_SyncStatus.go -package=mocks github.com/kripsy/GophKeeper/internal/server/controller SyncStatus;
+# generate ServerStream for controller	
+	mockgen -destination=internal/server/controller/mocks/mock_server_stream.go -package=mocks google.golang.org/grpc ServerStream;
+
+
+lint-all:
+	golangci-lint run ./internal/utils/...
+
+lint-one:
+	golangci-lint run --no-config --disable-all --enable goerr113 ./internal/utils/...
+
+
+cover:
+	go test -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out
