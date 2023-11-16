@@ -21,4 +21,8 @@ vendor/
 .idea
 .vscode
 .DS_Store
-.run
+.ru
+cert/*.key
+cert/*.crt
+tempFiles/*
+!tempFiles/README.md

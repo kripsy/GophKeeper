@@ -10,11 +10,21 @@ services:
     container_name: GophKeeper_server
     restart: always
     environment:
-      - RUN_ADDRESS=server:8080
-      - DATABASE_URI=postgres://gophkeeperdb:gophkeeperdbpwd@postgres_db:5432/gophkeeperdb?sslmode=disable
-      - LOGGER_LEVEL=Debug
+      - SERVER_ADDRESS=server:8080
+      - LOG_LEVEL=Info
+      - DATABASE_DSN=postgres://gophkeeperdb:gophkeeperdbpwd@postgres_db:5432/gophkeeperdb?sslmode=disable
+      - SECRET=supersecret
+      - ISSECURE=true
+      - ENDPOINTMINIO=minio:9000
+      - ACCESSKEYIDMINIO=masoud
+      - SECRETACCESSKEYMINIO=Strong#Pass#2022
+      - BUCKETNAMEMINIO=secrets
+      - ISUSESSLMINIO=false
+    ports:
+      - 50051:50051
     depends_on:
       - postgres_db
+      - minio
 
 
   postgres_db:
@@ -45,7 +55,19 @@ services:
     depends_on:
       - postgres_db
 
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_storage:/data
+    environment:
+      MINIO_ROOT_USER: masoud
+      MINIO_ROOT_PASSWORD: Strong#Pass#2022
+    command: server --console-address ":9001" /data
+
 
 volumes:
-  pg_data: { }
-  pgadmin-data: { }
+  pg_data: {}
+  minio_storage: {}
